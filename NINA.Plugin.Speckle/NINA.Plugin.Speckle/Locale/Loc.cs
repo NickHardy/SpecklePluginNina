@@ -21,7 +21,7 @@ using System.Globalization;
 using System.Resources;
 using System.Windows.Data;
 
-namespace Speckle.Locale {
+namespace NINA.Plugin.Speckle.Locale {
 
     [Export(typeof(ILoc))]
     [JsonObject(MemberSerialization.OptIn)]
@@ -33,7 +33,7 @@ namespace Speckle.Locale {
          new Lazy<Loc>(() => new Loc());
 
         private Loc() {
-            _locale = new ResourceManager("Speckle.Locale.Locale", typeof(Loc).Assembly);
+            _locale = new ResourceManager("NINA.Plugin.Speckle.Locale.Locale", typeof(Loc).Assembly);
         }
 
         public void ReloadLocale(string culture) {

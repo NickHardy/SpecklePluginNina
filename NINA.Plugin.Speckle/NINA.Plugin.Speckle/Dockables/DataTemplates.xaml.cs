@@ -7,8 +7,10 @@ using System.Threading.Tasks;
 using System.Windows;
 
 namespace NINA.Plugin.Speckle.Dockables {
+
     [Export(typeof(ResourceDictionary))]
-    partial class DataTemplates : ResourceDictionary {
+    public partial class DataTemplates : ResourceDictionary {
+
         public DataTemplates() {
             InitializeComponent();
         }

@@ -1,4 +1,4 @@
-﻿using Speckle.Properties;
+﻿using NINA.Plugin.Speckle.Properties;
 using NINA.Core.Utility;
 using NINA.Plugin;
 using NINA.Plugin.Interfaces;
@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
-namespace Speckle.Photometry {
+namespace NINA.Plugin.Speckle {
     /// <summary>
     /// This class exports the IPluginManifest interface and will be used for the general plugin information and options
     /// The base class "PluginBase" will populate all the necessary Manifest Meta Data out of the AssemblyInfo attributes. Please fill these accoringly
@@ -32,45 +32,45 @@ namespace Speckle.Photometry {
         }
 
         public double MDistance {
-            get => Properties.Settings.Default.MDistance;
+            get => Settings.Default.MDistance;
             set {
-                Properties.Settings.Default.MDistance = value;
+                Settings.Default.MDistance = value;
                 CoreUtil.SaveSettings(Properties.Settings.Default);
                 RaisePropertyChanged();
             }
         }
 
         public int Nights {
-            get => Properties.Settings.Default.Nights;
+            get => Settings.Default.Nights;
             set {
-                Properties.Settings.Default.Nights = value;
+                Settings.Default.Nights = value;
                 CoreUtil.SaveSettings(Properties.Settings.Default);
                 RaisePropertyChanged();
             }
         }
 
         public int Cycles {
-            get => Properties.Settings.Default.Cycles;
+            get => Settings.Default.Cycles;
             set {
-                Properties.Settings.Default.Cycles = value;
+                Settings.Default.Cycles = value;
                 CoreUtil.SaveSettings(Properties.Settings.Default);
                 RaisePropertyChanged();
             }
         }
 
         public int Priority {
-            get => Properties.Settings.Default.Priority;
+            get => Settings.Default.Priority;
             set {
-                Properties.Settings.Default.Priority = value;
+                Settings.Default.Priority = value;
                 CoreUtil.SaveSettings(Properties.Settings.Default);
                 RaisePropertyChanged();
             }
         }
 
         public string DefaultTemplate {
-            get => Properties.Settings.Default.DefaultTemplate;
+            get => Settings.Default.DefaultTemplate;
             set {
-                Properties.Settings.Default.DefaultTemplate = value;
+                Settings.Default.DefaultTemplate = value;
                 CoreUtil.SaveSettings(Properties.Settings.Default);
                 RaisePropertyChanged();
             }

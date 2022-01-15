@@ -38,11 +38,11 @@ using NINA.Equipment.Equipment.MyCamera;
 using NINA.WPF.Base.Interfaces.ViewModel;
 using NINA.Sequencer.Interfaces;
 using NINA.Sequencer.SequenceItem;
-using Speckle.Photometry.ViewModel;
+using NINA.Plugin.Speckle.ViewModel;
 using NINA.Equipment.Interfaces.ViewModel;
-using Speckle.Photometry.Sequencer.Utility;
+using NINA.Plugin.Speckle.Sequencer.Utility;
 
-namespace Speckle.Photometry.Sequencer.SequenceItem {
+namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
 
     [ExportMetadata("Name", "TakeRoiExposures")]
     [ExportMetadata("Description", "Lbl_SequenceItem_Imaging_TakeExposure_Description")]

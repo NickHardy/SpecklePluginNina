@@ -14,7 +14,7 @@
     xmlns:behaviors="clr-namespace:NINA.Sequencer.Behaviors;assembly=NINA.Sequencer"
     xmlns:converter="clr-namespace:NINA.View.Sequencer.Converter;assembly=NINA.Sequencer"
     xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
-    xmlns:local="clr-namespace:Speckle.Photometry.Sequencer.Container"
+    xmlns:local="clr-namespace:NINA.Plugin.Speckle.Sequencer.Container"
     xmlns:ninactrl="clr-namespace:NINACustomControlLibrary;assembly=NINACustomControlLibrary"
     xmlns:ns="clr-namespace:NINA.Core.Locale;assembly=NINA.Core"
     xmlns:rules="clr-namespace:NINA.Core.Utility.ValidationRules;assembly=NINA.Core"

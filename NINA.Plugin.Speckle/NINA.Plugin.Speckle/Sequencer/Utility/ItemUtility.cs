@@ -12,7 +12,7 @@
 
 #endregion "copyright"
 
-using Speckle.Photometry.Sequencer.Container;
+using NINA.Plugin.Speckle.Sequencer.Container;
 using NINA.Astrometry;
 using System;
 using System.Collections.Generic;
@@ -22,7 +22,7 @@ using System.Threading.Tasks;
 using NINA.Sequencer.Container;
 using NINA.Core.Utility;
 
-namespace Speckle.Photometry.Sequencer.Utility {
+namespace NINA.Plugin.Speckle.Sequencer.Utility {
 
     public class ItemUtility {
 

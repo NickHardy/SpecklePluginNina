@@ -40,7 +40,7 @@ using NINA.Equipment.Equipment;
 using NINA.WPF.Base.ViewModel;
 using NINA.WPF.Base.Interfaces.ViewModel;
 
-namespace Speckle.Photometry.ViewModel {
+namespace NINA.Plugin.Speckle.ViewModel {
 
     internal class RapidImagingVM : BaseVM, IImagingVM {
 

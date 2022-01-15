@@ -40,7 +40,7 @@ using NINA.Sequencer;
 using NINA.Equipment.Interfaces.Mediator;
 using NINA.Equipment.Equipment.MyCamera;
 
-namespace Speckle.Photometry.Sequencer.Container {
+namespace NINA.Plugin.Speckle.Sequencer.Container {
 
     [ExportMetadata("Name", "SpeckleTargetContainer")]
     [ExportMetadata("Description", "Lbl_SequenceContainer_DeepSkyObjectContainer_Description")]

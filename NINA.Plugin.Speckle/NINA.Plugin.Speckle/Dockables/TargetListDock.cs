@@ -15,7 +15,7 @@ using NINA.Sequencer.Container;
 using NINA.Sequencer.Interfaces.Mediator;
 using NINA.WPF.Base.Interfaces.Mediator;
 using NINA.WPF.Base.ViewModel;
-using Speckle.Photometry.Sequencer.Container;
+using NINA.Plugin.Speckle.Sequencer.Container;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
@@ -35,15 +35,8 @@ namespace NINA.Plugin.Speckle.Dockables {
         private ITelescopeMediator telescopeMediator;
         private IGuiderMediator guiderMediator;
         private IApplicationStatusMediator applicationStatusMediator;
-        private IFilterWheelMediator filterWheelMediator;
-        private CameraInfo cameraInfo;
-
         private ICameraMediator cameraMediator;
-        private IImagingMediator imagingMediator;
-
-        private TelescopeInfo telescopeInfo;
-        private IDomeMediator domeMediator;
-        private IDomeFollower domeFollower;
+        private ISequenceMediator sequenceMediator;
 
         private CancellationTokenSource executeCTS;
 
@@ -55,11 +48,14 @@ namespace NINA.Plugin.Speckle.Dockables {
             ICameraMediator cameraMediator,
             ISequenceMediator sequenceMediator) : base(profileService) {
             Title = "Speckle targetlist";
+            // ImageGeometry = (System.Windows.Media.GeometryGroup)System.Windows.Application.Current.Resources["PlatesolveSVG"];
             this.profileService = profileService;
             this.applicationStatusMediator = applicationStatusMediator;
             this.telescopeMediator = telescopeMediator;
             this.guiderMediator = guiderMediator;
             this.applicationStatusMediator = applicationStatusMediator;
+            this.cameraMediator = cameraMediator;
+            this.sequenceMediator = sequenceMediator;
 
             OpenFileCommand = new RelayCommand((object o) => OpenFile());
             SpeckleTargets = new AsyncObservableCollection<SpeckleTarget>();
@@ -77,15 +73,15 @@ namespace NINA.Plugin.Speckle.Dockables {
                 RaisePropertyChanged(nameof(DSOTemplates));
             }, (object o) => sequenceMediator.Initialized);
 
-            SetSequencerTargetCommand = new RelayCommand((object o) => {
-                // applicationMediator.ChangeTab(ApplicationTab.SEQUENCE);
+            /*            SetSequencerTargetCommand = new RelayCommand((object o) => {
+                            // applicationMediator.ChangeTab(ApplicationTab.SEQUENCE);
 
-                var template = o as IDeepSkyObjectContainer;
-                foreach (var container in GetDSOContainerListFromFraming(template)) {
-                    Logger.Info($"Adding target to advanced sequencer: {container.Target.DeepSkyObject.Name} - {container.Target.DeepSkyObject.Coordinates}");
-                    sequenceMediator.AddAdvancedTarget(container);
-                }
-            }, (object o) => sequenceMediator.Initialized);
+                            var template = o as IDeepSkyObjectContainer;
+                            foreach (var container in GetDSOContainerListFromFraming(template)) {
+                                Logger.Info($"Adding target to advanced sequencer: {container.Target.DeepSkyObject.Name} - {container.Target.DeepSkyObject.Coordinates}");
+                                sequenceMediator.AddAdvancedTarget(container);
+                            }
+                        }, (object o) => sequenceMediator.Initialized);*/
 
         }
 
