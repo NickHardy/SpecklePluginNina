@@ -36,7 +36,6 @@ namespace NINA.Plugin.Speckle.Dockables {
         private IGuiderMediator guiderMediator;
         private IApplicationStatusMediator applicationStatusMediator;
         private ICameraMediator cameraMediator;
-        private ISequenceMediator sequenceMediator;
 
         private CancellationTokenSource executeCTS;
 
@@ -45,8 +44,7 @@ namespace NINA.Plugin.Speckle.Dockables {
             IApplicationStatusMediator applicationStatusMediator, 
             ITelescopeMediator telescopeMediator, 
             IGuiderMediator guiderMediator,
-            ICameraMediator cameraMediator,
-            ISequenceMediator sequenceMediator) : base(profileService) {
+            ICameraMediator cameraMediator) : base(profileService) {
             Title = "Speckle targetlist";
             // ImageGeometry = (System.Windows.Media.GeometryGroup)System.Windows.Application.Current.Resources["PlatesolveSVG"];
             this.profileService = profileService;
@@ -55,14 +53,13 @@ namespace NINA.Plugin.Speckle.Dockables {
             this.guiderMediator = guiderMediator;
             this.applicationStatusMediator = applicationStatusMediator;
             this.cameraMediator = cameraMediator;
-            this.sequenceMediator = sequenceMediator;
 
             OpenFileCommand = new RelayCommand((object o) => OpenFile());
             SpeckleTargets = new AsyncObservableCollection<SpeckleTarget>();
             SlewToCommand = new AsyncCommand<bool>(async () => { using (executeCTS = new CancellationTokenSource()) { return await SlewToTarget(new Progress<ApplicationStatus>(p => Status = p), executeCTS.Token); } });
             CancelExecuteCommand = new RelayCommand((object o) => { try { executeCTS?.Cancel(); } catch (Exception) { } });
 
-            GetDSOTemplatesCommand = new RelayCommand((object o) => {
+/*            GetDSOTemplatesCommand = new RelayCommand((object o) => {
                 DSOTemplates = new List<IDeepSkyObjectContainer>();
                 foreach (var container in sequenceMediator.GetDeepSkyObjectContainerTemplates()) {
                     var speckleContainer = container as SpeckleTargetContainer;
@@ -71,7 +68,7 @@ namespace NINA.Plugin.Speckle.Dockables {
                     DSOTemplates.Add(speckleContainer);
                 }
                 RaisePropertyChanged(nameof(DSOTemplates));
-            }, (object o) => sequenceMediator.Initialized);
+            }, (object o) => sequenceMediator.Initialized);*/
 
             /*            SetSequencerTargetCommand = new RelayCommand((object o) => {
                             // applicationMediator.ChangeTab(ApplicationTab.SEQUENCE);
@@ -94,6 +91,11 @@ namespace NINA.Plugin.Speckle.Dockables {
         public ICommand SynchMountCommand { get; private set; }
         public ICommand GetDSOTemplatesCommand { get; private set; }
         public ICommand SetSequencerTargetCommand { get; private set; }
+
+        public override bool IsTool => true;
+        public void Teardown() {
+            executeCTS?.Cancel();
+        }
 
         private SpeckleTarget _speckleTarget;
 
@@ -207,7 +209,7 @@ namespace NINA.Plugin.Speckle.Dockables {
                 applicationStatusMediator.StatusUpdate(_status);
             }
         }
-
+        
         private ApplicationStatus GetStatus(string status) {
             return new ApplicationStatus { Source = "Speckle", Status = status };
         }
