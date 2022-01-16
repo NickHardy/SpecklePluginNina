@@ -39,6 +39,10 @@ namespace NINA.Plugin.Speckle.Model {
         [JsonProperty]
         public double Priority { get; set; }
         [JsonProperty]
+        public double ExposureTime { get; set; }
+        [JsonProperty]
+        public double Exposures { get; set; }
+        [JsonProperty]
         public double Completed_nights { get; set; }
         [JsonProperty]
         public double Completed_cycles { get; set; }
@@ -64,6 +68,8 @@ namespace NINA.Plugin.Speckle.Model {
             Map(m => m.Nights).Name("Nights");
             Map(m => m.Cycles).Name("Cycles");
             Map(m => m.Priority).Name("Priority");
+            Map(m => m.ExposureTime).Name("ExposureTime");
+            Map(m => m.Exposures).Name("Exposures");
             Map(m => m.Completed_nights).Name("Completed_nights");
             Map(m => m.Completed_cycles).Name("Completed_cycles");
             Map(m => m.Template).Name("Template");

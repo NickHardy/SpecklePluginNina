@@ -28,6 +28,12 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Forms;
 using System.Windows.Input;
+using NINA.Sequencer;
+using NINA.Sequencer.Serialization;
+using Newtonsoft.Json;
+using System.Windows.Data;
+using System.ComponentModel;
+using Newtonsoft.Json.Linq;
 
 namespace NINA.Plugin.Speckle.Dockables {
     [Export(typeof(IDockableVM))]
@@ -46,7 +52,7 @@ namespace NINA.Plugin.Speckle.Dockables {
             IGuiderMediator guiderMediator,
             ICameraMediator cameraMediator) : base(profileService) {
             Title = "Speckle targetlist";
-            // ImageGeometry = (System.Windows.Media.GeometryGroup)System.Windows.Application.Current.Resources["PlatesolveSVG"];
+            ImageGeometry = (System.Windows.Media.GeometryGroup)System.Windows.Application.Current.Resources["GridSVG"];
             this.profileService = profileService;
             this.applicationStatusMediator = applicationStatusMediator;
             this.telescopeMediator = telescopeMediator;
@@ -54,43 +60,21 @@ namespace NINA.Plugin.Speckle.Dockables {
             this.applicationStatusMediator = applicationStatusMediator;
             this.cameraMediator = cameraMediator;
 
+            LoadUserTemplates();
+
             OpenFileCommand = new RelayCommand((object o) => OpenFile());
             SpeckleTargets = new AsyncObservableCollection<SpeckleTarget>();
-            SlewToCommand = new AsyncCommand<bool>(async () => { using (executeCTS = new CancellationTokenSource()) { return await SlewToTarget(new Progress<ApplicationStatus>(p => Status = p), executeCTS.Token); } });
-            CancelExecuteCommand = new RelayCommand((object o) => { try { executeCTS?.Cancel(); } catch (Exception) { } });
-
-/*            GetDSOTemplatesCommand = new RelayCommand((object o) => {
-                DSOTemplates = new List<IDeepSkyObjectContainer>();
-                foreach (var container in sequenceMediator.GetDeepSkyObjectContainerTemplates()) {
-                    var speckleContainer = container as SpeckleTargetContainer;
-                    if (speckleContainer == null)
-                        continue;
-                    DSOTemplates.Add(speckleContainer);
-                }
-                RaisePropertyChanged(nameof(DSOTemplates));
-            }, (object o) => sequenceMediator.Initialized);*/
-
-            /*            SetSequencerTargetCommand = new RelayCommand((object o) => {
-                            // applicationMediator.ChangeTab(ApplicationTab.SEQUENCE);
-
-                            var template = o as IDeepSkyObjectContainer;
-                            foreach (var container in GetDSOContainerListFromFraming(template)) {
-                                Logger.Info($"Adding target to advanced sequencer: {container.Target.DeepSkyObject.Name} - {container.Target.DeepSkyObject.Coordinates}");
-                                sequenceMediator.AddAdvancedTarget(container);
-                            }
-                        }, (object o) => sequenceMediator.Initialized);*/
+            SlewToCommand = new GalaSoft.MvvmLight.Command.RelayCommand<bool>(async (o) => { using (executeCTS = new CancellationTokenSource()) { await SlewToTarget(new Progress<ApplicationStatus>(p => Status = p), executeCTS.Token); } });
+            //SlewToClusterCommand = new GalaSoft.MvvmLight.Command.RelayCommand<bool>(async (o) => { using (executeCTS = new CancellationTokenSource()) { await RetrieveTemplates(new Progress<ApplicationStatus>(p => Status = p), executeCTS.Token); } });
+            CancelExecuteCommand = new GalaSoft.MvvmLight.Command.RelayCommand<bool>(async (o) => { try { executeCTS?.Cancel(); } catch (Exception) { } });
 
         }
 
         public ICommand CancelExecuteCommand { get; }
         public ICommand OpenFileCommand { get; private set; }
         public ICommand SlewToCommand { get; private set; }
-        public ICommand TakeImageCommand { get; private set; }
-        public ICommand PlateSolveCommand { get; private set; }
         public ICommand SlewToClusterCommand { get; private set; }
         public ICommand SynchMountCommand { get; private set; }
-        public ICommand GetDSOTemplatesCommand { get; private set; }
-        public ICommand SetSequencerTargetCommand { get; private set; }
 
         public override bool IsTool => true;
         public void Teardown() {
@@ -166,7 +150,7 @@ namespace NINA.Plugin.Speckle.Dockables {
                         record.Meridian = GetMeridianTime(record.Coordinates());
                         SpeckleTargets.Add(record);
                     }
-                    SpeckleTargets = new AsyncObservableCollection<SpeckleTarget>(SpeckleTargets.OrderByDescending(i => i.Meridian).Reverse());
+                    SpeckleTargets = new AsyncObservableCollection<SpeckleTarget>(SpeckleTargets.OrderBy(i => i.Meridian).ThenByDescending(n => n.Priority));
                 }
             }
         }
@@ -190,7 +174,57 @@ namespace NINA.Plugin.Speckle.Dockables {
             return true;
         }
 
-        public IList<IDeepSkyObjectContainer> DSOTemplates { get; private set; }
+        private AsyncObservableCollection<string> _templates = new AsyncObservableCollection<string>();
+
+        public AsyncObservableCollection<string> Templates {
+            get => _templates;
+            set {
+                _templates = value;
+                RaisePropertyChanged();
+            }
+        }
+
+        public async Task<bool> RetrieveTemplates(IProgress<ApplicationStatus> externalProgress, CancellationToken token) {
+            try {
+                using (var localCTS = CancellationTokenSource.CreateLinkedTokenSource(token)) {
+                    // todo: use token
+                    await LoadUserTemplates();
+                }
+            } catch (OperationCanceledException) {
+            } catch (Exception ex) {
+                Logger.Error(ex);
+                Notification.ShowError(ex.Message);
+            } finally {
+                externalProgress?.Report(GetStatus(string.Empty));
+            }
+            return true;
+        }
+
+        private Task LoadUserTemplates() {
+            return Task.Run(() => {
+                try {
+                    Templates = new AsyncObservableCollection<string>();
+                    var userTemplatePath = profileService.ActiveProfile.SequenceSettings.SequencerTemplatesFolder;
+
+                    if (!Directory.Exists(userTemplatePath)) {
+                        Notification.ShowError("No template directory");
+                    }
+
+                    foreach (var file in Directory.GetFiles(userTemplatePath, "*" + TemplateController.TemplateFileExtension, SearchOption.AllDirectories)) {
+                        try {
+                            var container = JObject.Parse(File.ReadAllText(file));
+                            if (!container.Value<string>("$type").Contains("SpeckleTargetContainer")) continue;
+                            Templates.Add(container.Value<string>("name"));
+                        } catch (Exception ex) {
+                            Logger.Error("Invalid template JSON", ex);
+                        }
+                    }
+                } catch (Exception ex) {
+                    Logger.Error(ex);
+                    Notification.ShowError("Error loading templates");
+                }
+            });
+        }
 
         private ApplicationStatus _status;
 

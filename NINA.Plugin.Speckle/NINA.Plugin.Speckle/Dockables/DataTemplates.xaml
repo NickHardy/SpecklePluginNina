@@ -42,26 +42,6 @@
                         <TextBlock Padding="5,0" Foreground="{StaticResource ButtonForegroundBrush}" Text="{ns:Loc LblSlewToTarget}" />
                     </Button>
                     <Button
-                        Grid.Column="1"
-                        Height="25"
-                        MinWidth="50"
-                        Margin="10,0,0,0"
-                        HorizontalAlignment="Left"
-                        VerticalAlignment="Center"
-                        Command="{Binding TakeImageCommand}">
-                        <TextBlock Padding="5,0" Foreground="{StaticResource ButtonForegroundBrush}" Text="Take image" />
-                    </Button>
-                    <Button
-                        Grid.Column="2"
-                        Height="25"
-                        MinWidth="50"
-                        Margin="10,0,0,0"
-                        HorizontalAlignment="Left"
-                        VerticalAlignment="Center"
-                        Command="{Binding PlateSolveCommand}">
-                        <TextBlock Padding="5,0" Foreground="{StaticResource ButtonForegroundBrush}" Text="Platesolve" />
-                    </Button>
-                    <Button
                         Grid.Column="3"
                         Height="25"
                         MinWidth="50"
@@ -128,10 +108,28 @@
                     <DataGridTextColumn Width="*" Binding="{Binding Nights}" Header="Nights" />
                     <DataGridTextColumn Width="*" Binding="{Binding Cycles}" Header="Cycles" />
                     <DataGridTextColumn Width="*" Binding="{Binding Priority}" Header="Priority" />
+                    <DataGridTextColumn Width="*" Binding="{Binding ExposureTime}" Header="ExposureTime" />
+                    <DataGridTextColumn Width="*" Binding="{Binding Exposures}" Header="Exposures" />
                     <DataGridTextColumn Width="*" Binding="{Binding Ra}" Header="Ra" />
                     <DataGridTextColumn Width="*" Binding="{Binding Dec}" Header="Dec" />
                     <DataGridTextColumn Width="*" Binding="{Binding Meridian, StringFormat='{}{0:HH:mm:ss.fff}'}" Header="Meridian time" IsReadOnly="True" />
-                    <DataGridTextColumn Width="*" Binding="{Binding Template}" Header="Template" />
+                    <DataGridTemplateColumn
+                                Width="*"
+                                Header="Template">
+                        <DataGridTemplateColumn.CellEditingTemplate>
+                            <DataTemplate>
+                                <ComboBox
+                                        Name="selectTemplate"
+                                        ItemsSource="{Binding Templates, RelativeSource={RelativeSource AncestorType={x:Type local:TargetListDock}}, Mode=OneWay}"
+                                        SelectedItem="{Binding Template}" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellEditingTemplate>
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Padding="5,0" Foreground="{StaticResource ButtonForegroundBrush}" Text="{Binding Template}" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
                 </DataGrid.Columns>
             </DataGrid>
 
