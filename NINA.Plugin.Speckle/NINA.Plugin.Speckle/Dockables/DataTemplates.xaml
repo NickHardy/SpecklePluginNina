@@ -4,9 +4,13 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity"
     xmlns:local="clr-namespace:NINA.Plugin.Speckle.Dockables"
-    xmlns:ns="clr-namespace:NINA.Core.Locale;assembly=NINA.Core">
+    xmlns:ns="clr-namespace:NINA.Core.Locale;assembly=NINA.Core" xmlns:utility="clr-namespace:NINA.Core.Utility;assembly=NINA.Core">
     <DataTemplate x:Key="NINA.Plugin.Speckle.Dockables.TargetListDock_Dockable" DataType="{x:Type local:TargetListDock}">
         <Grid DataContext="{Binding}">
+            <Grid.Resources>
+                <utility:BindingProxy x:Key="targetList" Data="{Binding}" />
+            </Grid.Resources>
+
             <Grid VerticalAlignment="Top">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="auto" />
@@ -120,7 +124,7 @@
                             <DataTemplate>
                                 <ComboBox
                                         Name="selectTemplate"
-                                        ItemsSource="{Binding Templates, RelativeSource={RelativeSource AncestorType={x:Type local:TargetListDock}}, Mode=OneWay}"
+                                        ItemsSource="{Binding Data.Templates, Source={StaticResource targetList}}"
                                         SelectedItem="{Binding Template}" />
                             </DataTemplate>
                         </DataGridTemplateColumn.CellEditingTemplate>

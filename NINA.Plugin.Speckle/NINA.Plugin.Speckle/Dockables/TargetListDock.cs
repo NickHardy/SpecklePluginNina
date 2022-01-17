@@ -214,7 +214,7 @@ namespace NINA.Plugin.Speckle.Dockables {
                         try {
                             var container = JObject.Parse(File.ReadAllText(file));
                             if (!container.Value<string>("$type").Contains("SpeckleTargetContainer")) continue;
-                            Templates.Add(container.Value<string>("name"));
+                            Templates.Add(container.Value<string>("Name"));
                         } catch (Exception ex) {
                             Logger.Error("Invalid template JSON", ex);
                         }
