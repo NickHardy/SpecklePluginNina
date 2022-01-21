@@ -17,6 +17,7 @@ using NINA.Core.Model;
 using NINA.Astrometry;
 using CsvHelper.Configuration;
 using System;
+using System.Collections.Generic;
 
 namespace NINA.Plugin.Speckle.Model {
 
@@ -51,10 +52,12 @@ namespace NINA.Plugin.Speckle.Model {
         [JsonProperty]
         public DateTime Meridian { get; set; }
 
+        public List<SimbadStarCluster> StarClusterList { get; set; }
+        public SimbadStarCluster StarCluster { get; set; } = new SimbadStarCluster();
+
         public Coordinates Coordinates() {
             return new Coordinates(Angle.ByDegree(Ra), Angle.ByDegree(Dec), Epoch.J2000);
         }
-
     }
 
     public sealed class SpeckleTargetMap : ClassMap<SpeckleTarget> {

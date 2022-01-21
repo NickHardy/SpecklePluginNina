@@ -1,7 +1,7 @@
 User,Nights,Cycles,Priority,Ref,ExposureTime,Exposures,Target,Ra,Dec,Template,Completed_nights,Completed_cycles
-Nick,2,3,20,false,0.5,500,"22280+5742",336.9916224,57.6941974,RGB speckle template,0,0
-Russ,2,3,73,false,0.25,100,"None",311.5549963,33.9714572,RGB speckle template,0,0
-Dave,2,3,103,true,0.05,200,"22234+3228",335.8726117,32.4583384,RGB speckle template,0,0
+Nick,2,3,20,false,0.5,500,"22280+5742",336.9916224,57.6941974,,0,0
+Russ,2,3,73,false,0.25,100,"None",311.5549963,33.9714572,,0,0
+Dave,2,3,103,true,0.05,200,"22234+3228",335.8726117,32.4583384,,0,0
 Pat,2,3,126,false,0.3,300,"23409+2022",355.215343,20.3658181,,0,0
 Leon,2,3,131,false,0.08,100,"23350+0136",353.7525891,1.6058483,,0,0
 Sophia,2,3,148,false,0.4,250,"23506+0957",357.6538329,9.9492276,,0,0

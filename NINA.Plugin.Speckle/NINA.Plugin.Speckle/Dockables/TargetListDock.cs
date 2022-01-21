@@ -34,6 +34,7 @@ using Newtonsoft.Json;
 using System.Windows.Data;
 using System.ComponentModel;
 using Newtonsoft.Json.Linq;
+using NINA.Plugin.Speckle.Sequencer.Utility;
 
 namespace NINA.Plugin.Speckle.Dockables {
     [Export(typeof(IDockableVM))]
@@ -65,7 +66,7 @@ namespace NINA.Plugin.Speckle.Dockables {
             OpenFileCommand = new RelayCommand((object o) => OpenFile());
             SpeckleTargets = new AsyncObservableCollection<SpeckleTarget>();
             SlewToCommand = new GalaSoft.MvvmLight.Command.RelayCommand<bool>(async (o) => { using (executeCTS = new CancellationTokenSource()) { await SlewToTarget(new Progress<ApplicationStatus>(p => Status = p), executeCTS.Token); } });
-            //SlewToClusterCommand = new GalaSoft.MvvmLight.Command.RelayCommand<bool>(async (o) => { using (executeCTS = new CancellationTokenSource()) { await RetrieveTemplates(new Progress<ApplicationStatus>(p => Status = p), executeCTS.Token); } });
+            SlewToClusterCommand = new GalaSoft.MvvmLight.Command.RelayCommand<bool>(async (o) => { using (executeCTS = new CancellationTokenSource()) { await SlewToStarCluster(new Progress<ApplicationStatus>(p => Status = p), executeCTS.Token); } });
             CancelExecuteCommand = new GalaSoft.MvvmLight.Command.RelayCommand<bool>(async (o) => { try { executeCTS?.Cancel(); } catch (Exception) { } });
 
         }
@@ -162,6 +163,37 @@ namespace NINA.Plugin.Speckle.Dockables {
                     await telescopeMediator.SlewToCoordinatesAsync(SpeckleTarget.Coordinates(), localCTS.Token);
                     if (stoppedGuiding) {
                         await guiderMediator.StartGuiding(false, externalProgress, localCTS.Token);
+                    }
+                }
+            } catch (OperationCanceledException) {
+            } catch (Exception ex) {
+                Logger.Error(ex);
+                Notification.ShowError(ex.Message);
+            } finally {
+                externalProgress?.Report(GetStatus(string.Empty));
+            }
+            return true;
+        }
+
+        public async Task<bool> SlewToStarCluster(IProgress<ApplicationStatus> externalProgress, CancellationToken token) {
+            try {
+                using (var localCTS = CancellationTokenSource.CreateLinkedTokenSource(token)) {
+                    if (SpeckleTarget.StarClusterList == null || !SpeckleTarget.StarClusterList.Any()) {
+                        SimbadUtils simUtils = new SimbadUtils();
+                        SpeckleTarget.StarClusterList = await simUtils.FindSimbadStarClusters(externalProgress, token, SpeckleTarget.Coordinates());
+                        SpeckleTarget.StarCluster = SpeckleTarget.StarClusterList.FirstOrDefault();
+                        var listTarget = SpeckleTargets.First(x => x.Ra == SpeckleTarget.Ra && x.Dec == SpeckleTarget.Dec);
+                        listTarget.StarClusterList = SpeckleTarget.StarClusterList;
+                        listTarget.StarCluster = SpeckleTarget.StarCluster;
+                        RaiseAllPropertiesChanged();
+                    }
+
+                    if (SpeckleTarget.StarCluster != null) {
+                        var stoppedGuiding = await guiderMediator.StopGuiding(localCTS.Token);
+                        await telescopeMediator.SlewToCoordinatesAsync(SpeckleTarget.StarCluster.Coordinates(), localCTS.Token);
+                        if (stoppedGuiding) {
+                            await guiderMediator.StartGuiding(false, externalProgress, localCTS.Token);
+                        }
                     }
                 }
             } catch (OperationCanceledException) {

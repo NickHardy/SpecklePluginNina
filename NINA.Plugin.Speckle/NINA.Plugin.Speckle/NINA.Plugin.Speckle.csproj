@@ -278,7 +278,9 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Locale.resx</DependentUpon>
     </Compile>
+    <Compile Include="Model\SimbadStarCluster.cs" />
     <Compile Include="Model\SpeckleTarget.cs" />
+    <Compile Include="Model\VoTable.cs" />
     <Compile Include="Sequencer\Container\Datatemplates.xaml.cs">
       <DependentUpon>Datatemplates.xaml</DependentUpon>
     </Compile>
@@ -287,6 +289,7 @@
       <DependentUpon>DataTemplates.xaml</DependentUpon>
     </Compile>
     <Compile Include="Sequencer\SequenceItem\TakeRoiExposures.cs" />
+    <Compile Include="Sequencer\Utility\SimbadUtils.cs" />
     <Compile Include="Sequencer\Utility\ItemUtility.cs" />
     <Compile Include="Speckle.cs" />
     <Compile Include="Options.xaml.cs">
