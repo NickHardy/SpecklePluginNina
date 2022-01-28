@@ -48,11 +48,52 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
                     dictionary.Add("maxrec", "100");
                     dictionary.Add("runid", "");
                     dictionary.Add("phase", "run");
-                    dictionary.Add("query", "SELECT TOP 50 main_id, ra, dec, DISTANCE(POINT('ICRS', " + coords.RADegrees + ", " + coords.Dec + "), POINT('ICRS', ra, dec)) as dist FROM basic WHERE (otype_txt = 'Cl*' OR otype_txt = 'C?*') AND CONTAINS(POINT('ICRS', ra, dec), CIRCLE('ICRS', " + coords.RADegrees + ", " + coords.Dec + ", " + maxDistance + ")) = 1 AND ra IS NOT NULL AND dec IS NOT NULL ORDER BY dist;");
+                    dictionary.Add("query", "SELECT TOP 10 main_id, ra, dec, DISTANCE(POINT('ICRS', " + coords.RADegrees + ", " + coords.Dec + "), POINT('ICRS', ra, dec)) as dist FROM basic WHERE (otype_txt = 'Cl*' OR otype_txt = 'C?*') AND CONTAINS(POINT('ICRS', ra, dec), CIRCLE('ICRS', " + coords.RADegrees + ", " + coords.Dec + ", " + maxDistance + ")) = 1 AND ra IS NOT NULL AND dec IS NOT NULL ORDER BY dist;");
                     VoTable voTable = PostForm(url, dictionary);
                     if (voTable != null) {
                         foreach (List<object> obj in voTable.Data) {
                             starClusters.Add(new SimbadStarCluster(obj));
+                        }
+                    }
+                }
+            } catch (OperationCanceledException) {
+            } catch (Exception ex) {
+                Logger.Error(ex);
+                Notification.ShowError(ex.Message);
+            } finally {
+                externalProgress.Report(new ApplicationStatus() { Status = "" });
+            }
+            return Task.FromResult(starClusters);
+        }
+
+        public Task<List<SimbadSaoStar>> FindSimbadSaoStars(IProgress<ApplicationStatus> externalProgress, CancellationToken token, Coordinates coords, int maxDistance = 5) {
+            List<SimbadSaoStar> starClusters = new List<SimbadSaoStar>();
+            try {
+                using (var localCTS = CancellationTokenSource.CreateLinkedTokenSource(token)) {
+                    localCTS.CancelAfter(TimeSpan.FromSeconds(30));
+                    externalProgress.Report(new ApplicationStatus() { Status = "Retrieving stars in the SAO catalogue from simbad" });
+                    var url = $"http://simbad.u-strasbg.fr/simbad/sim-tap/sync";
+
+                    Dictionary<string, string> dictionary = new Dictionary<string, string>();
+                    dictionary.Add("request", "doQuery");
+                    dictionary.Add("lang", "adql");
+                    dictionary.Add("format", "json");
+                    dictionary.Add("maxrec", "100");
+                    dictionary.Add("runid", "");
+                    dictionary.Add("phase", "run");
+                    dictionary.Add("query", "SELECT TOP 10 basic.main_id, basic.ra, basic.dec, allfluxes.v, DISTANCE(POINT('ICRS', " + coords.RADegrees + ", " + coords.Dec + "), POINT('ICRS', basic.ra, basic.dec)) as dist " +
+                        "FROM basic " +
+                        "JOIN ident on(basic.oid = ident.oidref) " +
+                        "JOIN allfluxes using (oidref) " +
+                        "WHERE ident.id like 'SAO%' and basic.otype_txt = '*' and allfluxes.v >= 8 and allfluxes.v <= 10 " +
+                        "AND CONTAINS(POINT('ICRS', basic.ra, basic.dec), CIRCLE('ICRS', " + coords.RADegrees + ", " + coords.Dec + ", " + maxDistance + ")) = 1 " +
+                        "AND basic.ra IS NOT NULL " +
+                        "AND basic.dec IS NOT NULL " +
+                        "ORDER BY dist;");
+                    VoTable voTable = PostForm(url, dictionary);
+                    if (voTable != null) {
+                        foreach (List<object> obj in voTable.Data) {
+                            starClusters.Add(new SimbadSaoStar(obj));
                         }
                     }
                 }

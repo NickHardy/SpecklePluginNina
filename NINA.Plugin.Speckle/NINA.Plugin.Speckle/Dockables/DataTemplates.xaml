@@ -34,6 +34,7 @@
                         <ColumnDefinition Width="auto" />
                         <ColumnDefinition Width="auto" />
                         <ColumnDefinition Width="auto" />
+                        <ColumnDefinition Width="auto" />
                     </Grid.ColumnDefinitions>
                     <Button
                         Grid.Column="0"
@@ -46,7 +47,17 @@
                         <TextBlock Padding="5,0" Foreground="{StaticResource ButtonForegroundBrush}" Text="{ns:Loc LblSlewToTarget}" />
                     </Button>
                     <Button
-                        Grid.Column="3"
+                        Grid.Column="1"
+                        Height="25"
+                        MinWidth="50"
+                        Margin="10,0,0,0"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Center"
+                        Command="{Binding SlewToReferenceStarCommand}">
+                        <TextBlock Padding="5,0" Foreground="{StaticResource ButtonForegroundBrush}" Text="Slew to refStar" />
+                    </Button>
+                    <Button
+                        Grid.Column="2"
                         Height="25"
                         MinWidth="50"
                         Margin="10,0,0,0"
@@ -56,7 +67,7 @@
                         <TextBlock Padding="5,0" Foreground="{StaticResource ButtonForegroundBrush}" Text="Slew to cluster" />
                     </Button>
                     <Button
-                        Grid.Column="4"
+                        Grid.Column="3"
                         Height="25"
                         MinWidth="50"
                         Margin="10,0,0,0"
@@ -64,6 +75,16 @@
                         VerticalAlignment="Center"
                         Command="{Binding SynchMountCommand}">
                         <TextBlock Padding="5,0" Foreground="{StaticResource ButtonForegroundBrush}" Text="Synch mount" />
+                    </Button>
+                    <Button
+                        Grid.Column="4"
+                        Height="25"
+                        MinWidth="50"
+                        Margin="10,0,0,0"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Center"
+                        Command="{Binding StartTargetSequenceCommand}">
+                        <TextBlock Padding="5,0" Foreground="{StaticResource ButtonForegroundBrush}" Text="Add sequence" />
                     </Button>
                 </Grid>
             </Grid>
@@ -81,37 +102,6 @@
                 <DataGrid.Columns>
                     <DataGridTextColumn Width="auto" Binding="{Binding User}" Header="User" />
                     <DataGridTextColumn Width="*" Binding="{Binding Target}" Header="Target" />
-                    <DataGridTemplateColumn
-                                Width="60"
-                                Header="Reference">
-                        <DataGridTemplateColumn.CellEditingTemplate>
-                            <DataTemplate>
-                                <CheckBox
-                                    Width="20"
-                                    Height="20"
-                                    Margin="5,0,0,0"
-                                    HorizontalAlignment="Center"
-                                    BorderBrush="Transparent"
-                                    IsChecked="{Binding Ref, FallbackValue=False, Mode=TwoWay}"
-                                    IsEnabled="True"
-                                    Style="{StaticResource CheckmarkAndEmptyCheckbox}" />
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellEditingTemplate>
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <CheckBox
-                                    Width="20"
-                                    Height="20"
-                                    Margin="5,0,0,0"
-                                    HorizontalAlignment="Center"
-                                    BorderBrush="Transparent"
-                                    IsChecked="{Binding Ref, FallbackValue=False, Mode=TwoWay}"
-                                    IsEnabled="False"
-                                    Style="{StaticResource BorderlessCheckmarkAndEmptyCheckbox}" />
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                    <DataGridTextColumn Width="40" Binding="{Binding Nights}" Header="Nights" />
                     <DataGridTextColumn Width="40" Binding="{Binding Cycles}" Header="Cycles" />
                     <DataGridTextColumn Width="50" Binding="{Binding Priority}" Header="Priority" />
                     <DataGridTextColumn Width="80" Binding="{Binding ExposureTime}" Header="ExposureTime" />
@@ -121,13 +111,31 @@
                     <DataGridTextColumn Width="80" Binding="{Binding Meridian, StringFormat='{}{0:HH:mm:ss}'}" Header="Meridian time" IsReadOnly="True" />
                     <DataGridTemplateColumn
                                 Width="auto"
+                                Header="ReferenceStar">
+                        <DataGridTemplateColumn.CellEditingTemplate>
+                            <DataTemplate>
+                                <ComboBox
+                                        Name="selectCluster"
+                                        ItemsSource="{Binding ReferenceStarList, Mode=TwoWay}"
+                                        SelectedItem="{Binding ReferenceStar, Mode=TwoWay}"
+                                        DisplayMemberPath="main_id"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellEditingTemplate>
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Padding="5,0" Foreground="{StaticResource ButtonForegroundBrush}" Text="{Binding Path=ReferenceStar.main_id}" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn
+                                Width="auto"
                                 Header="StarClusters">
                         <DataGridTemplateColumn.CellEditingTemplate>
                             <DataTemplate>
                                 <ComboBox
                                         Name="selectCluster"
-                                        ItemsSource="{Binding StarClusterList}"
-                                        SelectedItem="{Binding StarCluster}"
+                                        ItemsSource="{Binding StarClusterList, Mode=TwoWay}"
+                                        SelectedItem="{Binding StarCluster, Mode=TwoWay}"
                                         DisplayMemberPath="main_id"/>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellEditingTemplate>

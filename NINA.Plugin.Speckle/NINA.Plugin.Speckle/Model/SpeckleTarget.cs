@@ -42,7 +42,7 @@ namespace NINA.Plugin.Speckle.Model {
         [JsonProperty]
         public double ExposureTime { get; set; }
         [JsonProperty]
-        public double Exposures { get; set; }
+        public int Exposures { get; set; }
         [JsonProperty]
         public double Completed_nights { get; set; }
         [JsonProperty]
@@ -54,6 +54,9 @@ namespace NINA.Plugin.Speckle.Model {
 
         public List<SimbadStarCluster> StarClusterList { get; set; }
         public SimbadStarCluster StarCluster { get; set; } = new SimbadStarCluster();
+
+        public List<SimbadSaoStar> ReferenceStarList { get; set; }
+        public SimbadSaoStar ReferenceStar { get; set; } = new SimbadSaoStar();
 
         public Coordinates Coordinates() {
             return new Coordinates(Angle.ByDegree(Ra), Angle.ByDegree(Dec), Epoch.J2000);
