@@ -41,6 +41,9 @@ using NINA.Sequencer.SequenceItem;
 using NINA.Plugin.Speckle.ViewModel;
 using NINA.Equipment.Interfaces.ViewModel;
 using NINA.Plugin.Speckle.Sequencer.Utility;
+using NINA.Image.Interfaces;
+using NINA.Image.FileFormat;
+using NINA.Core.Utility.Notification;
 
 namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
 
@@ -51,6 +54,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
     [Export(typeof(ISequenceItem))]
     [JsonObject(MemberSerialization.OptIn)]
     public class TakeRoiExposures : NINA.Sequencer.SequenceItem.SequenceItem, IExposureItem, IValidatable {
+        private static SemaphoreSlim semaphoreSlim = new SemaphoreSlim(1, 1);
         private ICameraMediator cameraMediator;
         private IImagingMediator imagingMediator;
         private IImageSaveMediator imageSaveMediator;
@@ -59,6 +63,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
         private IImageControlVM imageControlVM;
         private RapidImagingVM rapidImagingVM;
         private Speckle speckle;
+        private Task<IRenderedImage> _imageProcessingTask;
 
         [ImportingConstructor]
         public TakeRoiExposures(IProfileService profileService, ICameraMediator cameraMediator, IImagingMediator imagingMediator, IImageSaveMediator imageSaveMediator, IApplicationStatusMediator applicationStatusMediator, IImageControlVM imageControlVM) {
@@ -92,7 +97,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             };
 
             if (clone.Binning == null) {
-                clone.Binning = new BinningMode((short)256, (short)256);
+                clone.Binning = new BinningMode((short)1, (short)1);
             }
 
             return clone;
@@ -194,31 +199,54 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                 SubSambleRectangle = ItemUtility.RetrieveSpeckleTargetRoi(Parent)
             };
 
-            var imageParams = new PrepareImageParameters(false, false);
+            var imageParams = new PrepareImageParameters(true, false);
 
             var target = RetrieveTarget(Parent);
+            var title = ItemUtility.RetrieveSpeckleTitle(Parent);
 
-            while (ExposureCount <= TotalExposureCount) {
-                var exposureData = await imagingMediator.CaptureImage(capture, token, progress);
+            try {
+                await semaphoreSlim.WaitAsync(token);
+                while (ExposureCount <= TotalExposureCount) {
+                    await cameraMediator.Capture(capture, token, progress);
+                    progress.Report(new ApplicationStatus() { Status = "Taking Roi image: " + ExposureCount });
+                    token.ThrowIfCancellationRequested();
+                    IExposureData exposureData = await cameraMediator.Download(token);
+                    token.ThrowIfCancellationRequested();
 
-                var imageData = await exposureData.ToImageData(progress, token);
+                    var imageData = await exposureData.ToImageData(progress, token);
 
-                var prepareTask = imagingMediator.PrepareImage(imageData, imageParams, token);
+                    if (target != null) {
+                        imageData.MetaData.Target.Name = target.DeepSkyObject.NameAsAscii;
+                        imageData.MetaData.Target.Coordinates = target.InputCoordinates.Coordinates;
+                        imageData.MetaData.Target.Rotation = target.Rotation;
+                    }
 
-                if (target != null) {
-                    imageData.MetaData.Target.Name = target.DeepSkyObject.NameAsAscii;
-                    imageData.MetaData.Target.Coordinates = target.InputCoordinates.Coordinates;
-                    imageData.MetaData.Target.Rotation = target.Rotation;
+                    // Only show first and last image in Imaging window
+                    if (ExposureCount == 1 || ExposureCount % 100 == 0 || ExposureCount == TotalExposureCount) {
+                        _imageProcessingTask = imagingMediator.PrepareImage(imageData, imageParams, token);
+                    }
+
+                    imageData.MetaData.Sequence.Title = title;
+                    imageData.MetaData.Image.ExposureStart = DateTime.Now;
+                    imageData.MetaData.Image.ExposureNumber = ExposureCount;
+                    imageData.MetaData.Image.ExposureTime = ExposureTime;
+                    await imageData.SaveToDisk(new FileSaveInfo(profileService), token);
+
+                    capture.ProgressExposureCount = ExposureCount;
+                    ExposureCount++;
                 }
-
-                imageData.MetaData.Sequence.Title = ItemUtility.RetrieveSpeckleTitle(Parent);
-
-                _ = imageSaveMediator.Enqueue(imageData, prepareTask, progress, token);
-                
-                ExposureCount++;
-                capture.ProgressExposureCount = ExposureCount;
+            } catch (OperationCanceledException) {
+                cameraMediator.AbortExposure();
+                throw;
+            } catch (Exception ex) {
+                Notification.ShowError(Loc.Instance["LblUnexpectedError"] + Environment.NewLine + ex.Message);
+                Logger.Error(ex);
+                cameraMediator.AbortExposure();
+                throw;
+            } finally {
+                progress.Report(new ApplicationStatus() { Status = "" });
+                semaphoreSlim.Release();
             }
-
         }
 
         public override void AfterParentChanged() {
