@@ -17,7 +17,12 @@
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
                 <Grid Grid.Column="0" HorizontalAlignment="Left" Margin="5,10,5,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
                     <Button
+                        Grid.Column="0"
                         Height="25"
                         MinWidth="50"
                         Margin="0"
@@ -25,6 +30,16 @@
                         VerticalAlignment="Center"
                         Command="{Binding OpenFileCommand}">
                         <TextBlock Padding="5,0" Foreground="{StaticResource ButtonForegroundBrush}" Text="{ns:Loc LblLoadTargetSet}" />
+                    </Button>
+                    <Button
+                        Grid.Column="1"
+                        Height="25"
+                        MinWidth="50"
+                        Margin="10,0,0,0"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Center"
+                        Command="{Binding AddTargetsCommand}">
+                        <TextBlock Padding="5,0" Foreground="{StaticResource ButtonForegroundBrush}" Text="Add nearby targets" />
                     </Button>
                 </Grid>
                 <Grid Grid.Column="1" HorizontalAlignment="Right" Margin="5,10,5,10">

@@ -55,6 +55,8 @@ namespace NINA.Plugin.Speckle.Dockables {
 
         private CancellationTokenSource executeCTS;
 
+        private Speckle speckle;
+
         [ImportingConstructor]
         public TargetListDock(IProfileService profileService, 
             IApplicationStatusMediator applicationStatusMediator,
@@ -79,10 +81,13 @@ namespace NINA.Plugin.Speckle.Dockables {
             this.applicationMediator = applicationMediator;
             this.planetariumFactory = planetariumFactory;
 
+            speckle = new Speckle();
+
             LoadUserTemplates();
 
             OpenFileCommand = new RelayCommand((object o) => OpenFile());
             SpeckleTargets = new AsyncObservableCollection<SpeckleTarget>();
+            AddTargetsCommand = new GalaSoft.MvvmLight.Command.RelayCommand<bool>(async (o) => { using (executeCTS = new CancellationTokenSource()) { await AddTargetStars(new Progress<ApplicationStatus>(p => Status = p), executeCTS.Token); } });
             SlewToCommand = new GalaSoft.MvvmLight.Command.RelayCommand<bool>(async (o) => { using (executeCTS = new CancellationTokenSource()) { await SlewToTarget(new Progress<ApplicationStatus>(p => Status = p), executeCTS.Token); } });
             SlewToClusterCommand = new GalaSoft.MvvmLight.Command.RelayCommand<bool>(async (o) => { using (executeCTS = new CancellationTokenSource()) { await SlewToStarCluster(new Progress<ApplicationStatus>(p => Status = p), executeCTS.Token); } });
             SlewToReferenceStarCommand = new GalaSoft.MvvmLight.Command.RelayCommand<bool>(async (o) => { using (executeCTS = new CancellationTokenSource()) { await SlewToReferenceStar(new Progress<ApplicationStatus>(p => Status = p), executeCTS.Token); } });
@@ -93,6 +98,7 @@ namespace NINA.Plugin.Speckle.Dockables {
 
         public ICommand CancelExecuteCommand { get; }
         public ICommand OpenFileCommand { get; private set; }
+        public ICommand AddTargetsCommand { get; private set; }
         public ICommand SlewToCommand { get; private set; }
         public ICommand SlewToClusterCommand { get; private set; }
         public ICommand SlewToReferenceStarCommand { get; private set; }
@@ -225,7 +231,7 @@ namespace NINA.Plugin.Speckle.Dockables {
         private async Task RetrieveStarClusters(IProgress<ApplicationStatus> externalProgress, CancellationToken token) {
             if (SpeckleTarget.StarClusterList == null || !SpeckleTarget.StarClusterList.Any()) {
                 SimbadUtils simUtils = new SimbadUtils();
-                SpeckleTarget.StarClusterList = await simUtils.FindSimbadStarClusters(externalProgress, token, SpeckleTarget.Coordinates());
+                SpeckleTarget.StarClusterList = await simUtils.FindSimbadStarClusters(externalProgress, token, SpeckleTarget.Coordinates(), speckle.MDistance);
                 SpeckleTarget.StarCluster = SpeckleTarget.StarClusterList.FirstOrDefault();
                 RaiseAllPropertiesChanged();
             }
@@ -257,10 +263,27 @@ namespace NINA.Plugin.Speckle.Dockables {
         private async Task RetrieveReferenceStars(IProgress<ApplicationStatus> externalProgress, CancellationToken token) {
             if (SpeckleTarget.ReferenceStarList == null || !SpeckleTarget.ReferenceStarList.Any()) {
                 SimbadUtils simUtils = new SimbadUtils();
-                SpeckleTarget.ReferenceStarList = await simUtils.FindSimbadSaoStars(externalProgress, token, SpeckleTarget.Coordinates());
+                SpeckleTarget.ReferenceStarList = await simUtils.FindSimbadSaoStars(externalProgress, token, SpeckleTarget.Coordinates(), speckle.MDistance);
                 SpeckleTarget.ReferenceStar = SpeckleTarget.ReferenceStarList.FirstOrDefault();
                 RaiseAllPropertiesChanged();
             }
+        }
+
+        public async Task AddTargetStars(IProgress<ApplicationStatus> externalProgress, CancellationToken token) {
+            SimbadUtils simUtils = new SimbadUtils();
+            List<SimbadBinaryStar> targets = await simUtils.FindSimbadBinaryStars(externalProgress, token, telescopeMediator.GetCurrentPosition(), speckle.MDistance);
+            foreach (SimbadBinaryStar target in targets) {
+                SpeckleTarget speckleTarget = new SpeckleTarget();
+                speckleTarget.Target = target.main_id;
+                speckleTarget.Ra = target.ra;
+                speckleTarget.Dec = target.dec;
+                speckleTarget.Cycles = speckle.Cycles;
+                speckleTarget.Priority = speckle.Priority;
+                speckleTarget.Template = speckle.DefaultTemplate;
+                speckleTarget.Meridian = GetMeridianTime(speckleTarget.Coordinates());
+                SpeckleTargets.Add(speckleTarget);
+            }
+            RaiseAllPropertiesChanged();
         }
 
         private AsyncObservableCollection<string> _templates = new AsyncObservableCollection<string>();

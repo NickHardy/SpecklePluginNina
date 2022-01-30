@@ -33,7 +33,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
 
     public class SimbadUtils {
 
-        public Task<List<SimbadStarCluster>> FindSimbadStarClusters(IProgress<ApplicationStatus> externalProgress, CancellationToken token, Coordinates coords, int maxDistance = 5) {
+        public Task<List<SimbadStarCluster>> FindSimbadStarClusters(IProgress<ApplicationStatus> externalProgress, CancellationToken token, Coordinates coords, double maxDistance = 5d) {
             List<SimbadStarCluster> starClusters = new List<SimbadStarCluster>();
             try {
                 using (var localCTS = CancellationTokenSource.CreateLinkedTokenSource(token)) {
@@ -66,8 +66,8 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
             return Task.FromResult(starClusters);
         }
 
-        public Task<List<SimbadSaoStar>> FindSimbadSaoStars(IProgress<ApplicationStatus> externalProgress, CancellationToken token, Coordinates coords, int maxDistance = 5) {
-            List<SimbadSaoStar> starClusters = new List<SimbadSaoStar>();
+        public Task<List<SimbadSaoStar>> FindSimbadSaoStars(IProgress<ApplicationStatus> externalProgress, CancellationToken token, Coordinates coords, double maxDistance = 5d) {
+            List<SimbadSaoStar> stars = new List<SimbadSaoStar>();
             try {
                 using (var localCTS = CancellationTokenSource.CreateLinkedTokenSource(token)) {
                     localCTS.CancelAfter(TimeSpan.FromSeconds(30));
@@ -93,7 +93,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
                     VoTable voTable = PostForm(url, dictionary);
                     if (voTable != null) {
                         foreach (List<object> obj in voTable.Data) {
-                            starClusters.Add(new SimbadSaoStar(obj));
+                            stars.Add(new SimbadSaoStar(obj));
                         }
                     }
                 }
@@ -104,7 +104,48 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
             } finally {
                 externalProgress.Report(new ApplicationStatus() { Status = "" });
             }
-            return Task.FromResult(starClusters);
+            return Task.FromResult(stars);
+        }
+
+        public Task<List<SimbadBinaryStar>> FindSimbadBinaryStars(IProgress<ApplicationStatus> externalProgress, CancellationToken token, Coordinates coords, double maxDistance = 5d) {
+            List<SimbadBinaryStar> stars = new List<SimbadBinaryStar>();
+            try {
+                using (var localCTS = CancellationTokenSource.CreateLinkedTokenSource(token)) {
+                    localCTS.CancelAfter(TimeSpan.FromSeconds(30));
+                    externalProgress.Report(new ApplicationStatus() { Status = "Retrieving stars in the SAO catalogue from simbad" });
+                    var url = $"http://simbad.u-strasbg.fr/simbad/sim-tap/sync";
+
+                    Dictionary<string, string> dictionary = new Dictionary<string, string>();
+                    dictionary.Add("request", "doQuery");
+                    dictionary.Add("lang", "adql");
+                    dictionary.Add("format", "json");
+                    dictionary.Add("maxrec", "100");
+                    dictionary.Add("runid", "");
+                    dictionary.Add("phase", "run");
+                    dictionary.Add("query", "SELECT TOP 10 basic.main_id, basic.ra, basic.dec, allfluxes.v, DISTANCE(POINT('ICRS', " + coords.RADegrees + ", " + coords.Dec + "), POINT('ICRS', basic.ra, basic.dec)) as dist " +
+                        "FROM basic " +
+                        "JOIN ident on(basic.oid = ident.oidref) " +
+                        "JOIN allfluxes using (oidref) " +
+                        "WHERE ident.id like 'WDS%' and (basic.otype_txt = '**?' OR basic.otype_txt = '**') " +
+                        "AND CONTAINS(POINT('ICRS', basic.ra, basic.dec), CIRCLE('ICRS', " + coords.RADegrees + ", " + coords.Dec + ", " + maxDistance + ")) = 1 " +
+                        "AND basic.ra IS NOT NULL " +
+                        "AND basic.dec IS NOT NULL " +
+                        "ORDER BY dist;");
+                    VoTable voTable = PostForm(url, dictionary);
+                    if (voTable != null) {
+                        foreach (List<object> obj in voTable.Data) {
+                            stars.Add(new SimbadBinaryStar(obj));
+                        }
+                    }
+                }
+            } catch (OperationCanceledException) {
+            } catch (Exception ex) {
+                Logger.Error(ex);
+                Notification.ShowError(ex.Message);
+            } finally {
+                externalProgress.Report(new ApplicationStatus() { Status = "" });
+            }
+            return Task.FromResult(stars);
         }
 
         private VoTable PostForm(string url, Dictionary<string, string> dictionary) {
