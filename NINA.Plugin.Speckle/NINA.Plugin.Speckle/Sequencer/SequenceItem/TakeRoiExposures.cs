@@ -38,7 +38,6 @@ using NINA.Equipment.Equipment.MyCamera;
 using NINA.WPF.Base.Interfaces.ViewModel;
 using NINA.Sequencer.Interfaces;
 using NINA.Sequencer.SequenceItem;
-using NINA.Plugin.Speckle.ViewModel;
 using NINA.Equipment.Interfaces.ViewModel;
 using NINA.Plugin.Speckle.Sequencer.Utility;
 using NINA.Image.Interfaces;
@@ -61,7 +60,6 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
         private IProfileService profileService;
         private IApplicationStatusMediator applicationStatusMediator;
         private IImageControlVM imageControlVM;
-        private RapidImagingVM rapidImagingVM;
         private Speckle speckle;
         private Task<IRenderedImage> _imageProcessingTask;
 
@@ -76,7 +74,6 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             this.applicationStatusMediator = applicationStatusMediator;
             this.profileService = profileService;
             this.imageControlVM = imageControlVM;
-            this.rapidImagingVM = new RapidImagingVM(profileService, cameraMediator, applicationStatusMediator, imageControlVM);
             CameraInfo = this.cameraMediator.GetInfo();
             speckle = new Speckle();
         }

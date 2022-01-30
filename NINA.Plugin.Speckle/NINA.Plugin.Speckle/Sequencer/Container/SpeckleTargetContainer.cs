@@ -192,11 +192,6 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             clone.Target.InputCoordinates.Coordinates = this.Target.InputCoordinates.Coordinates.Transform(Epoch.J2000);
             clone.Target.Rotation = this.Target.Rotation;
 
-/*            clone.SubSampleRectangle.Height = this.SubSampleRectangle.Height;
-            clone.SubSampleRectangle.Width = this.SubSampleRectangle.Width;
-            clone.SubSampleRectangle.X = this.SubSampleRectangle.X;
-            clone.SubSampleRectangle.Y = this.SubSampleRectangle.Y;*/
-
             foreach (var item in clone.Items) {
                 item.AttachNewParent(clone);
             }

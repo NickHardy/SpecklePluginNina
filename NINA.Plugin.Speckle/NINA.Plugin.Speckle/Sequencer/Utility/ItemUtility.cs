@@ -52,5 +52,18 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
             }
         }
 
+        public static InputTarget RetrieveSpeckleTarget(ISequenceContainer parent) {
+            if (parent != null) {
+                var container = parent as SpeckleTargetContainer;
+                if (container != null) {
+                    return container.Target;
+                } else {
+                    return RetrieveSpeckleTarget(parent.Parent);
+                }
+            } else {
+                return null;
+            }
+        }
+
     }
 }
