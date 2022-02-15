@@ -18,6 +18,7 @@ using NINA.Astrometry;
 using CsvHelper.Configuration;
 using System;
 using System.Collections.Generic;
+using NINA.Plugin.Speckle.Sequencer.Container;
 
 namespace NINA.Plugin.Speckle.Model {
 
@@ -44,6 +45,10 @@ namespace NINA.Plugin.Speckle.Model {
         [JsonProperty]
         public int Exposures { get; set; }
         [JsonProperty]
+        public double Magnitude { get; set; }
+        [JsonProperty]
+        public double Separation { get; set; }
+        [JsonProperty]
         public double Completed_nights { get; set; }
         [JsonProperty]
         public double Completed_cycles { get; set; }
@@ -52,11 +57,13 @@ namespace NINA.Plugin.Speckle.Model {
         [JsonProperty]
         public DateTime Meridian { get; set; }
 
+        public List<SimbadSaoStar> ReferenceStarList { get; set; }
+        public SimbadSaoStar ReferenceStar { get; set; } = new SimbadSaoStar();
+
         public List<SimbadStarCluster> StarClusterList { get; set; }
         public SimbadStarCluster StarCluster { get; set; } = new SimbadStarCluster();
 
-        public List<SimbadSaoStar> ReferenceStarList { get; set; }
-        public SimbadSaoStar ReferenceStar { get; set; } = new SimbadSaoStar();
+        public SpeckleTargetContainer SpeckleTemplate { get; set; }
 
         public Coordinates Coordinates() {
             return new Coordinates(Angle.ByDegree(Ra), Angle.ByDegree(Dec), Epoch.J2000);
@@ -76,6 +83,8 @@ namespace NINA.Plugin.Speckle.Model {
             Map(m => m.Priority).Name("Priority");
             Map(m => m.ExposureTime).Name("ExposureTime");
             Map(m => m.Exposures).Name("Exposures");
+            Map(m => m.Magnitude).Name("Magnitude");
+            Map(m => m.Separation).Name("Separation");
             Map(m => m.Completed_nights).Name("Completed_nights");
             Map(m => m.Completed_cycles).Name("Completed_cycles");
             Map(m => m.Template).Name("Template");

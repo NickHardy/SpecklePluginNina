@@ -455,6 +455,25 @@
                                 </TextBox>
                                 <TextBlock VerticalAlignment="Center">°</TextBlock>
                             </StackPanel>
+                            <StackPanel
+                                Grid.Row="6"
+                                Grid.Column="0"
+                                Margin="0,0,10,10"
+                                VerticalAlignment="Bottom"
+                                HorizontalAlignment="Right"
+                                Orientation="Horizontal">
+                                <TextBlock
+                                    Width="100"
+                                    Margin="0"
+                                    VerticalAlignment="Center"
+                                    HorizontalAlignment="Right"
+                                    Text="Link dimensions" />
+                                <CheckBox
+                                    Margin="5,0,0,0"
+                                    HorizontalAlignment="Left"
+                                    VerticalAlignment="Center"
+                                    IsChecked="{Binding LinkedDimensions}" />
+                            </StackPanel>
 
                             <alt:AltitudeChart
                                 Grid.Row="0"
@@ -482,7 +501,7 @@
                                         <TextBlock VerticalAlignment="Center" Text="X" />
                                         <TextBox VerticalAlignment="Center" VerticalContentAlignment="Center">
                                             <TextBox.Text>
-                                                <Binding Mode="TwoWay" Path="SubSampleRectangle.X">
+                                                <Binding Mode="TwoWay" Path="X">
                                                     <Binding.ValidationRules>
                                                         <rules:IntRangeRule>
                                                             <rules:IntRangeRule.ValidRange>
@@ -498,7 +517,7 @@
                                         <TextBlock VerticalAlignment="Center" Text="Y" />
                                         <TextBox VerticalAlignment="Center" VerticalContentAlignment="Center">
                                             <TextBox.Text>
-                                                <Binding Mode="TwoWay" Path="SubSampleRectangle.Y">
+                                                <Binding Mode="TwoWay" Path="Y">
                                                     <Binding.ValidationRules>
                                                         <rules:IntRangeRule>
                                                             <rules:IntRangeRule.ValidRange>
@@ -515,7 +534,7 @@
                                         <TextBlock VerticalAlignment="Center" Text="{ns:Loc LblWidth}" />
                                         <TextBox VerticalAlignment="Center" VerticalContentAlignment="Center">
                                             <TextBox.Text>
-                                                <Binding Mode="TwoWay" Path="SubSampleRectangle.Width">
+                                                <Binding Mode="TwoWay" Path="Width">
                                                     <Binding.ValidationRules>
                                                         <rules:IntRangeRule>
                                                             <rules:IntRangeRule.ValidRange>
@@ -531,7 +550,7 @@
                                         <TextBlock VerticalAlignment="Center" Text="{ns:Loc LblHeight}" />
                                         <TextBox VerticalAlignment="Center" VerticalContentAlignment="Center">
                                             <TextBox.Text>
-                                                <Binding Mode="TwoWay" Path="SubSampleRectangle.Height">
+                                                <Binding Mode="TwoWay" Path="Height">
                                                     <Binding.ValidationRules>
                                                         <rules:IntRangeRule>
                                                             <rules:IntRangeRule.ValidRange>

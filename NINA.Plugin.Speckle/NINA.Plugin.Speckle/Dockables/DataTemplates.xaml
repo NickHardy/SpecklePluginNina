@@ -8,7 +8,7 @@
     <DataTemplate x:Key="NINA.Plugin.Speckle.Dockables.TargetListDock_Dockable" DataType="{x:Type local:TargetListDock}">
         <Grid DataContext="{Binding}">
             <Grid.Resources>
-                <utility:BindingProxy x:Key="targetList" Data="{Binding}" />
+                <utility:BindingProxy x:Key="targetListDock" Data="{Binding}" />
             </Grid.Resources>
 
             <Grid VerticalAlignment="Top">
@@ -118,11 +118,12 @@
                     <DataGridTextColumn Width="auto" Binding="{Binding User}" Header="User" />
                     <DataGridTextColumn Width="*" Binding="{Binding Target}" Header="Target" />
                     <DataGridTextColumn Width="40" Binding="{Binding Cycles}" Header="Cycles" />
-                    <DataGridTextColumn Width="50" Binding="{Binding Priority}" Header="Priority" />
                     <DataGridTextColumn Width="80" Binding="{Binding ExposureTime}" Header="ExposureTime" />
                     <DataGridTextColumn Width="70" Binding="{Binding Exposures}" Header="Exposures" />
                     <DataGridTextColumn Width="80" Binding="{Binding Ra}" Header="Ra" />
                     <DataGridTextColumn Width="80" Binding="{Binding Dec}" Header="Dec" />
+                    <DataGridTextColumn Width="50" Binding="{Binding Magnitude}" Header="Mag" />
+                    <DataGridTextColumn Width="50" Binding="{Binding Separation}" Header="Sep" />
                     <DataGridTextColumn Width="80" Binding="{Binding Meridian, StringFormat='{}{0:HH:mm:ss}'}" Header="Meridian time" IsReadOnly="True" />
                     <DataGridTemplateColumn
                                 Width="auto"
@@ -167,13 +168,14 @@
                             <DataTemplate>
                                 <ComboBox
                                         Name="selectTemplate"
-                                        ItemsSource="{Binding Data.Templates, Source={StaticResource targetList}}"
-                                        SelectedItem="{Binding Template}" />
+                                        ItemsSource="{Binding Data.SpeckleTemplates, Source={StaticResource targetListDock}, Mode=TwoWay}"
+                                        SelectedItem="{Binding SpeckleTemplate, Mode=TwoWay}"
+                                        DisplayMemberPath="Name"/>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellEditingTemplate>
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <TextBlock Padding="5,0" Foreground="{StaticResource ButtonForegroundBrush}" Text="{Binding Template}" />
+                                <TextBlock Padding="5,0" Foreground="{StaticResource ButtonForegroundBrush}" Text="{Binding Path=SpeckleTemplate.Name}" />
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>

@@ -43,6 +43,7 @@ using NINA.Plugin.Speckle.Sequencer.Utility;
 using NINA.Image.Interfaces;
 using NINA.Image.FileFormat;
 using NINA.Core.Utility.Notification;
+using System.Diagnostics;
 
 namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
 
@@ -53,7 +54,6 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
     [Export(typeof(ISequenceItem))]
     [JsonObject(MemberSerialization.OptIn)]
     public class TakeRoiExposures : NINA.Sequencer.SequenceItem.SequenceItem, IExposureItem, IValidatable {
-        private static SemaphoreSlim semaphoreSlim = new SemaphoreSlim(1, 1);
         private ICameraMediator cameraMediator;
         private IImagingMediator imagingMediator;
         private IImageSaveMediator imageSaveMediator;
@@ -202,15 +202,19 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             var title = ItemUtility.RetrieveSpeckleTitle(Parent);
 
             try {
-                await semaphoreSlim.WaitAsync(token);
+                Stopwatch seqDuration = Stopwatch.StartNew();
                 while (ExposureCount <= TotalExposureCount) {
+                    Stopwatch roiDuration = Stopwatch.StartNew();
                     await cameraMediator.Capture(capture, token, progress);
+                    Logger.Info("Capture: " + roiDuration.ElapsedMilliseconds);
                     progress.Report(new ApplicationStatus() { Status = "Taking Roi image: " + ExposureCount });
                     token.ThrowIfCancellationRequested();
                     IExposureData exposureData = await cameraMediator.Download(token);
+                    Logger.Info("Download: " + roiDuration.ElapsedMilliseconds);
                     token.ThrowIfCancellationRequested();
 
                     var imageData = await exposureData.ToImageData(progress, token);
+                    Logger.Info("ImageData: " + roiDuration.ElapsedMilliseconds);
 
                     if (target != null) {
                         imageData.MetaData.Target.Name = target.DeepSkyObject.NameAsAscii;
@@ -219,19 +223,29 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                     }
 
                     // Only show first and last image in Imaging window
-                    if (ExposureCount == 1 || ExposureCount % 100 == 0 || ExposureCount == TotalExposureCount) {
+                    if (ExposureCount == 1 || ExposureCount % 10 == 0 || ExposureCount == TotalExposureCount) {
                         _imageProcessingTask = imagingMediator.PrepareImage(imageData, imageParams, token);
+                        Logger.Info("Prepare: " + roiDuration.ElapsedMilliseconds);
                     }
 
                     imageData.MetaData.Sequence.Title = title;
                     imageData.MetaData.Image.ExposureStart = DateTime.Now;
                     imageData.MetaData.Image.ExposureNumber = ExposureCount;
                     imageData.MetaData.Image.ExposureTime = ExposureTime;
-                    await imageData.SaveToDisk(new FileSaveInfo(profileService), token);
+                    //_ = imageData.SaveToDisk(new FileSaveInfo(profileService), token);
+                    Logger.Info("Metadata: " + roiDuration.ElapsedMilliseconds);
+                    _ = Task.Run(() => {
+                        var result = imageData.SaveToDisk(new FileSaveInfo(profileService), token);
+                        Logger.Info("SaveToDisk: " + roiDuration.ElapsedMilliseconds);
+                    });
+                    Logger.Info("Task save: " + roiDuration.ElapsedMilliseconds);
 
                     capture.ProgressExposureCount = ExposureCount;
                     ExposureCount++;
                 }
+                ExposureCount--;
+                double fps = ExposureCount / (((double)seqDuration.ElapsedMilliseconds) / 1000);
+                Logger.Info("Captured " + ExposureCount + " images in " + seqDuration.ElapsedMilliseconds + " ms. : " + Math.Round(fps, 2) + " fps");
             } catch (OperationCanceledException) {
                 cameraMediator.AbortExposure();
                 throw;
@@ -242,7 +256,6 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                 throw;
             } finally {
                 progress.Report(new ApplicationStatus() { Status = "" });
-                semaphoreSlim.Release();
             }
         }
 

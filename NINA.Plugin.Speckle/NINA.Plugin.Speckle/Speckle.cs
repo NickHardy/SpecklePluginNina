@@ -67,6 +67,42 @@ namespace NINA.Plugin.Speckle {
             }
         }
 
+        public double MinMag {
+            get => Settings.Default.MinMag;
+            set {
+                Settings.Default.MinMag = value;
+                CoreUtil.SaveSettings(Properties.Settings.Default);
+                RaisePropertyChanged();
+            }
+        }
+
+        public double MaxMag {
+            get => Settings.Default.MaxMag;
+            set {
+                Settings.Default.MaxMag = value;
+                CoreUtil.SaveSettings(Properties.Settings.Default);
+                RaisePropertyChanged();
+            }
+        }
+
+        public double MinSep {
+            get => Settings.Default.MinSep;
+            set {
+                Settings.Default.MinSep = value;
+                CoreUtil.SaveSettings(Properties.Settings.Default);
+                RaisePropertyChanged();
+            }
+        }
+
+        public double MaxSep {
+            get => Settings.Default.MaxSep;
+            set {
+                Settings.Default.MaxSep = value;
+                CoreUtil.SaveSettings(Properties.Settings.Default);
+                RaisePropertyChanged();
+            }
+        }
+
         public string DefaultTemplate {
             get => Settings.Default.DefaultTemplate;
             set {

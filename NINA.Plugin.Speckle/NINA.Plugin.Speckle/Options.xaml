@@ -10,9 +10,12 @@
         <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
-                <ColumnDefinition />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
+                <RowDefinition MinHeight="25" />
+                <RowDefinition MinHeight="25" />
                 <RowDefinition MinHeight="25" />
                 <RowDefinition MinHeight="25" />
                 <RowDefinition MinHeight="25" />
@@ -23,42 +26,63 @@
             <ninactrl:UnitTextBox
                 Grid.Row="0"
                 Grid.Column="1"
-                MinWidth="80"
+                MinWidth="100"
                 Margin="5,0,0,0"
                 HorizontalAlignment="Left"
                 VerticalAlignment="Center"
                 Text="{Binding MDistance}"
                 Unit="°" />
-            <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Text="Number of nights" />
+            
+            <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Text="Magnitude between:" />
             <TextBox
                 Grid.Row="1"
                 Grid.Column="1"
-                MinWidth="80"
+                MinWidth="100"
                 Margin="5,0,0,0"
                 HorizontalAlignment="Left"
                 VerticalAlignment="Center"
-                Text="{Binding Nights}" />
-            <TextBlock Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Text="Number of cycles" />
+                Text="{Binding MinMag}" />
+            <TextBox
+                Grid.Row="1"
+                Grid.Column="2"
+                MinWidth="100"
+                Margin="5,0,0,0"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                Text="{Binding MaxMag}" />
+
+            <TextBlock Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Text="Separation between:" />
             <TextBox
                 Grid.Row="2"
                 Grid.Column="1"
-                MinWidth="80"
+                MinWidth="100"
+                Margin="5,0,0,0"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                Text="{Binding MinSep}" />
+            <TextBox
+                Grid.Row="2"
+                Grid.Column="2"
+                MinWidth="100"
+                Margin="5,0,0,0"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                Text="{Binding MaxSep}" />
+
+            <TextBlock Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" Text="Default number of cycles" />
+            <TextBox
+                Grid.Row="3"
+                Grid.Column="1"
+                MinWidth="100"
                 Margin="5,0,0,0"
                 HorizontalAlignment="Left"
                 VerticalAlignment="Center"
                 Text="{Binding Cycles}" />
-            <TextBlock Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" Text="Priority" />
-            <TextBox
-                Grid.Row="3" Grid.Column="1"
-                MinWidth="80"
-                Margin="5,0,0,0"
-                HorizontalAlignment="Left"
-                VerticalAlignment="Center"
-                Text="{Binding Priority}" />
+            
             <TextBlock Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" Text="Default Template" />
             <TextBox
-                Grid.Row="4" Grid.Column="1"
-                MinWidth="80"
+                Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="2"
+                MinWidth="100"
                 Margin="5,0,0,0"
                 HorizontalAlignment="Left"
                 VerticalAlignment="Center"

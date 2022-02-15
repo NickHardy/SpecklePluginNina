@@ -83,10 +83,8 @@ namespace NINA.Plugin.Speckle.Dockables {
 
             speckle = new Speckle();
 
-            LoadUserTemplates();
-
-            OpenFileCommand = new RelayCommand((object o) => OpenFile());
             SpeckleTargets = new AsyncObservableCollection<SpeckleTarget>();
+            OpenFileCommand = new GalaSoft.MvvmLight.Command.RelayCommand<bool>(async (o) => { using (executeCTS = new CancellationTokenSource()) { OpenFile(new Progress<ApplicationStatus>(p => Status = p), executeCTS.Token); } });
             AddTargetsCommand = new GalaSoft.MvvmLight.Command.RelayCommand<bool>(async (o) => { using (executeCTS = new CancellationTokenSource()) { await AddTargetStars(new Progress<ApplicationStatus>(p => Status = p), executeCTS.Token); } });
             SlewToCommand = new GalaSoft.MvvmLight.Command.RelayCommand<bool>(async (o) => { using (executeCTS = new CancellationTokenSource()) { await SlewToTarget(new Progress<ApplicationStatus>(p => Status = p), executeCTS.Token); } });
             SlewToClusterCommand = new GalaSoft.MvvmLight.Command.RelayCommand<bool>(async (o) => { using (executeCTS = new CancellationTokenSource()) { await SlewToStarCluster(new Progress<ApplicationStatus>(p => Status = p), executeCTS.Token); } });
@@ -130,8 +128,6 @@ namespace NINA.Plugin.Speckle.Dockables {
             }
         }
 
-        public IList<IDeepSkyObjectContainer> DSOTemplates { get; private set; }
-
         private class Dp {
             public DateTime datetime { get; set; }
             public double alt { get; set; }
@@ -159,17 +155,18 @@ namespace NINA.Plugin.Speckle.Dockables {
             return altList.OrderByDescending((x) => x.alt).FirstOrDefault().datetime;
         }
 
-        private void OpenFile() {
+        private void OpenFile(IProgress<ApplicationStatus> externalProgress, CancellationToken token) {
             OpenFileDialog fileDialog = new OpenFileDialog();
             fileDialog.DefaultExt = ".csv"; // Required file extension 
             fileDialog.Filter = "Csv documents (.csv)|*.csv"; // Optional file extensions
 
             if (fileDialog.ShowDialog() == DialogResult.OK) {
-                LoadTargets(fileDialog.FileName);
+                _ = LoadTargetsAsync(externalProgress, token, fileDialog.FileName);
             }
         }
 
-        private void LoadTargets(string file) {
+        private async Task LoadTargetsAsync(IProgress<ApplicationStatus> externalProgress, CancellationToken token, string file) {
+            _ = await RetrieveTemplates(externalProgress, token);
             SpeckleTargets = new AsyncObservableCollection<SpeckleTarget>();
             using (var reader = new StreamReader(file))
             using (var csv = new CsvReader(reader, CultureInfo.InvariantCulture)) {
@@ -179,6 +176,11 @@ namespace NINA.Plugin.Speckle.Dockables {
                     var records = csv.GetRecords<SpeckleTarget>();
                     foreach (SpeckleTarget record in records.ToList()) {
                         record.Meridian = GetMeridianTime(record.Coordinates());
+                        if (record.Template != "") {
+                            record.SpeckleTemplate = SpeckleTemplates.FirstOrDefault(x => x.Name == SpeckleTarget.Template);
+                        } else {
+                            record.SpeckleTemplate = SpeckleTemplates.FirstOrDefault(x => x.Name == speckle.DefaultTemplate);
+                        }
                         SpeckleTargets.Add(record);
                     }
                     SpeckleTargets = new AsyncObservableCollection<SpeckleTarget>(SpeckleTargets.OrderBy(i => i.Meridian).ThenByDescending(n => n.Priority));
@@ -187,6 +189,10 @@ namespace NINA.Plugin.Speckle.Dockables {
         }
 
         public async Task<bool> SlewToTarget(IProgress<ApplicationStatus> externalProgress, CancellationToken token) {
+            if (!telescopeMediator.GetInfo().Connected) {
+                Notification.ShowWarning("Telescope not connected!");
+                return false;
+            }
             try {
                 using (var localCTS = CancellationTokenSource.CreateLinkedTokenSource(token)) {
                     var stoppedGuiding = await guiderMediator.StopGuiding(localCTS.Token);
@@ -210,7 +216,7 @@ namespace NINA.Plugin.Speckle.Dockables {
                 using (var localCTS = CancellationTokenSource.CreateLinkedTokenSource(token)) {
                     await RetrieveStarClusters(externalProgress, token);
 
-                    if (SpeckleTarget.StarCluster != null) {
+                    if (SpeckleTarget.StarCluster != null && telescopeMediator.GetInfo().Connected) {
                         var stoppedGuiding = await guiderMediator.StopGuiding(localCTS.Token);
                         await telescopeMediator.SlewToCoordinatesAsync(SpeckleTarget.StarCluster.Coordinates(), localCTS.Token);
                         if (stoppedGuiding) {
@@ -242,7 +248,7 @@ namespace NINA.Plugin.Speckle.Dockables {
                 using (var localCTS = CancellationTokenSource.CreateLinkedTokenSource(token)) {
                     await RetrieveReferenceStars(externalProgress, token);
 
-                    if (SpeckleTarget.ReferenceStar != null) {
+                    if (SpeckleTarget.ReferenceStar != null && telescopeMediator.GetInfo().Connected) {
                         var stoppedGuiding = await guiderMediator.StopGuiding(localCTS.Token);
                         await telescopeMediator.SlewToCoordinatesAsync(SpeckleTarget.ReferenceStar.Coordinates(), localCTS.Token);
                         if (stoppedGuiding) {
@@ -270,6 +276,10 @@ namespace NINA.Plugin.Speckle.Dockables {
         }
 
         public async Task AddTargetStars(IProgress<ApplicationStatus> externalProgress, CancellationToken token) {
+            if (!telescopeMediator.GetInfo().Connected) {
+                Notification.ShowWarning("Telescope not connected!");
+                return;
+            }
             SimbadUtils simUtils = new SimbadUtils();
             List<SimbadBinaryStar> targets = await simUtils.FindSimbadBinaryStars(externalProgress, token, telescopeMediator.GetCurrentPosition(), speckle.MDistance);
             foreach (SimbadBinaryStar target in targets) {
@@ -279,19 +289,22 @@ namespace NINA.Plugin.Speckle.Dockables {
                 speckleTarget.Dec = target.dec;
                 speckleTarget.Cycles = speckle.Cycles;
                 speckleTarget.Priority = speckle.Priority;
-                speckleTarget.Template = speckle.DefaultTemplate;
+                if (speckle.DefaultTemplate != "") {
+                    speckleTarget.Template = speckle.DefaultTemplate;
+                    speckleTarget.SpeckleTemplate = SpeckleTemplates.FirstOrDefault(x => x.Name == speckle.DefaultTemplate);
+                }
                 speckleTarget.Meridian = GetMeridianTime(speckleTarget.Coordinates());
                 SpeckleTargets.Add(speckleTarget);
             }
             RaiseAllPropertiesChanged();
         }
 
-        private AsyncObservableCollection<string> _templates = new AsyncObservableCollection<string>();
+        private AsyncObservableCollection<SpeckleTargetContainer> _speckleTemplates = new AsyncObservableCollection<SpeckleTargetContainer>();
 
-        public AsyncObservableCollection<string> Templates {
-            get => _templates;
+        public AsyncObservableCollection<SpeckleTargetContainer> SpeckleTemplates {
+            get => _speckleTemplates;
             set {
-                _templates = value;
+                _speckleTemplates = value;
                 RaisePropertyChanged();
             }
         }
@@ -299,8 +312,13 @@ namespace NINA.Plugin.Speckle.Dockables {
         public async Task<bool> RetrieveTemplates(IProgress<ApplicationStatus> externalProgress, CancellationToken token) {
             try {
                 using (var localCTS = CancellationTokenSource.CreateLinkedTokenSource(token)) {
-                    // todo: use token
-                    await LoadUserTemplates();
+                    SpeckleTemplates.Clear();
+                    var templates = sequenceMediator.GetDeepSkyObjectContainerTemplates();
+                    foreach (var template in templates) {
+                        var speckleTemplate = template as SpeckleTargetContainer;
+                        if (speckleTemplate != null)
+                            SpeckleTemplates.Add(speckleTemplate);
+                    }
                 }
             } catch (OperationCanceledException) {
             } catch (Exception ex) {
@@ -312,45 +330,17 @@ namespace NINA.Plugin.Speckle.Dockables {
             return true;
         }
 
-        private Task LoadUserTemplates() {
-            return Task.Run(() => {
-                try {
-                    Templates = new AsyncObservableCollection<string>();
-                    var userTemplatePath = profileService.ActiveProfile.SequenceSettings.SequencerTemplatesFolder;
-
-                    if (!Directory.Exists(userTemplatePath)) {
-                        Notification.ShowError("No template directory");
-                    }
-
-                    foreach (var file in Directory.GetFiles(userTemplatePath, "*" + TemplateController.TemplateFileExtension, SearchOption.AllDirectories)) {
-                        try {
-                            var container = JObject.Parse(File.ReadAllText(file));
-                            if (!container.Value<string>("$type").Contains("SpeckleTargetContainer")) continue;
-                            Templates.Add(container.Value<string>("Name"));
-                        } catch (Exception ex) {
-                            Logger.Error("Invalid template JSON", ex);
-                        }
-                    }
-                } catch (Exception ex) {
-                    Logger.Error(ex);
-                    Notification.ShowError("Error loading templates");
-                }
-            });
-        }
-
         public async Task<bool> StartTargetSequence(IProgress<ApplicationStatus> externalProgress, CancellationToken token) {
             try {
                 using (var localCTS = CancellationTokenSource.CreateLinkedTokenSource(token)) {
-                    if (SpeckleTarget.Template == null || SpeckleTarget.Template == "") {
+                    if (SpeckleTarget.SpeckleTemplate == null) {
                         Notification.ShowError("You must select a template.");
                         return true;
                     }
-                    DSOTemplates = sequenceMediator.GetDeepSkyObjectContainerTemplates();
-                    
+
                     for (int i = 1; i <= SpeckleTarget.Cycles; i++) {
                         // Set target
-                        SpeckleTargetContainer template = (SpeckleTargetContainer) DSOTemplates.FirstOrDefault(x => x.Name == SpeckleTarget.Template);
-                        SpeckleTargetContainer speckleTargetContainer = (SpeckleTargetContainer) template.Clone();
+                        SpeckleTargetContainer speckleTargetContainer = (SpeckleTargetContainer)SpeckleTarget.SpeckleTemplate.Clone();
                         speckleTargetContainer.Target = new InputTarget(Angle.ByDegree(profileService.ActiveProfile.AstrometrySettings.Latitude), Angle.ByDegree(profileService.ActiveProfile.AstrometrySettings.Longitude), profileService.ActiveProfile.AstrometrySettings.Horizon) {
                             TargetName = SpeckleTarget.Target + "_" + i,
                             InputCoordinates = new InputCoordinates() {
@@ -366,7 +356,7 @@ namespace NINA.Plugin.Speckle.Dockables {
 
                         // Set Reference
                         await RetrieveReferenceStars(externalProgress, token);
-                        SpeckleTargetContainer speckleTargetContainerRef = (SpeckleTargetContainer)template.Clone();
+                        SpeckleTargetContainer speckleTargetContainerRef = (SpeckleTargetContainer)SpeckleTarget.SpeckleTemplate.Clone();
                         speckleTargetContainerRef.Target = new InputTarget(Angle.ByDegree(profileService.ActiveProfile.AstrometrySettings.Latitude), Angle.ByDegree(profileService.ActiveProfile.AstrometrySettings.Longitude), profileService.ActiveProfile.AstrometrySettings.Horizon) {
                             TargetName = SpeckleTarget.Target + "_" + i + "_ref_" + SpeckleTarget.ReferenceStar.main_id,
                             InputCoordinates = new InputCoordinates() {
@@ -380,7 +370,6 @@ namespace NINA.Plugin.Speckle.Dockables {
                         takeRoiExposuresRef.TotalExposureCount = SpeckleTarget.Exposures;
                         sequenceMediator.AddAdvancedTarget(speckleTargetContainerRef);
                     }
-
                 }
             } catch (OperationCanceledException) {
             } catch (Exception ex) {

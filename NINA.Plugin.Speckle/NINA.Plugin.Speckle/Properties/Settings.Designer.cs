@@ -94,5 +94,53 @@ namespace NINA.Plugin.Speckle.Properties {
                 this["DefaultTemplate"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("8")]
+        public double MinMag {
+            get {
+                return ((double)(this["MinMag"]));
+            }
+            set {
+                this["MinMag"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("11")]
+        public double MaxMag {
+            get {
+                return ((double)(this["MaxMag"]));
+            }
+            set {
+                this["MaxMag"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        public double MinSep {
+            get {
+                return ((double)(this["MinSep"]));
+            }
+            set {
+                this["MinSep"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("1")]
+        public double MaxSep {
+            get {
+                return ((double)(this["MaxSep"]));
+            }
+            set {
+                this["MaxSep"] = value;
+            }
+        }
     }
 }

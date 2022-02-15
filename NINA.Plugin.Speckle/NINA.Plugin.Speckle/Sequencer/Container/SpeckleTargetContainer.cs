@@ -75,7 +75,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             this.planetariumFactory = planetariumFactory;
             CameraInfo = this.cameraMediator.GetInfo();
             speckle = new Speckle();
-            SubSampleRectangle = new ObservableRectangle(CameraInfo.XSize / 2, CameraInfo.YSize / 2, 256, 256);
+            SubSampleRectangle = new ObservableRectangle(0, 0, 320, 240);
             Task.Run(() => NighttimeData = nighttimeCalculator.Calculate());
             Target = new InputTarget(Angle.ByDegree(profileService.ActiveProfile.AstrometrySettings.Latitude), Angle.ByDegree(profileService.ActiveProfile.AstrometrySettings.Longitude), profileService.ActiveProfile.AstrometrySettings.Horizon);
             CoordsToFramingCommand = new GalaSoft.MvvmLight.Command.RelayCommand(SendCoordinatesToFraming);
@@ -149,6 +149,10 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             }
         }
 
+        private void Target_OnCoordinatesChanged(object sender, EventArgs e) {
+            AfterParentChanged();
+        }
+
         private CameraInfo cameraInfo;
 
         public CameraInfo CameraInfo {
@@ -170,8 +174,53 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             }
         }
 
-        private void Target_OnCoordinatesChanged(object sender, EventArgs e) {
-            AfterParentChanged();
+        public double X {
+            get => SubSampleRectangle.X;
+            set {
+                SubSampleRectangle.X = value;
+                RaisePropertyChanged();
+            }
+        }
+
+        public double Y {
+            get => SubSampleRectangle.Y;
+            set {
+                SubSampleRectangle.Y = value;
+                RaisePropertyChanged();
+            }
+        }
+
+        public double Width {
+            get => SubSampleRectangle.Width;
+            set {
+                SubSampleRectangle.Width = value;
+                if (LinkedDimensions && cameraInfo.Connected) {
+                    SubSampleRectangle.Height = cameraInfo.YSize / (cameraInfo.XSize / value);
+                }
+                RaiseAllPropertiesChanged();
+            }
+        }
+
+        public double Height {
+            get => SubSampleRectangle.Height;
+            set {
+                SubSampleRectangle.Height = value;
+                if (LinkedDimensions && cameraInfo.Connected) {
+                    SubSampleRectangle.Width = cameraInfo.XSize / (cameraInfo.YSize / value);
+                }
+                RaiseAllPropertiesChanged();
+            }
+        }
+
+        private bool _linkedDimensions = true;
+
+        [JsonProperty]
+        public bool LinkedDimensions {
+            get => _linkedDimensions;
+            set {
+                _linkedDimensions = value;
+                RaisePropertyChanged();
+            }
         }
 
         public override object Clone() {
@@ -184,13 +233,17 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                 Triggers = new ObservableCollection<ISequenceTrigger>(Triggers.Select(t => t.Clone() as ISequenceTrigger)),
                 Conditions = new ObservableCollection<ISequenceCondition>(Conditions.Select(t => t.Clone() as ISequenceCondition)),
                 Target = new InputTarget(Angle.ByDegree(profileService.ActiveProfile.AstrometrySettings.Latitude), Angle.ByDegree(profileService.ActiveProfile.AstrometrySettings.Longitude), profileService.ActiveProfile.AstrometrySettings.Horizon),
-                SubSampleRectangle = SubSampleRectangle,
                 Title = Title
             };
 
             clone.Target.TargetName = this.Target.TargetName;
             clone.Target.InputCoordinates.Coordinates = this.Target.InputCoordinates.Coordinates.Transform(Epoch.J2000);
             clone.Target.Rotation = this.Target.Rotation;
+
+            clone.SubSampleRectangle.X = SubSampleRectangle.X;
+            clone.SubSampleRectangle.Y = SubSampleRectangle.Y;
+            clone.SubSampleRectangle.Width = SubSampleRectangle.Width;
+            clone.SubSampleRectangle.Height = SubSampleRectangle.Height;
 
             foreach (var item in clone.Items) {
                 item.AttachNewParent(clone);
@@ -257,7 +310,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                 Notification.ShowError(string.Format(Loc.Instance["LblPlanetariumCoordsError"], s.Name));
             }
 
-            return (resp != null);
+            return resp != null;
         }
     }
 }
