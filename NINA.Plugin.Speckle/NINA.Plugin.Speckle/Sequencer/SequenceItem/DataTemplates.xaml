@@ -247,4 +247,47 @@
         </view:SequenceBlockView>
     </DataTemplate>
 
+    <DataTemplate x:Key="NINA.Plugin.Speckle.Sequencer.SequenceItem.TakeLiveExposures_Mini">
+        <mini:MiniSequenceItem>
+            <mini:MiniSequenceItem.SequenceItemContent>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock VerticalAlignment="Center" Text="{Binding ExposureCount}" />
+                    <TextBlock VerticalAlignment="Center" Text="/" />
+                    <TextBlock VerticalAlignment="Center" Text="{Binding TotalExposureCount}" />
+                </StackPanel>
+            </mini:MiniSequenceItem.SequenceItemContent>
+        </mini:MiniSequenceItem>
+    </DataTemplate>
+
+    <DataTemplate DataType="{x:Type local:TakeLiveExposures}">
+        <view:SequenceBlockView>
+            <view:SequenceBlockView.SequenceItemContent>
+                <WrapPanel Orientation="Horizontal">
+
+                    <ContentPresenter Content="{StaticResource TakeExposureDetails}" />
+                    <TextBlock
+                        Margin="7.5,0,7.5,0"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Text="|" />
+
+                    <TextBlock
+                        VerticalAlignment="Center"
+                        Text="Wait for reconnect" />
+                    <CheckBox
+                        Width="80"
+                        HorizontalAlignment="Right"
+                        IsChecked="{Binding WaitForCameraReconnect}">
+                        <CheckBox.ToolTip>
+                            <ToolTip ToolTipService.ShowOnDisabled="False">
+                                <TextBlock Text="Wait for the camera to reconnect before continuing." />
+                            </ToolTip>
+                        </CheckBox.ToolTip>
+                    </CheckBox>
+                    
+                </WrapPanel>
+            </view:SequenceBlockView.SequenceItemContent>
+        </view:SequenceBlockView>
+    </DataTemplate>
+
 </ResourceDictionary>
