@@ -47,10 +47,10 @@ using System.Diagnostics;
 
 namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
 
-    [ExportMetadata("Name", "TakeRoiExposures")]
+    [ExportMetadata("Name", "Take Roi Exposures")]
     [ExportMetadata("Description", "Lbl_SequenceItem_Imaging_TakeExposure_Description")]
     [ExportMetadata("Icon", "CameraSVG")]
-    [ExportMetadata("Category", "aSpeckle")]
+    [ExportMetadata("Category", "Speckle Interferometry")]
     [Export(typeof(ISequenceItem))]
     [JsonObject(MemberSerialization.OptIn)]
     public class TakeRoiExposures : NINA.Sequencer.SequenceItem.SequenceItem, IExposureItem, IValidatable {
@@ -206,15 +206,15 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                 while (ExposureCount <= TotalExposureCount) {
                     Stopwatch roiDuration = Stopwatch.StartNew();
                     await cameraMediator.Capture(capture, token, progress);
-                    Logger.Info("Capture: " + roiDuration.ElapsedMilliseconds);
+                    Logger.Debug("Capture: " + roiDuration.ElapsedMilliseconds);
                     progress.Report(new ApplicationStatus() { Status = "Taking Roi image: " + ExposureCount });
                     token.ThrowIfCancellationRequested();
                     IExposureData exposureData = await cameraMediator.Download(token);
-                    Logger.Info("Download: " + roiDuration.ElapsedMilliseconds);
+                    Logger.Debug("Download: " + roiDuration.ElapsedMilliseconds);
                     token.ThrowIfCancellationRequested();
 
                     var imageData = await exposureData.ToImageData(progress, token);
-                    Logger.Info("ImageData: " + roiDuration.ElapsedMilliseconds);
+                    Logger.Debug("ImageData: " + roiDuration.ElapsedMilliseconds);
 
                     if (target != null) {
                         imageData.MetaData.Target.Name = target.DeepSkyObject.NameAsAscii;
@@ -223,9 +223,9 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                     }
 
                     // Only show first and last image in Imaging window
-                    if (ExposureCount == 1 || ExposureCount % 10 == 0 || ExposureCount == TotalExposureCount) {
+                    if (ExposureCount == 1 || ExposureCount % speckle.ShowEveryNthImage == 0 || ExposureCount == TotalExposureCount) {
                         _imageProcessingTask = imagingMediator.PrepareImage(imageData, imageParams, token);
-                        Logger.Info("Prepare: " + roiDuration.ElapsedMilliseconds);
+                        Logger.Debug("Prepare: " + roiDuration.ElapsedMilliseconds);
                     }
 
                     imageData.MetaData.Sequence.Title = title;
@@ -233,12 +233,12 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                     imageData.MetaData.Image.ExposureNumber = ExposureCount;
                     imageData.MetaData.Image.ExposureTime = ExposureTime;
                     //_ = imageData.SaveToDisk(new FileSaveInfo(profileService), token);
-                    Logger.Info("Metadata: " + roiDuration.ElapsedMilliseconds);
+                    Logger.Debug("Metadata: " + roiDuration.ElapsedMilliseconds);
                     _ = Task.Run(() => {
                         var result = imageData.SaveToDisk(new FileSaveInfo(profileService), token);
-                        Logger.Info("SaveToDisk: " + roiDuration.ElapsedMilliseconds);
+                        Logger.Debug("SaveToDisk: " + roiDuration.ElapsedMilliseconds);
                     });
-                    Logger.Info("Task save: " + roiDuration.ElapsedMilliseconds);
+                    Logger.Debug("Task save: " + roiDuration.ElapsedMilliseconds);
 
                     capture.ProgressExposureCount = ExposureCount;
                     ExposureCount++;
@@ -290,7 +290,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                 }
             }
 
-            if (ItemUtility.RetrieveSpeckleTargetRoi(Parent) == null) {
+            if (ItemUtility.RetrieveSpeckleContainer(Parent) == null) {
                 i.Add("This instruction only works within a SpeckleTargetContainer.");
             }
 

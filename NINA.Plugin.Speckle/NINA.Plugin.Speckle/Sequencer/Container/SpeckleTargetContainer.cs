@@ -42,10 +42,10 @@ using NINA.Equipment.Equipment.MyCamera;
 
 namespace NINA.Plugin.Speckle.Sequencer.Container {
 
-    [ExportMetadata("Name", "SpeckleTargetContainer")]
+    [ExportMetadata("Name", "Speckle Target Container")]
     [ExportMetadata("Description", "Lbl_SequenceContainer_DeepSkyObjectContainer_Description")]
     [ExportMetadata("Icon", "TelescopeSVG")]
-    [ExportMetadata("Category", "aSpeckle")]
+    [ExportMetadata("Category", "Speckle Interferometry")]
     [Export(typeof(ISequenceItem))]
     [Export(typeof(ISequenceContainer))]
     [JsonObject(MemberSerialization.OptIn)]

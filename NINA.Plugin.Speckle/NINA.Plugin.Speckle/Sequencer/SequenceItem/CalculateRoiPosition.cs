@@ -45,10 +45,10 @@ using System.Windows;
 
 namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
 
-    [ExportMetadata("Name", "CalculateRoiPosition")]
+    [ExportMetadata("Name", "Calculate Roi Position")]
     [ExportMetadata("Description", "Platesolve an image locate the target and center the ROI position on the target.")]
     [ExportMetadata("Icon", "CrosshairSVG")]
-    [ExportMetadata("Category", "aSpeckle")]
+    [ExportMetadata("Category", "Speckle Interferometry")]
     [Export(typeof(ISequenceItem))]
     [JsonObject(MemberSerialization.OptIn)]
     public class CalculateRoiPosition : NINA.Sequencer.SequenceItem.SequenceItem, IValidatable {
@@ -128,12 +128,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
 
             var prepareTask = imagingMediator.PrepareImage(imageData, new PrepareImageParameters(true, false), token);
             var image = prepareTask.Result;
-            var starDetection = new Utility.StarDetection();
-            var starDetectionParams = new StarDetectionParams() {
-                Sensitivity = StarSensitivityEnum.High,
-                NoiseReduction = NoiseReductionEnum.None
-            };
-            var starDetectionResult = await starDetection.Detect(image, image.Image.Format, starDetectionParams, progress, token);
+
             var imageSolver = new ImageSolver(plateSolver, null);
 
             var plateSolveResult = await imageSolver.Solve(image.RawImageData, parameter, progress, token);
@@ -149,21 +144,14 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             //Translate your coordinates to x/y in relation to center coordinates
             var inputTarget = ItemUtility.RetrieveSpeckleTarget(Parent);
             Point targetPoint = inputTarget.InputCoordinates.Coordinates.XYProjection(plateSolveResult.Coordinates, center, arcsecPerPix, arcsecPerPix, plateSolveResult.Orientation, ProjectionType.Stereographic);
-            var TargetStar = starDetectionResult.StarList
-                .GroupBy(p => Math.Pow(targetPoint.X - p.Position.X, 2) + Math.Pow(targetPoint.Y - p.Position.Y, 2))
-                .OrderBy(p => p.Key)
-                .FirstOrDefault()?.FirstOrDefault();
 
-            if (TargetStar == null) {
-                Notification.ShowError("Target star not found.");
-                throw new SequenceEntityFailedException("Target star not found.");
-            }
-            TargetStar.Position = TargetStar.Position.Round();
-            Logger.Info("TargetStar: " + JsonConvert.SerializeObject(TargetStar));
+            // Check if the target is in the image
+            if (targetPoint.X < 0 || targetPoint.X > width || targetPoint.Y < 0 || targetPoint.Y > height)
+                throw new SequenceEntityFailedException("Calculation failed. Target outside of image");
 
-            var targetRoi = ItemUtility.RetrieveSpeckleTargetRoi(Parent);
-            targetRoi.X = TargetStar.Position.X - (targetRoi.Width / 2);
-            targetRoi.Y = TargetStar.Position.Y - (targetRoi.Height / 2);
+            var speckleContainer = ItemUtility.RetrieveSpeckleContainer(Parent);
+            speckleContainer.X = targetPoint.X - (speckleContainer.Width / 2);
+            speckleContainer.Y = targetPoint.Y - (speckleContainer.Height / 2);
 
         }
 
@@ -172,7 +160,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             if (!telescopeMediator.GetInfo().Connected) {
                 i.Add(Loc.Instance["LblTelescopeNotConnected"]);
             }
-            if (ItemUtility.RetrieveSpeckleTargetRoi(Parent) == null) {
+            if (ItemUtility.RetrieveSpeckleContainer(Parent) == null) {
                 i.Add("This instruction only works within a SpeckleTargetContainer.");
             }
 

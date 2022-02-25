@@ -26,6 +26,19 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
 
     public class ItemUtility {
 
+        public static SpeckleTargetContainer RetrieveSpeckleContainer(ISequenceContainer parent) {
+            if (parent != null) {
+                var container = parent as SpeckleTargetContainer;
+                if (container != null) {
+                    return container;
+                } else {
+                    return RetrieveSpeckleContainer(parent.Parent);
+                }
+            } else {
+                return null;
+            }
+        }
+
         public static ObservableRectangle RetrieveSpeckleTargetRoi(ISequenceContainer parent) {
             if (parent != null) {
                 var container = parent as SpeckleTargetContainer;

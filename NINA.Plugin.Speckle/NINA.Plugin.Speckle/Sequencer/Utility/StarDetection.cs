@@ -267,11 +267,11 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
                 if (checker.IsCircle(points, out centerpoint, out radius)) {
                     s = new Star { Position = new Accord.Point(centerpoint.X * (float)state._inverseResizefactor, centerpoint.Y * (float)state._inverseResizefactor), radius = radius * state._inverseResizefactor, Rectangle = rect };
                 } else { //Star is elongated
-                    var eccentricity = CalculateEccentricity(rect.Width, rect.Height);
+/*                    var eccentricity = CalculateEccentricity(rect.Width, rect.Height);
                     //Discard highly elliptical shapes.
                     if (eccentricity > 0.8) {
                         continue;
-                    }
+                    }*/
                     s = new Star { Position = new Accord.Point(centerpoint.X * (float)state._inverseResizefactor, centerpoint.Y * (float)state._inverseResizefactor), radius = Math.Max(rect.Width, rect.Height) / 2, Rectangle = rect };
                 }
 

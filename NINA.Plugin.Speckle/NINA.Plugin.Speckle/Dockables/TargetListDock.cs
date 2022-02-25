@@ -85,20 +85,22 @@ namespace NINA.Plugin.Speckle.Dockables {
             speckle = new Speckle();
 
             SpeckleTargets = new AsyncObservableCollection<SpeckleTarget>();
-            OpenFileCommand = new GalaSoft.MvvmLight.Command.RelayCommand<bool>(async (o) => { using (executeCTS = new CancellationTokenSource()) { OpenFile(new Progress<ApplicationStatus>(p => Status = p), executeCTS.Token); } });
+            OpenFileCommand = new GalaSoft.MvvmLight.Command.RelayCommand<bool>((o) => { using (executeCTS = new CancellationTokenSource()) { OpenFile(new Progress<ApplicationStatus>(p => Status = p), executeCTS.Token); } });
             AddTargetsCommand = new GalaSoft.MvvmLight.Command.RelayCommand<bool>(async (o) => { using (executeCTS = new CancellationTokenSource()) { await AddTargetStars(new Progress<ApplicationStatus>(p => Status = p), executeCTS.Token); } });
+            RemoveTargetCommand = new GalaSoft.MvvmLight.Command.RelayCommand<bool>((o) => { using (executeCTS = new CancellationTokenSource()) { RemoveTarget(); } });
             SlewToCommand = new GalaSoft.MvvmLight.Command.RelayCommand<bool>(async (o) => { using (executeCTS = new CancellationTokenSource()) { await SlewToTarget(new Progress<ApplicationStatus>(p => Status = p), executeCTS.Token); } });
             SlewToClusterCommand = new GalaSoft.MvvmLight.Command.RelayCommand<bool>(async (o) => { using (executeCTS = new CancellationTokenSource()) { await SlewToStarCluster(new Progress<ApplicationStatus>(p => Status = p), executeCTS.Token); } });
             SlewToReferenceStarCommand = new GalaSoft.MvvmLight.Command.RelayCommand<bool>(async (o) => { using (executeCTS = new CancellationTokenSource()) { await SlewToReferenceStar(new Progress<ApplicationStatus>(p => Status = p), executeCTS.Token); } });
             AddTargetSequenceCommand = new GalaSoft.MvvmLight.Command.RelayCommand<bool>(async (o) => { using (executeCTS = new CancellationTokenSource()) { await AddTargetSequence(new Progress<ApplicationStatus>(p => Status = p), executeCTS.Token); } });
             StartSequencesCommand = new GalaSoft.MvvmLight.Command.RelayCommand<bool>(async (o) => { using (executeCTS = new CancellationTokenSource()) { await StartSequences(new Progress<ApplicationStatus>(p => Status = p), executeCTS.Token); } });
-            CancelExecuteCommand = new GalaSoft.MvvmLight.Command.RelayCommand<bool>(async (o) => { try { executeCTS?.Cancel(); } catch (Exception) { } });
+            CancelExecuteCommand = new GalaSoft.MvvmLight.Command.RelayCommand<bool>((o) => { try { executeCTS?.Cancel(); } catch (Exception) { } });
 
         }
 
         public ICommand CancelExecuteCommand { get; }
         public ICommand OpenFileCommand { get; private set; }
         public ICommand AddTargetsCommand { get; private set; }
+        public ICommand RemoveTargetCommand { get; private set; }
         public ICommand SlewToCommand { get; private set; }
         public ICommand SlewToClusterCommand { get; private set; }
         public ICommand SlewToReferenceStarCommand { get; private set; }
@@ -184,6 +186,13 @@ namespace NINA.Plugin.Speckle.Dockables {
                         } else {
                             record.SpeckleTemplate = SpeckleTemplates.FirstOrDefault(x => x.Name == speckle.DefaultTemplate);
                         }
+                        if (record.User == "") { record.User = speckle.User; }
+                        if (record.Exposures == 0) { record.Exposures = speckle.Exposures; }
+                        if (record.ExposureTime == 0) { record.ExposureTime = speckle.ExposureTime; }
+                        if (record.Magnitude < speckle.MinMag || record.Magnitude > speckle.MaxMag)
+                            continue;
+                        if (record.Separation < speckle.MinSep || record.Separation > speckle.MaxSep)
+                            continue;
                         SpeckleTargets.Add(record);
                     }
                     SpeckleTargets = new AsyncObservableCollection<SpeckleTarget>(SpeckleTargets.OrderBy(i => i.Meridian).ThenByDescending(n => n.Priority));
@@ -283,6 +292,8 @@ namespace NINA.Plugin.Speckle.Dockables {
                 Notification.ShowWarning("Telescope not connected!");
                 return;
             }
+            _ = await RetrieveTemplates(externalProgress, token);
+
             SimbadUtils simUtils = new SimbadUtils();
             List<SimbadBinaryStar> targets = await simUtils.FindSimbadBinaryStars(externalProgress, token, telescopeMediator.GetCurrentPosition(), speckle.MDistance);
             foreach (SimbadBinaryStar target in targets) {
@@ -296,10 +307,20 @@ namespace NINA.Plugin.Speckle.Dockables {
                     speckleTarget.Template = speckle.DefaultTemplate;
                     speckleTarget.SpeckleTemplate = SpeckleTemplates.FirstOrDefault(x => x.Name == speckle.DefaultTemplate);
                 }
+                speckleTarget.User = speckle.User;
+                speckleTarget.Exposures = speckle.Exposures;
+                speckleTarget.ExposureTime = speckle.ExposureTime;
                 speckleTarget.Meridian = GetMeridianTime(speckleTarget.Coordinates());
                 SpeckleTargets.Add(speckleTarget);
             }
             RaiseAllPropertiesChanged();
+        }
+
+
+        public void RemoveTarget() {
+            if (SpeckleTarget != null)
+                SpeckleTargets.Remove(SpeckleTarget);
+            SpeckleTarget = SpeckleTargets.FirstOrDefault();
         }
 
         private AsyncObservableCollection<SpeckleTargetContainer> _speckleTemplates = new AsyncObservableCollection<SpeckleTargetContainer>();
@@ -340,10 +361,12 @@ namespace NINA.Plugin.Speckle.Dockables {
                         Notification.ShowError("You must select a template.");
                         return false;
                     }
+                    _ = await RetrieveTemplates(externalProgress, token);
 
                     for (int i = 1; i <= SpeckleTarget.Cycles; i++) {
                         // Set target
-                        SpeckleTargetContainer speckleTargetContainer = (SpeckleTargetContainer)SpeckleTarget.SpeckleTemplate.Clone();
+                        var template = SpeckleTemplates.FirstOrDefault(x => x.Name == SpeckleTarget.SpeckleTemplate.Name);
+                        SpeckleTargetContainer speckleTargetContainer = (SpeckleTargetContainer)template.Clone();
                         speckleTargetContainer.Target = new InputTarget(Angle.ByDegree(profileService.ActiveProfile.AstrometrySettings.Latitude), Angle.ByDegree(profileService.ActiveProfile.AstrometrySettings.Longitude), profileService.ActiveProfile.AstrometrySettings.Horizon) {
                             TargetName = SpeckleTarget.Target + "_" + i,
                             InputCoordinates = new InputCoordinates() {
@@ -352,9 +375,16 @@ namespace NINA.Plugin.Speckle.Dockables {
                         };
                         speckleTargetContainer.Title = SpeckleTarget.User;
                         speckleTargetContainer.Name = SpeckleTarget.User + "_" + SpeckleTarget.Target + "_" + i;
-                        TakeRoiExposures takeRoiExposures = (TakeRoiExposures)speckleTargetContainer.Items.First(x => x.Name == "TakeRoiExposures");
-                        takeRoiExposures.ExposureTime = SpeckleTarget.ExposureTime;
-                        takeRoiExposures.TotalExposureCount = SpeckleTarget.Exposures;
+                        TakeRoiExposures takeRoiExposures = (TakeRoiExposures)speckleTargetContainer.Items.FirstOrDefault(x => x is TakeRoiExposures);
+                        if (takeRoiExposures != null) {
+                            takeRoiExposures.ExposureTime = SpeckleTarget.ExposureTime;
+                            takeRoiExposures.TotalExposureCount = SpeckleTarget.Exposures;
+                        }
+                        TakeLiveExposures takeLiveExposures = (TakeLiveExposures)speckleTargetContainer.Items.FirstOrDefault(x => x is TakeLiveExposures);
+                        if (takeLiveExposures != null) {
+                            takeLiveExposures.ExposureTime = SpeckleTarget.ExposureTime;
+                            takeLiveExposures.TotalExposureCount = SpeckleTarget.Exposures;
+                        }
                         speckleTargetContainer.IsExpanded = false;
                         sequenceMediator.AddAdvancedTarget(speckleTargetContainer);
 
@@ -369,9 +399,17 @@ namespace NINA.Plugin.Speckle.Dockables {
                         };
                         speckleTargetContainerRef.Title = SpeckleTarget.User;
                         speckleTargetContainerRef.Name = SpeckleTarget.User + "_" + SpeckleTarget.Target + "_" + i + "_ref_" + SpeckleTarget.ReferenceStar.main_id;
-                        TakeRoiExposures takeRoiExposuresRef = (TakeRoiExposures)speckleTargetContainerRef.Items.First(x => x.Name == "TakeRoiExposures");
-                        takeRoiExposuresRef.ExposureTime = SpeckleTarget.ExposureTime;
-                        takeRoiExposuresRef.TotalExposureCount = SpeckleTarget.Exposures;
+                        TakeRoiExposures takeRoiExposuresRef = (TakeRoiExposures)speckleTargetContainerRef.Items.FirstOrDefault(x => x is TakeRoiExposures);
+                        if (takeRoiExposuresRef != null) {
+                            takeRoiExposuresRef.ExposureTime = SpeckleTarget.ExposureTime;
+                            takeRoiExposuresRef.TotalExposureCount = SpeckleTarget.Exposures;
+                        }
+                        TakeLiveExposures takeLiveExposuresRef = (TakeLiveExposures)speckleTargetContainerRef.Items.FirstOrDefault(x => x is TakeLiveExposures);
+                        if (takeLiveExposuresRef != null) {
+                            takeLiveExposuresRef.ExposureTime = SpeckleTarget.ExposureTime;
+                            takeLiveExposuresRef.TotalExposureCount = SpeckleTarget.Exposures;
+                        }
+
                         speckleTargetContainerRef.IsExpanded = false;
                         sequenceMediator.AddAdvancedTarget(speckleTargetContainerRef);
 
@@ -392,48 +430,20 @@ namespace NINA.Plugin.Speckle.Dockables {
 
         // Run all sequences
         public async Task<bool> StartSequences(IProgress<ApplicationStatus> externalProgress, CancellationToken token) {
-            
-                try {
-                    foreach (SpeckleTarget target in SpeckleTargets) {
-                        SpeckleTarget = target;
-                        _ = await AddTargetSequence(externalProgress, token);
-                    }
-
-                    /*                    while (!token.IsCancellationRequested) {
-                                            IList<IDeepSkyObjectContainer> currentTargets = sequenceMediator.GetAllTargetsInAdvancedSequence();
-                                            var finishedTarget = currentTargets.FirstOrDefault(t => t.Status == SequenceEntityStatus.FINISHED);
-                                            if (finishedTarget != null) {
-                                                var starget = (SpeckleTarget)SpeckleTargets.FirstOrDefault(t => finishedTarget.Name.StartsWith(t.User) && finishedTarget.Name.Contains(t.Target) && finishedTarget.Name.Contains("_ref"));
-                                                if (starget != null)
-                                                    starget.Cycles--;
-                                                finishedTarget.Detach();
-                                            }
-
-                                            if (currentTargets.Count() < 4) {
-                                                // Add next target
-                                                SpeckleTarget = SpeckleTargets.ElementAt(TargetIndex);
-                                                if (SpeckleTarget != null) {
-                                                    _ = await AddTargetSequence(externalProgress, token);
-                                                    TargetIndex++;
-                                                } else {
-                                                    break;
-                                                }
-                                            } else {
-                                                Thread.Sleep(10 * 1000); // Wait 10 seconds before looping
-                                            }
-                                            if (currentTargets.Count() > 0 && !sequenceMediator.IsAdvancedSequenceRunning())
-                                                sequenceMediator.StartAdvancedSequence();
-                                            if (TargetIndex >= 2 && !sequenceMediator.IsAdvancedSequenceRunning())
-                                                break;
-                                        }*/
-                } catch (OperationCanceledException) {
-                } catch (Exception ex) {
-                    Logger.Error(ex);
-                    Notification.ShowError(ex.Message);
-                } finally {
-                    externalProgress?.Report(GetStatus(string.Empty));
+            try {
+                foreach (SpeckleTarget target in SpeckleTargets) {
+                    token.ThrowIfCancellationRequested();
+                    SpeckleTarget = target;
+                    _ = await AddTargetSequence(externalProgress, token);
                 }
-                return true;
+            } catch (OperationCanceledException) {
+            } catch (Exception ex) {
+                Logger.Error(ex);
+                Notification.ShowError(ex.Message);
+            } finally {
+                externalProgress?.Report(GetStatus(string.Empty));
+            }
+            return true;
         }
 
         private ApplicationStatus _status;

@@ -6,7 +6,7 @@
     <!--  This data template will be displayed in N.I.N.A. on the options->plugin tab with the datacontext of the TestPlugin instance  -->
     <!--  In order for this datatemplate to be picked correctly, the key has to follow the naming convention of <IPlugin.Name>_Options -->
     <!--  Furthermore the Resource Dictionary has to be exported via code behind export attributes  -->
-    <DataTemplate x:Key="SpecklePhotometry_Options">
+    <DataTemplate x:Key="Speckle Interferometry_Options">
         <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
@@ -14,6 +14,10 @@
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
+                <RowDefinition MinHeight="25" />
+                <RowDefinition MinHeight="25" />
+                <RowDefinition MinHeight="25" />
+                <RowDefinition MinHeight="25" />
                 <RowDefinition MinHeight="25" />
                 <RowDefinition MinHeight="25" />
                 <RowDefinition MinHeight="25" />
@@ -78,15 +82,54 @@
                 HorizontalAlignment="Left"
                 VerticalAlignment="Center"
                 Text="{Binding Cycles}" />
-            
-            <TextBlock Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" Text="Default Template" />
+
+            <TextBlock Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" Text="Default number of images" />
             <TextBox
-                Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="2"
+                Grid.Row="4"
+                Grid.Column="1"
+                MinWidth="100"
+                Margin="5,0,0,0"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                Text="{Binding Exposures}" />
+
+            <TextBlock Grid.Row="5" Grid.Column="0" VerticalAlignment="Center" Text="Default Exposure time" />
+            <TextBox
+                Grid.Row="5"
+                Grid.Column="1"
+                MinWidth="100"
+                Margin="5,0,0,0"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                Text="{Binding ExposureTime}" />
+
+            <TextBlock Grid.Row="6" Grid.Column="0" VerticalAlignment="Center" Text="Default Template" />
+            <TextBox
+                Grid.Row="6" Grid.Column="1" Grid.ColumnSpan="2"
                 MinWidth="100"
                 Margin="5,0,0,0"
                 HorizontalAlignment="Left"
                 VerticalAlignment="Center"
                 Text="{Binding DefaultTemplate}" />
+
+            <TextBlock Grid.Row="7" Grid.Column="0" VerticalAlignment="Center" Text="Default User" />
+            <TextBox
+                Grid.Row="7" Grid.Column="1" Grid.ColumnSpan="2"
+                MinWidth="100"
+                Margin="5,0,0,0"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                Text="{Binding User}" />
+            
+            <TextBlock Grid.Row="8" Grid.Column="0" VerticalAlignment="Center" Text="Show every Nth Image" />
+            <TextBox
+                Grid.Row="8" Grid.Column="1" Grid.ColumnSpan="2"
+                MinWidth="100"
+                Margin="5,0,0,0"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                Text="{Binding ShowEveryNthImage}" />
+            
         </Grid>
     </DataTemplate>
 </ResourceDictionary>

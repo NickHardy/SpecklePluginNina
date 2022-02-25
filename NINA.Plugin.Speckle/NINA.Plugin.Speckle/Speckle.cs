@@ -112,6 +112,42 @@ namespace NINA.Plugin.Speckle {
             }
         }
 
+        public int Exposures {
+            get => Settings.Default.Exposures;
+            set {
+                Settings.Default.Exposures = value;
+                CoreUtil.SaveSettings(Properties.Settings.Default);
+                RaisePropertyChanged();
+            }
+        }
+
+        public double ExposureTime {
+            get => Settings.Default.ExposureTime;
+            set {
+                Settings.Default.ExposureTime = value;
+                CoreUtil.SaveSettings(Properties.Settings.Default);
+                RaisePropertyChanged();
+            }
+        }
+
+        public string User {
+            get => Settings.Default.User;
+            set {
+                Settings.Default.User = value;
+                CoreUtil.SaveSettings(Properties.Settings.Default);
+                RaisePropertyChanged();
+            }
+        }
+
+        public int ShowEveryNthImage {
+            get => Settings.Default.ShowEveryNthImage;
+            set {
+                Settings.Default.ShowEveryNthImage = value;
+                CoreUtil.SaveSettings(Properties.Settings.Default);
+                RaisePropertyChanged();
+            }
+        }
+        
         public static string GetVersion() {
             System.Reflection.Assembly assembly = System.Reflection.Assembly.GetExecutingAssembly();
             System.Diagnostics.FileVersionInfo fvi = System.Diagnostics.FileVersionInfo.GetVersionInfo(assembly.Location);

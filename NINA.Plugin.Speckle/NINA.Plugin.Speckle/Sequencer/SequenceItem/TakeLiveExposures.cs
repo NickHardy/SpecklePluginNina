@@ -46,10 +46,10 @@ using NINA.Plugin.Speckle.Sequencer.Utility;
 
 namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
 
-    [ExportMetadata("Name", "Take many live exposures")]
+    [ExportMetadata("Name", "QHY live exposures")]
     [ExportMetadata("Description", "Lbl_SequenceItem_Imaging_TakeExposure_Description")]
     [ExportMetadata("Icon", "CameraSVG")]
-    [ExportMetadata("Category", "aSpeckle")]
+    [ExportMetadata("Category", "Speckle Interferometry")]
     [Export(typeof(ISequenceItem))]
     [JsonObject(MemberSerialization.OptIn)]
     public class TakeLiveExposures : NINA.Sequencer.SequenceItem.SequenceItem, IExposureItem, IValidatable {
@@ -58,6 +58,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
         private IImageSaveMediator imageSaveMediator;
         private IImageHistoryVM imageHistoryVM;
         private IProfileService profileService;
+        private Speckle speckle;
 
         [ImportingConstructor]
         public TakeLiveExposures(IProfileService profileService, ICameraMediator cameraMediator, IImagingMediator imagingMediator, IImageSaveMediator imageSaveMediator, IImageHistoryVM imageHistoryVM) {
@@ -70,6 +71,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             this.imageHistoryVM = imageHistoryVM;
             this.profileService = profileService;
             CameraInfo = this.cameraMediator.GetInfo();
+            speckle = new Speckle();
         }
 
         private TakeLiveExposures(TakeLiveExposures cloneMe) : this(cloneMe.profileService, cloneMe.cameraMediator, cloneMe.imagingMediator, cloneMe.imageSaveMediator, cloneMe.imageHistoryVM) {
@@ -84,6 +86,8 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                 Gain = Gain,
                 Offset = Offset,
                 ImageType = ImageType,
+                TotalExposureCount = TotalExposureCount,
+                WaitForCameraReconnect = WaitForCameraReconnect
             };
 
             if (clone.Binning == null) {
@@ -200,15 +204,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             }
 
             var target = RetrieveTarget(Parent);
-
-            ISequenceContainer parent = Parent;
-            var sequenceTitle = "";
-            while (parent != null && !(parent is SequenceRootContainer)) {
-                parent = parent.Parent;
-            }
-            if (parent is SequenceRootContainer item) {
-                sequenceTitle = item.SequenceTitle;
-            }
+            var title = ItemUtility.RetrieveSpeckleTitle(Parent);
 
             var localCTS = CancellationTokenSource.CreateLinkedTokenSource(token);
 
@@ -218,21 +214,19 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                 if (ExposureCount == 1) { seqDuration = Stopwatch.StartNew(); }
                 var imageData = await exposureData.ToImageData(progress, localCTS.Token);
 
-                //var prepareTask = imagingMediator.PrepareImage(imageData, imageParams, localCTS.Token);
-
                 if (target != null) {
                     imageData.MetaData.Target.Name = target.DeepSkyObject.NameAsAscii;
                     imageData.MetaData.Target.Coordinates = target.InputCoordinates.Coordinates;
                     imageData.MetaData.Target.Rotation = target.Rotation;
                 }
 
-                imageData.MetaData.Sequence.Title = sequenceTitle;
+                imageData.MetaData.Sequence.Title = title;
                 imageData.MetaData.Image.ExposureStart = DateTime.Now;
                 imageData.MetaData.Image.ExposureNumber = ExposureCount;
                 imageData.MetaData.Image.ExposureTime = ExposureTime;
 
                 // Only show first and last image in Imaging window
-                if (ExposureCount == 1 || ExposureCount % 10 == 0 || ExposureCount == TotalExposureCount) {
+                if (ExposureCount == 1 || ExposureCount % speckle.ShowEveryNthImage == 0 || ExposureCount == TotalExposureCount) {
                     _ = imagingMediator.PrepareImage(imageData, imageParams, token);
                 }
 
@@ -288,6 +282,9 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                 if (CameraInfo.CanSetOffset && Offset > -1 && (Offset < CameraInfo.OffsetMin || Offset > CameraInfo.OffsetMax)) {
                     i.Add(string.Format(Loc.Instance["Lbl_SequenceItem_Imaging_TakeExposure_Validation_Offset"], CameraInfo.OffsetMin, CameraInfo.OffsetMax, Offset));
                 }
+            }
+            if (ItemUtility.RetrieveSpeckleContainer(Parent) == null) {
+                i.Add("This instruction only works within a SpeckleTargetContainer.");
             }
 
             var fileSettings = profileService.ActiveProfile.ImageFileSettings;

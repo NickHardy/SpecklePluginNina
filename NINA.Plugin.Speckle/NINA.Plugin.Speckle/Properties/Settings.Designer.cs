@@ -142,5 +142,53 @@ namespace NINA.Plugin.Speckle.Properties {
                 this["MaxSep"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("1000")]
+        public int Exposures {
+            get {
+                return ((int)(this["Exposures"]));
+            }
+            set {
+                this["Exposures"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("1")]
+        public double ExposureTime {
+            get {
+                return ((double)(this["ExposureTime"]));
+            }
+            set {
+                this["ExposureTime"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string User {
+            get {
+                return ((string)(this["User"]));
+            }
+            set {
+                this["User"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("10")]
+        public int ShowEveryNthImage {
+            get {
+                return ((int)(this["ShowEveryNthImage"]));
+            }
+            set {
+                this["ShowEveryNthImage"] = value;
+            }
+        }
     }
 }

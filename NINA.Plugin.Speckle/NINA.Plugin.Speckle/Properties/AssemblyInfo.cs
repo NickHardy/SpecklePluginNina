@@ -11,9 +11,9 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyFileVersion("1.0.0.0")]
 
 // [MANDATORY] The name of your plugin
-[assembly: AssemblyTitle("SpecklePhotometry")]
+[assembly: AssemblyTitle("Speckle Interferometry")]
 // [MANDATORY] A short description of your plugin
-[assembly: AssemblyDescription("This is the description of my plugin. It should contain all relevant description of what the plugin is about.")]
+[assembly: AssemblyDescription("This plugin adds functionality to Nina for doing Speckle Interferometry.")]
 
 
 // The following attributes are not required for the plugin per se, but are required by the official manifest meta data
@@ -21,7 +21,7 @@ using System.Runtime.InteropServices;
 // Your name
 [assembly: AssemblyCompany("NickHardy")]
 // The product name that this plugin is part of
-[assembly: AssemblyProduct("SpecklePhotometry")]
+[assembly: AssemblyProduct("Speckle Interferometry")]
 [assembly: AssemblyCopyright("")]
 
 // The minimum Version of N.I.N.A. that this plugin is compatible with
@@ -32,7 +32,7 @@ using System.Runtime.InteropServices;
 // The url to the license
 [assembly: AssemblyMetadata("LicenseURL", "https://www.mozilla.org/en-US/MPL/2.0/")]
 // The repository where your pluggin is hosted
-[assembly: AssemblyMetadata("Repository", "https://bitbucket.org/Isbeorn/nina.plugin.template/")]
+[assembly: AssemblyMetadata("Repository", "https://bitbucket.org/NickHardy/nina.plugin.speckle/src/main/")]
 
 
 // The following attributes are optional for the official manifest meta data
@@ -41,10 +41,10 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyMetadata("Homepage", "")]
 
 //[Optional] Common tags that quickly describe your plugin
-[assembly: AssemblyMetadata("Tags", "Speckle,Photometry,Sequencer")]
+[assembly: AssemblyMetadata("Tags", "Speckle,Interferometry,Sequencer")]
 
 //[Optional] A link that will show a log of all changes in between your plugin's versions
-[assembly: AssemblyMetadata("ChangelogURL", "https://bitbucket.org/Isbeorn/nina.plugin.template/commits/branch/master")]
+[assembly: AssemblyMetadata("ChangelogURL", "https://bitbucket.org/NickHardy/nina.plugin.speckle/commits/branch/main")]
 
 //[Optional] The url to a featured logo that will be displayed in the plugin list next to the name
 [assembly: AssemblyMetadata("FeaturedImageURL", "")]
