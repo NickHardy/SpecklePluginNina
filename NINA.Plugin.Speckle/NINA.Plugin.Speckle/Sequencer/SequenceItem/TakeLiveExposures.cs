@@ -234,7 +234,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
 
                 if (ExposureCount >= TotalExposureCount) {
                     double fps = ExposureCount / (((double)seqDuration.ElapsedMilliseconds) / 1000);
-                    Logger.Info("Captured " + ExposureCount + " images in " + seqDuration.ElapsedMilliseconds + " ms. : " + Math.Round(fps, 2) + " fps");
+                    Logger.Info("Captured " + ExposureCount + " times " + ExposureTime + "s live images in " + seqDuration.ElapsedMilliseconds + " ms. : " + Math.Round(fps, 2) + " fps");
                     localCTS.Cancel();
                 } else { ExposureCount++; }
             });

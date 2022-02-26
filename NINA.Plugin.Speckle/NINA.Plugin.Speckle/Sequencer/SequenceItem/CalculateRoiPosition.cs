@@ -123,6 +123,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                 1
             );
 
+            Logger.Debug("Capturing image for platesolve.");
             var exposureData = await imagingMediator.CaptureImage(seq, token, progress);
             var imageData = await exposureData.ToImageData(progress, token);
 
@@ -131,11 +132,13 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
 
             var imageSolver = new ImageSolver(plateSolver, null);
 
+            Logger.Debug("Solving image");
             var plateSolveResult = await imageSolver.Solve(image.RawImageData, parameter, progress, token);
             if (!plateSolveResult.Success) {
                 throw new SequenceEntityFailedException(Loc.Instance["LblPlatesolveFailed"]);
             }
 
+            Logger.Debug("Calculating target position");
             var arcsecPerPix = AstroUtil.ArcsecPerPixel(profileService.ActiveProfile.CameraSettings.PixelSize * profileService.ActiveProfile.PlateSolveSettings.Binning, profileService.ActiveProfile.TelescopeSettings.FocalLength);
             var width = image.Image.PixelWidth;
             var height = image.Image.PixelHeight;
@@ -144,15 +147,18 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             //Translate your coordinates to x/y in relation to center coordinates
             var inputTarget = ItemUtility.RetrieveSpeckleTarget(Parent);
             Point targetPoint = inputTarget.InputCoordinates.Coordinates.XYProjection(plateSolveResult.Coordinates, center, arcsecPerPix, arcsecPerPix, plateSolveResult.Orientation, ProjectionType.Stereographic);
+            Logger.Debug("Found target at " + targetPoint.X + "x" + targetPoint.Y);
 
             // Check if the target is in the image
-            if (targetPoint.X < 0 || targetPoint.X > width || targetPoint.Y < 0 || targetPoint.Y > height)
+            if (targetPoint.X < 0 || targetPoint.X > width || targetPoint.Y < 0 || targetPoint.Y > height) {
+                Notification.ShowError("TargetPoint is not in the image.");
                 throw new SequenceEntityFailedException("Calculation failed. Target outside of image");
+            }
 
             var speckleContainer = ItemUtility.RetrieveSpeckleContainer(Parent);
-            speckleContainer.X = targetPoint.X - (speckleContainer.Width / 2);
-            speckleContainer.Y = targetPoint.Y - (speckleContainer.Height / 2);
-
+            speckleContainer.X = Math.Round(targetPoint.X - (speckleContainer.Width / 2), 0);
+            speckleContainer.Y = Math.Round(targetPoint.Y - (speckleContainer.Height / 2), 0);
+            Logger.Debug("Setting roi position to " + speckleContainer.X + "x" + speckleContainer.Y);
         }
 
         public virtual bool Validate() {
