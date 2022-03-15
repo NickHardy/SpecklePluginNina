@@ -15,6 +15,7 @@
     xmlns:ninactrl="clr-namespace:NINACustomControlLibrary;assembly=NINACustomControlLibrary"
     xmlns:ns="clr-namespace:NINA.Core.Locale;assembly=NINA.Core"
     xmlns:util="clr-namespace:NINA.Core.Utility;assembly=NINA.Core"
+    xmlns:rules="clr-namespace:NINA.Core.Utility.ValidationRules;assembly=NINA.Core"
     xmlns:view="clr-namespace:NINA.View.Sequencer;assembly=NINA.Sequencer">
     <WrapPanel
         x:Key="TakeExposureDetails"
@@ -23,21 +24,6 @@
         <WrapPanel.Resources>
             <util:BindingProxy x:Key="CameraInfo" Data="{Binding CameraInfo}" />
         </WrapPanel.Resources>
-
-        <TextBlock VerticalAlignment="Center" Text="#" />
-
-        <TextBox
-            MinWidth="40"
-            Margin="5,0,0,0"
-            HorizontalAlignment="Center"
-            VerticalAlignment="Center"
-            Text="{Binding TotalExposureCount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-
-        <TextBlock
-            Margin="7.5,0,7.5,0"
-            HorizontalAlignment="Center"
-            VerticalAlignment="Center"
-            Text="|" />
 
         <TextBlock VerticalAlignment="Center" Text="{ns:Loc LblTime}" />
         <ninactrl:UnitTextBox
@@ -242,7 +228,24 @@
     <DataTemplate DataType="{x:Type local:TakeRoiExposures}">
         <view:SequenceBlockView>
             <view:SequenceBlockView.SequenceItemContent>
-                <ContentPresenter Content="{StaticResource TakeExposureDetails}" />
+                <WrapPanel Orientation="Horizontal">
+
+                    <TextBlock VerticalAlignment="Center" Text="#" />
+                    <TextBox
+                        MinWidth="40"
+                        Margin="5,0,0,0"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Text="{Binding TotalExposureCount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                    <TextBlock
+                        Margin="7.5,0,7.5,0"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Text="|" />
+
+                    <ContentPresenter Content="{StaticResource TakeExposureDetails}" />
+
+                </WrapPanel>
             </view:SequenceBlockView.SequenceItemContent>
         </view:SequenceBlockView>
     </DataTemplate>
@@ -263,6 +266,19 @@
         <view:SequenceBlockView>
             <view:SequenceBlockView.SequenceItemContent>
                 <WrapPanel Orientation="Horizontal">
+
+                    <TextBlock VerticalAlignment="Center" Text="#" />
+                    <TextBox
+                        MinWidth="40"
+                        Margin="5,0,0,0"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Text="{Binding TotalExposureCount, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                    <TextBlock
+                        Margin="7.5,0,7.5,0"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Text="|" />
 
                     <ContentPresenter Content="{StaticResource TakeExposureDetails}" />
                     <TextBlock
@@ -290,4 +306,101 @@
         </view:SequenceBlockView>
     </DataTemplate>
 
+    <DataTemplate x:Key="NINA.Plugin.Speckle.Sequencer.SequenceItem.CalculateRoiExposureTime_Mini">
+        <mini:MiniSequenceItem>
+            <mini:MiniSequenceItem.SequenceItemContent>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock VerticalAlignment="Center" Text="{Binding ExposureCount}" />
+                    <TextBlock VerticalAlignment="Center" Text="/" />
+                    <TextBlock VerticalAlignment="Center" Text="{Binding TotalExposureCount}" />
+                </StackPanel>
+            </mini:MiniSequenceItem.SequenceItemContent>
+        </mini:MiniSequenceItem>
+    </DataTemplate>
+
+    <DataTemplate DataType="{x:Type local:CalculateRoiExposureTime}">
+        <view:SequenceBlockView>
+            <view:SequenceBlockView.SequenceItemContent>
+                <WrapPanel Orientation="Horizontal">
+                    <TextBlock VerticalAlignment="Center" Text="Max" />
+                    <ninactrl:UnitTextBox
+                        MinWidth="40"
+                        Margin="5,0,0,0"
+                        VerticalAlignment="Center"
+                        VerticalContentAlignment="Center"
+                        Text="{Binding ExposureTimeMax}"
+                        TextAlignment="Right"
+                        Unit="s" />
+
+                    <TextBlock VerticalAlignment="Center" Text="Step" />
+                    <ninactrl:UnitTextBox
+                        MinWidth="40"
+                        Margin="5,0,0,0"
+                        VerticalAlignment="Center"
+                        VerticalContentAlignment="Center"
+                        Text="{Binding ExposureStepTime}"
+                        TextAlignment="Right"
+                        Unit="s" />
+
+                    <WrapPanel Orientation="Horizontal" Margin="5,7.5,5,7.5">
+                        <ContentPresenter Content="{StaticResource TakeExposureDetails}" />
+                    </WrapPanel>
+                    
+                    <TextBlock
+                        Margin="7.5,0,7.5,0"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Text="|" />
+                    <TextBlock VerticalAlignment="Center" Text="Target ADU" />
+                    <Slider 
+                        VerticalAlignment="Center"
+                        IsSnapToTickEnabled="True"
+                        Maximum="0.9"
+                        Minimum="0.1"
+                        TickFrequency="0.01"
+                        Value="{Binding TargetADU, UpdateSourceTrigger=PropertyChanged}" />
+                    <TextBlock
+                        Margin="5,0,0,0"    
+                        VerticalAlignment="Center"
+                        Text="{Binding TargetADU, Mode=OneWay, Converter={StaticResource PercentageConverter}}" />
+                    <TextBlock Margin="5,0,0,0" VerticalAlignment="Center" Text="%" />
+
+                </WrapPanel>
+            </view:SequenceBlockView.SequenceItemContent>
+        </view:SequenceBlockView>
+    </DataTemplate>
+
+    <DataTemplate DataType="{x:Type local:CenterOnStarCluster}">
+        <view:SequenceBlockView>
+            <view:SequenceBlockView.SequenceItemContent>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock VerticalAlignment="Center" Text="Searchradius" />
+                    <ninactrl:UnitTextBox
+                        MinWidth="40"
+                        Margin="5,0,0,0"
+                        VerticalAlignment="Center"
+                        VerticalContentAlignment="Center"
+                        Text="{Binding SearchRadius}"
+                        TextAlignment="Right"
+                        Unit="°" />
+
+                    <TextBlock
+                        Margin="7.5,0,7.5,0"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Text="|" />
+
+                    <TextBlock
+                            VerticalAlignment="Center"
+                            Text="Slew back to target" />
+                    <CheckBox
+                            Width="80"
+                            HorizontalAlignment="Right"
+                            IsChecked="{Binding SlewBackToTarget}">
+                    </CheckBox>
+
+                </StackPanel>
+            </view:SequenceBlockView.SequenceItemContent>
+        </view:SequenceBlockView>
+    </DataTemplate>
 </ResourceDictionary>

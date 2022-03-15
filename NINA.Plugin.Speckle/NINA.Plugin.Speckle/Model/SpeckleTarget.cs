@@ -19,6 +19,7 @@ using CsvHelper.Configuration;
 using System;
 using System.Collections.Generic;
 using NINA.Plugin.Speckle.Sequencer.Container;
+using System.Linq;
 
 namespace NINA.Plugin.Speckle.Model {
 
@@ -55,7 +56,7 @@ namespace NINA.Plugin.Speckle.Model {
         [JsonProperty]
         public string Template { get; set; }
         [JsonProperty]
-        public DateTime Meridian { get; set; }
+        public List<AltTime> AltList { get; set; } = new List<AltTime>();
 
         public List<SimbadSaoStar> ReferenceStarList { get; set; }
         public SimbadSaoStar ReferenceStar { get; set; } = new SimbadSaoStar();
@@ -68,6 +69,20 @@ namespace NINA.Plugin.Speckle.Model {
         public Coordinates Coordinates() {
             return new Coordinates(Angle.ByDegree(Ra), Angle.ByDegree(Dec), Epoch.J2000);
         }
+
+        public AltTime MeridianAltTime() {
+            return AltList.Where(x => x.datetime > DateTime.Now).OrderByDescending((x) => x.alt).FirstOrDefault();
+        }
+
+        public AltTime ImageFrom(double alt = 40d) {
+            return AltList.Where(x => x.datetime > DateTime.Now).Where((x) => x.alt > alt).OrderBy((x) => x.alt).FirstOrDefault();
+        }
+
+        public DateTime ImageTime { get; set; }
+        public AltTime ImageTo(double alt = 80d, double mDistance = 5d) {
+            return AltList.Where(x => x.datetime > DateTime.Now).Where((x) => x.alt < Math.Min(alt, MeridianAltTime().alt - mDistance)).OrderByDescending((x) => x.alt).FirstOrDefault();
+        }
+
     }
 
     public sealed class SpeckleTargetMap : ClassMap<SpeckleTarget> {

@@ -145,13 +145,13 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             var center = new Point(width / 2, height / 2);
 
             //Translate your coordinates to x/y in relation to center coordinates
-            var inputTarget = ItemUtility.RetrieveSpeckleTarget(Parent);
+            var inputTarget = ItemUtility.RetrieveInputTarget(Parent);
             Point targetPoint = inputTarget.InputCoordinates.Coordinates.XYProjection(plateSolveResult.Coordinates, center, arcsecPerPix, arcsecPerPix, plateSolveResult.Orientation, ProjectionType.Stereographic);
             Logger.Debug("Found target at " + targetPoint.X + "x" + targetPoint.Y);
 
             // Check if the target is in the image
             if (targetPoint.X < 0 || targetPoint.X > width || targetPoint.Y < 0 || targetPoint.Y > height) {
-                Notification.ShowError("TargetPoint is not in the image.");
+                Notification.ShowError("TargetPoint is not within the image.");
                 throw new SequenceEntityFailedException("Calculation failed. Target outside of image");
             }
 

@@ -40,6 +40,33 @@ namespace NINA.Plugin.Speckle {
             }
         }
 
+        public double SearchRadius {
+            get => Settings.Default.SearchRadius;
+            set {
+                Settings.Default.SearchRadius = value;
+                CoreUtil.SaveSettings(Properties.Settings.Default);
+                RaisePropertyChanged();
+            }
+        }
+
+        public double DecMin {
+            get => Settings.Default.DecMin;
+            set {
+                Settings.Default.DecMin = value;
+                CoreUtil.SaveSettings(Properties.Settings.Default);
+                RaisePropertyChanged();
+            }
+        }
+
+        public double DecMax {
+            get => Settings.Default.DecMax;
+            set {
+                Settings.Default.DecMax = value;
+                CoreUtil.SaveSettings(Properties.Settings.Default);
+                RaisePropertyChanged();
+            }
+        }
+
         public int Nights {
             get => Settings.Default.Nights;
             set {

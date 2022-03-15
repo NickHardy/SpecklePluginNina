@@ -97,7 +97,7 @@ namespace NINA.Plugin.Speckle.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("8")]
+        [global::System.Configuration.DefaultSettingValueAttribute("5")]
         public double MinMag {
             get {
                 return ((double)(this["MinMag"]));
@@ -109,7 +109,7 @@ namespace NINA.Plugin.Speckle.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("11")]
+        [global::System.Configuration.DefaultSettingValueAttribute("12")]
         public double MaxMag {
             get {
                 return ((double)(this["MaxMag"]));
@@ -133,7 +133,7 @@ namespace NINA.Plugin.Speckle.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("1")]
+        [global::System.Configuration.DefaultSettingValueAttribute("10")]
         public double MaxSep {
             get {
                 return ((double)(this["MaxSep"]));
@@ -188,6 +188,42 @@ namespace NINA.Plugin.Speckle.Properties {
             }
             set {
                 this["ShowEveryNthImage"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("5")]
+        public double SearchRadius {
+            get {
+                return ((double)(this["SearchRadius"]));
+            }
+            set {
+                this["SearchRadius"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("40")]
+        public double DecMin {
+            get {
+                return ((double)(this["DecMin"]));
+            }
+            set {
+                this["DecMin"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("80")]
+        public double DecMax {
+            get {
+                return ((double)(this["DecMax"]));
+            }
+            set {
+                this["DecMax"] = value;
             }
         }
     }

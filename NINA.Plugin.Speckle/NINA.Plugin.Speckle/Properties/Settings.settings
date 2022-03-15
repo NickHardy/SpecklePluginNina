@@ -21,16 +21,16 @@
       <Value Profile="(Default)" />
     </Setting>
     <Setting Name="MinMag" Type="System.Double" Scope="User">
-      <Value Profile="(Default)">8</Value>
+      <Value Profile="(Default)">5</Value>
     </Setting>
     <Setting Name="MaxMag" Type="System.Double" Scope="User">
-      <Value Profile="(Default)">11</Value>
+      <Value Profile="(Default)">12</Value>
     </Setting>
     <Setting Name="MinSep" Type="System.Double" Scope="User">
       <Value Profile="(Default)">0</Value>
     </Setting>
     <Setting Name="MaxSep" Type="System.Double" Scope="User">
-      <Value Profile="(Default)">1</Value>
+      <Value Profile="(Default)">10</Value>
     </Setting>
     <Setting Name="Exposures" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">1000</Value>
@@ -43,6 +43,15 @@
     </Setting>
     <Setting Name="ShowEveryNthImage" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">10</Value>
+    </Setting>
+    <Setting Name="SearchRadius" Type="System.Double" Scope="User">
+      <Value Profile="(Default)">5</Value>
+    </Setting>
+    <Setting Name="DecMin" Type="System.Double" Scope="User">
+      <Value Profile="(Default)">40</Value>
+    </Setting>
+    <Setting Name="DecMax" Type="System.Double" Scope="User">
+      <Value Profile="(Default)">80</Value>
     </Setting>
   </Settings>
 </SettingsFile>

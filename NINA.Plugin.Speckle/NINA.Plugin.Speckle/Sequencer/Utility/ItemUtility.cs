@@ -21,6 +21,7 @@ using System.Text;
 using System.Threading.Tasks;
 using NINA.Sequencer.Container;
 using NINA.Core.Utility;
+using NINA.Plugin.Speckle.Model;
 
 namespace NINA.Plugin.Speckle.Sequencer.Utility {
 
@@ -33,6 +34,19 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
                     return container;
                 } else {
                     return RetrieveSpeckleContainer(parent.Parent);
+                }
+            } else {
+                return null;
+            }
+        }
+
+        public static SpeckleTargetListContainer RetrieveSpeckleListContainer(ISequenceContainer parent) {
+            if (parent != null) {
+                var container = parent as SpeckleTargetListContainer;
+                if (container != null) {
+                    return container;
+                } else {
+                    return RetrieveSpeckleListContainer(parent.Parent);
                 }
             } else {
                 return null;
@@ -65,11 +79,24 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
             }
         }
 
-        public static InputTarget RetrieveSpeckleTarget(ISequenceContainer parent) {
+        public static InputTarget RetrieveInputTarget(ISequenceContainer parent) {
             if (parent != null) {
                 var container = parent as SpeckleTargetContainer;
                 if (container != null) {
                     return container.Target;
+                } else {
+                    return RetrieveInputTarget(parent.Parent);
+                }
+            } else {
+                return null;
+            }
+        }
+
+        public static SpeckleTarget RetrieveSpeckleTarget(ISequenceContainer parent) {
+            if (parent != null) {
+                var container = parent as SpeckleTargetListContainer;
+                if (container != null) {
+                    return container.SpeckleTarget;
                 } else {
                     return RetrieveSpeckleTarget(parent.Parent);
                 }
