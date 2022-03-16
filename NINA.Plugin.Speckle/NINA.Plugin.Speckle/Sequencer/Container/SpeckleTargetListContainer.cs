@@ -58,7 +58,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
 
     [ExportMetadata("Name", "Speckle Target List Container")]
     [ExportMetadata("Description", "Lbl_SequenceContainer_DeepSkyObjectContainer_Description")]
-    [ExportMetadata("Icon", "TelescopeSVG")]
+    [ExportMetadata("Icon", "SequentialSVG")]
     [ExportMetadata("Category", "Speckle Interferometry")]
     [Export(typeof(ISequenceItem))]
     [Export(typeof(ISequenceContainer))]

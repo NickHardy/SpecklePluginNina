@@ -13,7 +13,7 @@ using System.Runtime.InteropServices;
 // [MANDATORY] The name of your plugin
 [assembly: AssemblyTitle("Speckle Interferometry")]
 // [MANDATORY] A short description of your plugin
-[assembly: AssemblyDescription("This plugin adds functionality to Nina for doing Speckle Interferometry.")]
+[assembly: AssemblyDescription("This plugin automates the acquisition of speckle interferometry data for close multi-star systems.")]
 
 
 // The following attributes are not required for the plugin per se, but are required by the official manifest meta data
@@ -41,7 +41,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyMetadata("Homepage", "https://www.fairborninstitute.org/")]
 
 //[Optional] Common tags that quickly describe your plugin
-[assembly: AssemblyMetadata("Tags", "Speckle,Interferometry,Sequencer")]
+[assembly: AssemblyMetadata("Tags", "Speckle,Interferometry,Acquisition")]
 
 //[Optional] A link that will show a log of all changes in between your plugin's versions
 [assembly: AssemblyMetadata("ChangelogURL", "https://bitbucket.org/NickHardy/nina.plugin.speckle/commits/branch/main")]
@@ -53,17 +53,15 @@ using System.Runtime.InteropServices;
 //[Optional] An additional url to an example example screenshot of your plugin in action
 [assembly: AssemblyMetadata("AltScreenshotURL", "https://bitbucket.org/NickHardy/nina.plugin.speckle/downloads/ListSequence.png")]
 //[Optional] An in-depth description of your plugin
-[assembly: AssemblyMetadata("LongDescription", @"#Speckle Interferometry automation plugin#
+[assembly: AssemblyMetadata("LongDescription", @"#Speckle Interferometry data acquisition plugin#
 
-Measuring double stars using this speckle interferometry plugin to automated the aqcuisition of the speckle images.
+This plugin automates the acquisition of speckle interferometry data for close multi-star systems.
 
-Video's explaning double star observing and speckle interferometry: 
+Videos explaning double star observing and speckle interferometry: 
 * A Method for Speckle Photometry of Close Binary Star Components 
   [https://www.youtube.com/watch?v=lRhZ8aabeTI](https://www.youtube.com/watch?v=lRhZ8aabeTI)
 * BRIEF Video Lesson ASTROMETRY Double Stars Overview 
   [https://www.youtube.com/watch?v=wjma__-m4jY](https://www.youtube.com/watch?v=wjma__-m4jY)
-* Users guide to Platesolve 3 Speckle Interferometry Reduction Program 
-  [http://www.jdso.org/volume11/number1s/Rowe_266_276.pdf](http://www.jdso.org/volume11/number1s/Rowe_266_276.pdf)
 
 ## Instructions ##
 
@@ -79,8 +77,8 @@ Video's explaning double star observing and speckle interferometry:
 
 * Calculate exposure time  
   Use this instruction to check if your Roi image is not to bright. The speckle star should not exceed 1/3 of the camera ADU.
-  !The max time will be set to the ExposureTime set for the target in the list container. It will check the brightness and lower the exposuretime until it reaches the target ADU.
-   When it finds a good exposure time it will copy that time into the 'Take Roi Exposures' and 'Qhy live exposures' instructions in the Speckle Target Container.
+  The max time will be set to the ExposureTime set for the target in the list container. It will check the brightness and lower the exposuretime until it reaches the target ADU.
+  When it finds a good exposure time it will copy that time into the 'Take Roi Exposures' and 'Qhy live exposures' instructions in the Speckle Target Container.
 
 * Take Roi Exposures  
   Fit for most cameras. It will take rapid single exposures of the target Roi using the Roi settings in the Speckle Target Container.
@@ -93,14 +91,18 @@ Video's explaning double star observing and speckle interferometry:
   Also the images will not show up in the image history or the Hfr history.
 
 * Speckle Target List Container  
-  Main target container. Here you can load a list of targets to run through the night. First choose the Speckle Target Template and enter the preferred values for the target list.
-  Then press Load target set to select the csv file with the targets.
+  This is the main target container. Here you can load a list of targets to run through the night.
+  First create and choose the Speckle Target Template and enter the preferred values for the target list.
+  Next press Load target set to select the csv file with the targets.
   The csv you provide will be filtered based on your location and the targets altitude during the night.
   The target needs to reach an altitude between 40 and 80 degrees during the night, which is best for speckle image aquisition.
-  All loaded targets will be checked for the best imaging time and sorted accordingly.
+  All loaded targets will be checked for the best imaging time and sorted accordingly.  
+
   When you start the sequence it will load the first target using the chosen template and it will fill in some values into the instructions, like Wait for time, Exposure times.
-  It will also retrieve a reference star nearby the target and load the same Template. The reference star is needed as a baseline for the target double star.
-  If you have multiple cycles it will add multiple templates alternating between target and reference star.
+  It will also retrieve a reference star nearby the target and use the same Template to create the sequence. The reference star is needed as a baseline for the target double star.
+  The reference star is retrieved from the [Simbad Astronomical Database](http://simbad.u-strasbg.fr/simbad/).
+  It must be an SAO single star, near the target and preferebly a little brighter than the target.
+  If you have multiple cycles it will add multiple templates to the sequence alternating between target and reference star.
   After the target and reference sequences have all been done, it will remove the sequences and load the next target until it has finished all targets or until a condition ends the loop.
 
 * Center on StarCluster  
@@ -115,10 +117,10 @@ Video's explaning double star observing and speckle interferometry:
   + [8 inch telescopes and larger](https://bitbucket.org/NickHardy/nina.plugin.speckle/downloads/GdsSpeckleTargetList8inch.csv)
 
 
-A big thank you goes out to Leon(@lbew#3670) for testing this plugin with me.
+A big thank you goes out to Leon(@lbew#3670) for testing this plugin with me. 
 Also many thanks to the members and friends of Fairborn Institute for all the input given to create this plugin.
 
-Please report any issues in the [Nina discord server](https://discord.gg/rWRbVbw) and tag me: @NickHolland#5257 
+If you have any ideas or want to report an issue, please contact me in the [Nina discord server](https://discord.gg/rWRbVbw) and tag me: @NickHolland#5257 
 
 If you would like to buy me a whisky: [click here](https://www.paypal.com/paypalme/NickHardyHolland)
 
