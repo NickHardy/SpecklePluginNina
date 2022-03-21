@@ -49,19 +49,19 @@ namespace NINA.Plugin.Speckle {
             }
         }
 
-        public double DecMin {
-            get => Settings.Default.DecMin;
+        public double AltitudeMin {
+            get => Settings.Default.AltitudeMin;
             set {
-                Settings.Default.DecMin = value;
+                Settings.Default.AltitudeMin = value;
                 CoreUtil.SaveSettings(Properties.Settings.Default);
                 RaisePropertyChanged();
             }
         }
 
-        public double DecMax {
-            get => Settings.Default.DecMax;
+        public double AltitudeMax {
+            get => Settings.Default.AltitudeMax;
             set {
-                Settings.Default.DecMax = value;
+                Settings.Default.AltitudeMax = value;
                 CoreUtil.SaveSettings(Properties.Settings.Default);
                 RaisePropertyChanged();
             }

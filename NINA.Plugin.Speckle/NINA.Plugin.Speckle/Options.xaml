@@ -48,7 +48,7 @@
                 Text="{Binding SearchRadius}"
                 Unit="°" />
 
-            <TextBlock Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Text="Declination between:" />
+            <TextBlock Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Text="Altitude between:" />
             <ninactrl:UnitTextBox
                 Grid.Row="2"
                 Grid.Column="1"
@@ -56,7 +56,7 @@
                 Margin="5,0,0,0"
                 HorizontalAlignment="Left"
                 VerticalAlignment="Center"
-                Text="{Binding DecMin}"
+                Text="{Binding AltitudeMin}"
                 Unit="°" />
             <ninactrl:UnitTextBox
                 Grid.Row="2"
@@ -65,7 +65,7 @@
                 Margin="5,0,0,0"
                 HorizontalAlignment="Left"
                 VerticalAlignment="Center"
-                Text="{Binding DecMax}"
+                Text="{Binding AltitudeMax}"
                 Unit="°" />
 
             <TextBlock Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" Text="Magnitude between:" />
@@ -87,22 +87,24 @@
                 Text="{Binding MaxMag}" />
 
             <TextBlock Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" Text="Separation between:" />
-            <TextBox
+            <ninactrl:UnitTextBox
                 Grid.Row="4"
                 Grid.Column="1"
                 MinWidth="100"
                 Margin="5,0,0,0"
                 HorizontalAlignment="Left"
                 VerticalAlignment="Center"
-                Text="{Binding MinSep}" />
-            <TextBox
+                Text="{Binding MinSep}"
+                Unit="&quot;" />
+            <ninactrl:UnitTextBox
                 Grid.Row="4"
                 Grid.Column="2"
                 MinWidth="100"
                 Margin="5,0,0,0"
                 HorizontalAlignment="Left"
                 VerticalAlignment="Center"
-                Text="{Binding MaxSep}" />
+                Text="{Binding MaxSep}"
+                Unit="&quot;" />
 
             <TextBlock Grid.Row="5" Grid.Column="0" VerticalAlignment="Center" Text="Default number of cycles" />
             <TextBox
@@ -125,14 +127,15 @@
                 Text="{Binding Exposures}" />
 
             <TextBlock Grid.Row="7" Grid.Column="0" VerticalAlignment="Center" Text="Default Exposure time" />
-            <TextBox
+            <ninactrl:UnitTextBox
                 Grid.Row="7"
                 Grid.Column="1"
                 MinWidth="100"
                 Margin="5,0,0,0"
                 HorizontalAlignment="Left"
                 VerticalAlignment="Center"
-                Text="{Binding ExposureTime}" />
+                Text="{Binding ExposureTime}"
+                Unit="s" />
 
             <TextBlock Grid.Row="8" Grid.Column="0" VerticalAlignment="Center" Text="Default Template" />
             <TextBox

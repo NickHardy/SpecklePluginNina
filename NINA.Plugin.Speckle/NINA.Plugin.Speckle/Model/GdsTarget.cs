@@ -38,32 +38,32 @@ namespace NINA.Plugin.Speckle.Model {
         public double Gmag0 { get; set; }
         public double Gmag1 { get; set; }
         public double BPmag0 { get; set; }
-        public string BPmag1 { get; set; }
+        public double BPmag1 { get; set; }
         public double RPmag0 { get; set; }
-        public string RPmag1 { get; set; }
+        public double RPmag1 { get; set; }
         public double PMRA0 { get; set; }
         public double PMDec0 { get; set; }
-        public string PMRA1 { get; set; }
-        public string PMDec1 { get; set; }
+        public double PMRA1 { get; set; }
+        public double PMDec1 { get; set; }
         public double PMRA_Err0 { get; set; }
         public double PMDec_Err0 { get; set; }
-        public string PMRA_Err1 { get; set; }
-        public string PMDec_Err1 { get; set; }
+        public double PMRA_Err1 { get; set; }
+        public double PMDec_Err1 { get; set; }
         public double Parallax0 { get; set; }
-        public string Parallax1 { get; set; }
+        public double Parallax1 { get; set; }
         public double Parallax_Err0 { get; set; }
-        public string Parallax_Err1 { get; set; }
+        public double Parallax_Err1 { get; set; }
         public int VarFlag { get; set; }
         public double Teff0 { get; set; }
-        public string Teff1 { get; set; }
-        public string Lum0 { get; set; }
-        public string Lum1 { get; set; }
-        public string Radius0 { get; set; }
-        public string Radius1 { get; set; }
-        public string RV0 { get; set; }
-        public string RV1 { get; set; }
-        public string RV_Err0 { get; set; }
-        public string RV_Err1 { get; set; }
+        public double Teff1 { get; set; }
+        public double Lum0 { get; set; }
+        public double Lum1 { get; set; }
+        public double Radius0 { get; set; }
+        public double Radius1 { get; set; }
+        public double RV0 { get; set; }
+        public double RV1 { get; set; }
+        public double RV_Err0 { get; set; }
+        public double RV_Err1 { get; set; }
         public double Mass0 { get; set; }
         public double Mass1 { get; set; }
         public double Distance0 { get; set; }
@@ -86,52 +86,52 @@ namespace NINA.Plugin.Speckle.Model {
 
     public class GdsTargetClassMap : ClassMap<GdsTarget> {
         public GdsTargetClassMap() {
-            Map(m => m.Number).Name("Number");
-            Map(m => m.SeqNum0).Name("SeqNum0");
-            Map(m => m.SeqNum1).Name("SeqNum1");
-            Map(m => m.WDSIndex).Name("WDSIndex");
+            Map(m => m.Number).Name("Number").Optional().Default(0);
+            Map(m => m.SeqNum0).Name("SeqNum0").Optional().Default(0);
+            Map(m => m.SeqNum1).Name("SeqNum1").Optional().Default(0);
+            Map(m => m.WDSIndex).Name("WDSIndex").Optional().Default(0);
             Map(m => m.RA0).Name("RA0");
             Map(m => m.Decl0).Name("Decl0");
             Map(m => m.RA1).Name("RA1");
             Map(m => m.Decl1).Name("Decl1");
-            Map(m => m.GaiaPA).Name("Gaia PA");
-            Map(m => m.GaiaSep).Name("Gaia Sep");
-            Map(m => m.GBIndex).Name("GB Index");
-            Map(m => m.num3Band).Name("3Band");
-            Map(m => m.Gmag0).Name("Gmag0");
-            Map(m => m.Gmag1).Name("Gmag1");
-            Map(m => m.BPmag0).Name("BPmag0");
-            Map(m => m.BPmag1).Name("BPmag1");
-            Map(m => m.RPmag0).Name("RPmag0");
-            Map(m => m.RPmag1).Name("RPmag1");
-            Map(m => m.PMRA0).Name("PMRA0");
-            Map(m => m.PMDec0).Name("PMDec0");
-            Map(m => m.PMRA1).Name("PMRA1");
-            Map(m => m.PMDec1).Name("PMDec1");
-            Map(m => m.PMRA_Err0).Name("PMRA_Err0");
-            Map(m => m.PMDec_Err0).Name("PMDec_Err0");
-            Map(m => m.PMRA_Err1).Name("PMRA_Err1");
-            Map(m => m.PMDec_Err1).Name("PMDec_Err1");
-            Map(m => m.Parallax0).Name("Parallax0");
-            Map(m => m.Parallax1).Name("Parallax1");
-            Map(m => m.Parallax_Err0).Name("Parallax_Err0");
-            Map(m => m.Parallax_Err1).Name(" Parallax_Err1");
-            Map(m => m.VarFlag).Name("VarFlag");
-            Map(m => m.Teff0).Name("Teff0");
-            Map(m => m.Teff1).Name("Teff1");
-            Map(m => m.Lum0).Name("Lum0");
-            Map(m => m.Lum1).Name("Lum1");
-            Map(m => m.Radius0).Name("Radius0");
-            Map(m => m.Radius1).Name("Radius1");
-            Map(m => m.RV0).Name("RV0");
-            Map(m => m.RV1).Name("RV1");
-            Map(m => m.RV_Err0).Name("RV_Err0");
-            Map(m => m.RV_Err1).Name("RV_Err1");
-            Map(m => m.Mass0).Name("Mass0");
-            Map(m => m.Mass1).Name("Mass1");
-            Map(m => m.Distance0).Name("Distance0");
-            Map(m => m.SepAU).Name("SepAU");
-            Map(m => m.Period).Name("Period");
+            Map(m => m.GaiaPA).Name("Gaia PA").Optional().Default(0);
+            Map(m => m.GaiaSep).Name("Gaia Sep").Optional().Default(0);
+            Map(m => m.GBIndex).Name("GB Index").Optional().Default(0);
+            Map(m => m.num3Band).Name("3Band").Optional().Default(0);
+            Map(m => m.Gmag0).Name("Gmag0").Optional().Default(0);
+            Map(m => m.Gmag1).Name("Gmag1").Optional().Default(0);
+            Map(m => m.BPmag0).Name("BPmag0").Optional().Default(0);
+            Map(m => m.BPmag1).Name("BPmag1").Optional().Default(0);
+            Map(m => m.RPmag0).Name("RPmag0").Optional().Default(0);
+            Map(m => m.RPmag1).Name("RPmag1").Optional().Default(0);
+            Map(m => m.PMRA0).Name("PMRA0").Optional().Default(0);
+            Map(m => m.PMDec0).Name("PMDec0").Optional().Default(0);
+            Map(m => m.PMRA1).Name("PMRA1").Optional().Default(0);
+            Map(m => m.PMDec1).Name("PMDec1").Optional().Default(0);
+            Map(m => m.PMRA_Err0).Name("PMRA_Err0").Optional().Default(0);
+            Map(m => m.PMDec_Err0).Name("PMDec_Err0").Optional().Default(0);
+            Map(m => m.PMRA_Err1).Name("PMRA_Err1").Optional().Default(0);
+            Map(m => m.PMDec_Err1).Name("PMDec_Err1").Optional().Default(0);
+            Map(m => m.Parallax0).Name("Parallax0").Optional().Default(0);
+            Map(m => m.Parallax1).Name("Parallax1").Optional().Default(0);
+            Map(m => m.Parallax_Err0).Name("Parallax_Err0").Optional().Default(0);
+            Map(m => m.Parallax_Err1).Name(" Parallax_Err1").Optional().Default(0);
+            Map(m => m.VarFlag).Name("VarFlag").Optional().Default(0);
+            Map(m => m.Teff0).Name("Teff0").Optional().Default(0);
+            Map(m => m.Teff1).Name("Teff1").Optional().Default(0);
+            Map(m => m.Lum0).Name("Lum0").Optional().Default(0);
+            Map(m => m.Lum1).Name("Lum1").Optional().Default(0);
+            Map(m => m.Radius0).Name("Radius0").Optional().Default(0);
+            Map(m => m.Radius1).Name("Radius1").Optional().Default(0);
+            Map(m => m.RV0).Name("RV0").Optional().Default(0);
+            Map(m => m.RV1).Name("RV1").Optional().Default(0);
+            Map(m => m.RV_Err0).Name("RV_Err0").Optional().Default(0);
+            Map(m => m.RV_Err1).Name("RV_Err1").Optional().Default(0);
+            Map(m => m.Mass0).Name("Mass0").Optional().Default(0d);
+            Map(m => m.Mass1).Name("Mass1").Optional().Default(0d);
+            Map(m => m.Distance0).Name("Distance0").Optional().Default(0d);
+            Map(m => m.SepAU).Name("SepAU").Optional().Default(0d);
+            Map(m => m.Period).Name("Period").Optional().Default(0d);
             Map(m => m.WDSName).Name("WDS Name");
             Map(m => m.DD).Name("DD");
             Map(m => m.Comp).Name("Comp");

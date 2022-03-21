@@ -61,7 +61,7 @@ namespace NINA.Plugin.Speckle.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("3")]
+        [global::System.Configuration.DefaultSettingValueAttribute("1")]
         public int Cycles {
             get {
                 return ((int)(this["Cycles"]));
@@ -206,24 +206,24 @@ namespace NINA.Plugin.Speckle.Properties {
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("40")]
-        public double DecMin {
+        public double AltitudeMin {
             get {
-                return ((double)(this["DecMin"]));
+                return ((double)(this["AltitudeMin"]));
             }
             set {
-                this["DecMin"] = value;
+                this["AltitudeMin"] = value;
             }
         }
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("80")]
-        public double DecMax {
+        public double AltitudeMax {
             get {
-                return ((double)(this["DecMax"]));
+                return ((double)(this["AltitudeMax"]));
             }
             set {
-                this["DecMax"] = value;
+                this["AltitudeMax"] = value;
             }
         }
     }

@@ -56,6 +56,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyMetadata("LongDescription", @"#Speckle Interferometry data acquisition plugin#
 
 This plugin automates the acquisition of speckle interferometry data for close multi-star systems.
+Speckle imaging can be done on nights with a full moon, so it's a great alternative for when DSO imaging is less ideal.
 
 Videos explaning double star observing and speckle interferometry: 
 * A Method for Speckle Photometry of Close Binary Star Components 

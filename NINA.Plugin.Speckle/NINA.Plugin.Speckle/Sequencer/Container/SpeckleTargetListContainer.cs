@@ -298,7 +298,8 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
         private void RetrieveReferenceStars(IProgress<ApplicationStatus> externalProgress, CancellationToken token) {
             if (SpeckleTarget.ReferenceStarList == null || !SpeckleTarget.ReferenceStarList.Any()) {
                 SimbadUtils simUtils = new SimbadUtils();
-                SpeckleTarget.ReferenceStarList = simUtils.FindSimbadSaoStars(externalProgress, token, SpeckleTarget.Coordinates(), speckle.SearchRadius, SpeckleTarget.Magnitude - 1).Result;
+                double magnitude = SpeckleTarget.Magnitude > 1 ? SpeckleTarget.Magnitude - 1 : 8d;
+                SpeckleTarget.ReferenceStarList = simUtils.FindSimbadSaoStars(externalProgress, token, SpeckleTarget.Coordinates(), speckle.SearchRadius, magnitude).Result;
                 SpeckleTarget.ReferenceStar = SpeckleTarget.ReferenceStarList.FirstOrDefault();
                 RaiseAllPropertiesChanged();
             }
@@ -357,25 +358,30 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                         var records = csv.GetRecords<GdsTarget>();
                         foreach (GdsTarget record in records.ToList()) {
                             GdsTargets.Add(record);
-                            if (record.Gmag0 < speckle.MinMag || record.Gmag0 > speckle.MaxMag)
+                            if (record.Gmag0 < speckle.MinMag || record.Gmag0 > speckle.MaxMag) {
+                                Logger.Debug("Magnitude not within limits. Skipping target." + record.Number);
                                 continue;
-                            if (record.GaiaSep < speckle.MinSep || record.GaiaSep > speckle.MaxSep)
+                            }
+                            if (record.GaiaSep < speckle.MinSep || record.GaiaSep > speckle.MaxSep) {
+                                Logger.Debug("Seperation not within limits. Skipping target." + record.Number);
                                 continue;
+                            }
                             SpeckleTarget speckleTarget = new SpeckleTarget();
                             speckleTarget.Ra = record.RA0.Contains(":") ? AstroUtil.HMSToDegrees(record.RA0.Trim()) :
                                 double.Parse(record.RA0.Trim(), CultureInfo.InvariantCulture);
                             speckleTarget.Dec = record.Decl0.Contains(":") ? AstroUtil.DMSToDegrees(record.Decl0.Trim()) :
                                 double.Parse(record.Decl0.Trim(), CultureInfo.InvariantCulture);
                             speckleTarget.AltList = GetAltList(speckleTarget.Coordinates());
-                            var imageTo = speckleTarget.ImageTo(speckle.DecMax, speckle.MDistance);
-                            if (imageTo != null && imageTo.alt > speckle.DecMin && imageTo.datetime > NighttimeData.TwilightRiseAndSet.Set && imageTo.datetime < NighttimeData.TwilightRiseAndSet.Rise) {
+                            var imageTo = speckleTarget.ImageTo(speckle.AltitudeMax, speckle.MDistance);
+                            if (imageTo != null && imageTo.alt > speckle.AltitudeMin && imageTo.datetime > NighttimeData.TwilightRiseAndSet.Set && imageTo.datetime < NighttimeData.TwilightRiseAndSet.Rise) {
                                 speckleTarget.ImageTime = imageTo.datetime;
                             } else {
+                                Logger.Debug("Image time not within limits. Skipping target." + record.Number);
                                 continue;
                             }
                             speckleTarget.Template = Template != "" ? Template : speckle.DefaultTemplate;
                             speckleTarget.User = User.Trim() != "" ? User.Trim() : speckle.User;
-                            speckleTarget.Target = record.WDSName.Trim() != "" ? record.WDSName.Trim() + "_" + record.DD.Trim() :
+                            speckleTarget.Target = record.WDSName != null && record.WDSName.Trim() != "" ? record.WDSName.Trim() + "_" + record.DD.Trim() :
                                 "Ra" + AstroUtil.DegreesToHMS(speckleTarget.Ra).Replace(":", "_") + "_Dec" + AstroUtil.DegreesToFitsDMS(speckleTarget.Dec).Replace(" ", "_");
                             speckleTarget.Exposures = Exposures;
                             speckleTarget.ExposureTime = ExposureTime;

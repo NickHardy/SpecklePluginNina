@@ -12,7 +12,7 @@
       <Value Profile="(Default)">2</Value>
     </Setting>
     <Setting Name="Cycles" Type="System.Int32" Scope="User">
-      <Value Profile="(Default)">3</Value>
+      <Value Profile="(Default)">1</Value>
     </Setting>
     <Setting Name="Priority" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">1</Value>
@@ -47,10 +47,10 @@
     <Setting Name="SearchRadius" Type="System.Double" Scope="User">
       <Value Profile="(Default)">5</Value>
     </Setting>
-    <Setting Name="DecMin" Type="System.Double" Scope="User">
+    <Setting Name="AltitudeMin" Type="System.Double" Scope="User">
       <Value Profile="(Default)">40</Value>
     </Setting>
-    <Setting Name="DecMax" Type="System.Double" Scope="User">
+    <Setting Name="AltitudeMax" Type="System.Double" Scope="User">
       <Value Profile="(Default)">80</Value>
     </Setting>
   </Settings>
