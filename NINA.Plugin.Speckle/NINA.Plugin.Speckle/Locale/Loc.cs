@@ -23,6 +23,8 @@ using System.Windows.Data;
 
 namespace NINA.Plugin.Speckle.Locale {
 
+    // This is not in use yet. I was hoping to make it intenational, but Nina is not ready for that yet.
+
     [Export(typeof(ILoc))]
     [JsonObject(MemberSerialization.OptIn)]
     public class Loc : BaseINPC, ILoc {

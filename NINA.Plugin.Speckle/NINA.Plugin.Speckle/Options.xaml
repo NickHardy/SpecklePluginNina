@@ -163,7 +163,18 @@
                 HorizontalAlignment="Left"
                 VerticalAlignment="Center"
                 Text="{Binding ShowEveryNthImage}" />
-            
+
+            <TextBlock Grid.Row="11" Grid.Column="0" VerticalAlignment="Center" Text="Check if target imagetime within" />
+            <ninactrl:UnitTextBox
+                Grid.Row="11"
+                Grid.Column="1"
+                MinWidth="100"
+                Margin="5,0,0,0"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                Text="{Binding CheckImageTimeWithinMinutes}"
+                Unit="m" />
+
         </Grid>
     </DataTemplate>
 </ResourceDictionary>

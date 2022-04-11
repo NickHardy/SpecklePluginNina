@@ -174,7 +174,16 @@ namespace NINA.Plugin.Speckle {
                 RaisePropertyChanged();
             }
         }
-        
+
+        public int CheckImageTimeWithinMinutes {
+            get => Settings.Default.CheckImageTimeWithinMinutes;
+            set {
+                Settings.Default.CheckImageTimeWithinMinutes = value;
+                CoreUtil.SaveSettings(Properties.Settings.Default);
+                RaisePropertyChanged();
+            }
+        }
+
         public static string GetVersion() {
             System.Reflection.Assembly assembly = System.Reflection.Assembly.GetExecutingAssembly();
             System.Diagnostics.FileVersionInfo fvi = System.Diagnostics.FileVersionInfo.GetVersionInfo(assembly.Location);

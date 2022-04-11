@@ -23,10 +23,10 @@ using NINA.Plugin.Speckle.Sequencer.Container;
 namespace NINA.Plugin.Speckle.Model {
 
     public class GdsTarget {
-        public int Number { get; set; }
-        public int SeqNum0 { get; set; }
-        public int SeqNum1 { get; set; }
-        public int WDSIndex { get; set; }
+        public string Number { get; set; }
+        public string SeqNum0 { get; set; }
+        public string SeqNum1 { get; set; }
+        public string WDSIndex { get; set; }
         public string RA0 { get; set; }
         public string Decl0 { get; set; }
         public string RA1 { get; set; }
@@ -82,18 +82,24 @@ namespace NINA.Plugin.Speckle.Model {
         public string Mag1 { get; set; }
         public string DiffMag { get; set; }
         public string SpecType { get; set; }
+        public string User { get; set; }
+        public string Target { get; set; }
+        public int Cycles { get; set; }
+        public double ExposureTime { get; set; }
+        public int Exposures { get; set; }
+        public string Filter { get; set; }
     }
 
     public class GdsTargetClassMap : ClassMap<GdsTarget> {
         public GdsTargetClassMap() {
-            Map(m => m.Number).Name("Number").Optional().Default(0);
-            Map(m => m.SeqNum0).Name("SeqNum0").Optional().Default(0);
-            Map(m => m.SeqNum1).Name("SeqNum1").Optional().Default(0);
-            Map(m => m.WDSIndex).Name("WDSIndex").Optional().Default(0);
+            Map(m => m.Number).Name("Number").Optional().Default("");
+            Map(m => m.SeqNum0).Name("SeqNum0").Optional().Default("");
+            Map(m => m.SeqNum1).Name("SeqNum1").Optional().Default("");
+            Map(m => m.WDSIndex).Name("WDSIndex").Optional().Default("");
             Map(m => m.RA0).Name("RA0");
             Map(m => m.Decl0).Name("Decl0");
-            Map(m => m.RA1).Name("RA1");
-            Map(m => m.Decl1).Name("Decl1");
+            Map(m => m.RA1).Name("RA1").Optional().Default("");
+            Map(m => m.Decl1).Name("Decl1").Optional().Default("");
             Map(m => m.GaiaPA).Name("Gaia PA").Optional().Default(0);
             Map(m => m.GaiaSep).Name("Gaia Sep").Optional().Default(0);
             Map(m => m.GBIndex).Name("GB Index").Optional().Default(0);
@@ -132,19 +138,25 @@ namespace NINA.Plugin.Speckle.Model {
             Map(m => m.Distance0).Name("Distance0").Optional().Default(0d);
             Map(m => m.SepAU).Name("SepAU").Optional().Default(0d);
             Map(m => m.Period).Name("Period").Optional().Default(0d);
-            Map(m => m.WDSName).Name("WDS Name");
-            Map(m => m.DD).Name("DD");
-            Map(m => m.Comp).Name("Comp");
-            Map(m => m.RA).Name("RA");
-            Map(m => m.Decl).Name("Decl");
-            Map(m => m.PA).Name("PA");
-            Map(m => m.Sep).Name("Sep");
-            Map(m => m.Date).Name("Date");
-            Map(m => m.Nobs).Name("Nobs");
-            Map(m => m.Mag0).Name("Mag0");
-            Map(m => m.Mag1).Name("Mag1");
-            Map(m => m.DiffMag).Name("DiffMag");
-            Map(m => m.SpecType).Name("SpecType");
+            Map(m => m.WDSName).Name("WDS Name").Optional().Default("");
+            Map(m => m.DD).Name("DD").Optional().Default("");
+            Map(m => m.Comp).Name("Comp").Optional().Default("");
+            Map(m => m.RA).Name("RA").Optional().Default("");
+            Map(m => m.Decl).Name("Decl").Optional().Default("");
+            Map(m => m.PA).Name("PA").Optional().Default("");
+            Map(m => m.Sep).Name("Sep").Optional().Default("");
+            Map(m => m.Date).Name("Date").Optional().Default("");
+            Map(m => m.Nobs).Name("Nobs").Optional().Default("");
+            Map(m => m.Mag0).Name("Mag0").Optional().Default("");
+            Map(m => m.Mag1).Name("Mag1").Optional().Default("");
+            Map(m => m.DiffMag).Name("DiffMag").Optional().Default("");
+            Map(m => m.SpecType).Name("SpecType").Optional().Default("");
+            Map(m => m.User).Name("User").Optional().Default("");
+            Map(m => m.Target).Name("Target").Optional().Default("");
+            Map(m => m.Cycles).Name("Cycles").Optional().Default(0);
+            Map(m => m.ExposureTime).Name("ExposureTime").Optional().Default(0);
+            Map(m => m.Exposures).Name("Exposures").Optional().Default(0);
+            Map(m => m.Filter).Name("Filter").Optional().Default("");
         }
     }
 }

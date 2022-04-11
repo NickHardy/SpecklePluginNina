@@ -53,6 +53,10 @@ using System.Globalization;
 using CsvHelper.Configuration;
 using NINA.Plugin.Speckle.Sequencer.Container.ExecutionStrategy;
 using NINA.Sequencer.SequenceItem.Utility;
+using NINA.Sequencer.SequenceItem.FilterWheel;
+using NINA.Core.Model.Equipment;
+using NINA.Image.ImageData;
+using System.Text.RegularExpressions;
 
 namespace NINA.Plugin.Speckle.Sequencer.Container {
 
@@ -107,6 +111,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
         private Dispatcher _dispatcher = System.Windows.Application.Current?.Dispatcher ?? Dispatcher.CurrentDispatcher;
         public ICommand OpenFileCommand { get; private set; }
         public NighttimeData NighttimeData { get; private set; }
+        public ObserveAllCollection<FilterInfo> Filters => profileService.ActiveProfile.FilterWheelSettings.FilterWheelFilters;
 
         private int _targetnr;
 
@@ -145,6 +150,17 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             get => _speckleTarget;
             set {
                 _speckleTarget = value;
+                RaisePropertyChanged();
+            }
+        }
+
+        private SpeckleTarget _currentSpeckleTarget;
+
+        [JsonProperty]
+        public SpeckleTarget CurrentSpeckleTarget {
+            get => _currentSpeckleTarget;
+            set {
+                _currentSpeckleTarget = value;
                 RaisePropertyChanged();
             }
         }
@@ -194,9 +210,11 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
         }
 
         public void LoadNewTarget() {
-            if (TargetNr > SpeckleTargets.Count - 1)
+            RegisterStatusCurrentTarget();
+            SpeckleTarget = GetNextTarget();
+            if (SpeckleTarget == null)
                 return;
-            SpeckleTarget = SpeckleTargets.ElementAt(TargetNr);
+            CurrentSpeckleTarget = SpeckleTarget;
             TargetNr++;
 
             Items = new ObservableCollection<ISequenceItem>();
@@ -233,9 +251,12 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                         waitForTime.Minutes = SpeckleTarget.ImageTime.Minute;
                         waitForTime.Seconds = SpeckleTarget.ImageTime.Second;
                     }
+                    if (x is SwitchFilter switchFilter && SpeckleTarget.Filter != null && SpeckleTarget.Filter.Length > 0) {
+                        switchFilter.Filter = Filters?.FirstOrDefault(f => f.Name == SpeckleTarget.Filter);
+                    }
                 });
 
-                _dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() => { Items.Add(speckleTargetContainer); speckleTargetContainer.AttachNewParent(this); }));
+                _dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() => { Items.Add(speckleTargetContainer); speckleTargetContainer.AttachNewParent(this); speckleTargetContainer.AfterParentChanged(); }));
 
                 // Set Reference
                 using (executeCTS = new CancellationTokenSource()) {
@@ -269,13 +290,80 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                             waitForTime.Minutes = SpeckleTarget.ImageTime.Minute;
                             waitForTime.Seconds = SpeckleTarget.ImageTime.Second;
                         }
+                        if (x is SwitchFilter switchFilter && SpeckleTarget.Filter != null && SpeckleTarget.Filter.Length > 0) {
+                            switchFilter.Filter = Filters?.FirstOrDefault(f => f.Name == SpeckleTarget.Filter);
+                        }
                     });
 
-                    _dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() => { Items.Add(speckleTargetContainerRef); speckleTargetContainerRef.AttachNewParent(this); }));
+                    _dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() => { Items.Add(speckleTargetContainerRef); speckleTargetContainerRef.AttachNewParent(this); speckleTargetContainerRef.AfterParentChanged(); }));
                 }
                 RaiseAllPropertiesChanged();
             }
 
+        }
+
+        private SpeckleTarget GetNextTarget() {
+            if (TargetNr > SpeckleTargets.Count - 1)
+                return null;
+
+            SpeckleTarget = SpeckleTargets.ElementAt(TargetNr);
+            TimeSpan span = DateTime.Now.Subtract(SpeckleTarget.ImageTime);
+            if (span.Minutes > speckle.CheckImageTimeWithinMinutes) {
+                // Reorder targets to see what's best again ! TODO Save progress for targets first
+                SpeckleTargets = new AsyncObservableCollection<SpeckleTarget>(SpeckleTargets.Where(i => i.ImageTime != null && i.Completed_nights == 0).OrderBy(i => i.ImageTime).ThenByDescending(n => n.Priority));
+                if (SpeckleTargets.Count > 0) {
+                    TargetNr = 0;
+                    SpeckleTarget = SpeckleTargets.ElementAt(TargetNr);
+                } else {
+                    SpeckleTarget = null;
+                }
+            }
+            return SpeckleTarget;
+        }
+
+        private void RegisterStatusCurrentTarget() {
+            if (CurrentSpeckleTarget == null) return;
+            var nights = false;
+            foreach (ISequenceItem item in Items) {
+                var container = item as SpeckleTargetContainer;
+                if (container != null && !container.Target.TargetName.Contains("_ref_")) {
+                    List<ISequenceItem> nonFinishedItems = container.Items.Where(x => x.Status != SequenceEntityStatus.FINISHED).Cast<ISequenceItem>().ToList();
+                    if (nonFinishedItems.Count == 0) {
+                        if (nights == false) {
+                            CurrentSpeckleTarget.Completed_nights += 1;
+                            nights = true;
+                        }
+                        CurrentSpeckleTarget.Completed_cycles += 1;
+                    } else {
+                        var exposures = nonFinishedItems.Where(x => x is TakeLiveExposures || x is TakeRoiExposures).FirstOrDefault();
+                        if (exposures != null) {
+                            CurrentSpeckleTarget.Completed_cycles += 1; // TODO maybe add an error marker or something
+                        }
+                    }
+                }
+                if (container != null && container.Target.TargetName.Contains("_ref_")) {
+                    List<ISequenceItem> nonFinishedItems = container.Items.Where(x => x.Status != SequenceEntityStatus.FINISHED).Cast<ISequenceItem>().ToList();
+                    if (nonFinishedItems.Count == 0) {
+                        CurrentSpeckleTarget.Completed_ref_cycles += 1;
+                    } else {
+                        var exposures = nonFinishedItems.Where(x => x is TakeLiveExposures || x is TakeRoiExposures).FirstOrDefault();
+                        if (exposures == null) {
+                            CurrentSpeckleTarget.Completed_ref_cycles += 1; // TODO maybe add an error marker or something
+                        }
+                    }
+                }
+            }
+
+            // Write data to json textfile. TODO Clean up this ugly code
+            string path = Path.Combine(profileService.ActiveProfile.ImageFileSettings.FilePath, Guid.NewGuid().ToString());
+            string uniquePath = CoreUtil.GetUniqueFilePath(path + ".json");
+            File.WriteAllText(uniquePath, JsonConvert.SerializeObject(CurrentSpeckleTarget));
+            ImageMetaData metaData = new ImageMetaData();
+            metaData.Target.Name = CurrentSpeckleTarget.Target;
+            metaData.Sequence.Title = CurrentSpeckleTarget.User;
+            metaData.Image.ExposureStart = DateTime.Now;
+            BaseImageData baseImageData = new BaseImageData(new ushort[0], 0, 0, 0, false, metaData, profileService, new StarDetection(), null);
+            baseImageData.FinalizeSave(uniquePath, profileService.ActiveProfile.ImageFileSettings.FilePattern.Replace("$$FRAMENR$$", ""));
         }
 
         private void DropTarget(object obj) {
@@ -357,37 +445,41 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                         csv.Context.RegisterClassMap<GdsTargetClassMap>();
                         var records = csv.GetRecords<GdsTarget>();
                         foreach (GdsTarget record in records.ToList()) {
+                            if (record.RA0 == null || record.Decl0 == null) {
+                                Notification.ShowError("Csv file doesn't contain mandatory RA0 and/or Decl0 columns.");
+                                LoadingTargets = false;
+                                return false;
+                            }
                             GdsTargets.Add(record);
-                            if (record.Gmag0 < speckle.MinMag || record.Gmag0 > speckle.MaxMag) {
+                            if (record.Gmag0 > 0 && (record.Gmag0 < speckle.MinMag || record.Gmag0 > speckle.MaxMag)) {
                                 Logger.Debug("Magnitude not within limits. Skipping target." + record.Number);
                                 continue;
                             }
-                            if (record.GaiaSep < speckle.MinSep || record.GaiaSep > speckle.MaxSep) {
+                            if (record.GaiaSep > 0 && (record.GaiaSep < speckle.MinSep || record.GaiaSep > speckle.MaxSep)) {
                                 Logger.Debug("Seperation not within limits. Skipping target." + record.Number);
                                 continue;
                             }
                             SpeckleTarget speckleTarget = new SpeckleTarget();
-                            speckleTarget.Ra = record.RA0.Contains(":") ? AstroUtil.HMSToDegrees(record.RA0.Trim()) :
-                                double.Parse(record.RA0.Trim(), CultureInfo.InvariantCulture);
-                            speckleTarget.Dec = record.Decl0.Contains(":") ? AstroUtil.DMSToDegrees(record.Decl0.Trim()) :
-                                double.Parse(record.Decl0.Trim(), CultureInfo.InvariantCulture);
+                            speckleTarget.Ra = record.RA0.Trim();
+                            speckleTarget.Dec = record.Decl0.Trim();
                             speckleTarget.AltList = GetAltList(speckleTarget.Coordinates());
                             var imageTo = speckleTarget.ImageTo(speckle.AltitudeMax, speckle.MDistance);
                             if (imageTo != null && imageTo.alt > speckle.AltitudeMin && imageTo.datetime > NighttimeData.TwilightRiseAndSet.Set && imageTo.datetime < NighttimeData.TwilightRiseAndSet.Rise) {
-                                speckleTarget.ImageTime = imageTo.datetime;
+                                speckleTarget.ImageTime = RoundUp(imageTo.datetime, TimeSpan.FromMinutes(5));
                             } else {
                                 Logger.Debug("Image time not within limits. Skipping target." + record.Number);
                                 continue;
                             }
                             speckleTarget.Template = Template != "" ? Template : speckle.DefaultTemplate;
-                            speckleTarget.User = User.Trim() != "" ? User.Trim() : speckle.User;
-                            speckleTarget.Target = record.WDSName != null && record.WDSName.Trim() != "" ? record.WDSName.Trim() + "_" + record.DD.Trim() :
-                                "Ra" + AstroUtil.DegreesToHMS(speckleTarget.Ra).Replace(":", "_") + "_Dec" + AstroUtil.DegreesToFitsDMS(speckleTarget.Dec).Replace(" ", "_");
-                            speckleTarget.Exposures = Exposures;
-                            speckleTarget.ExposureTime = ExposureTime;
+                            speckleTarget.User = record.User.Trim() != "" ? record.User.Trim() : User.Trim() != "" ? User.Trim() : speckle.User;
+                            speckleTarget.Target = record.Target.Trim() != "" ? record.Target.Trim() : record.WDSName != null && record.WDSName.Trim() != "" ? record.WDSName.Trim() + "_" + record.DD.Trim() :
+                                "Ra" + speckleTarget.Coordinates().RAString.Replace(":", "_") + "_Dec" + speckleTarget.Coordinates().DecString.Replace(" ", "_");
+                            speckleTarget.Exposures = record.Exposures > 0 ? record.Exposures : Exposures;
+                            speckleTarget.ExposureTime = record.ExposureTime > 0 ? record.ExposureTime : ExposureTime;
                             speckleTarget.Magnitude = record.Gmag0;
                             speckleTarget.Separation = record.GaiaSep;
-                            speckleTarget.Cycles = Cycles;
+                            speckleTarget.Cycles = record.Cycles > 0 ? record.Cycles : Cycles;
+                            speckleTarget.Filter = record.Filter;
                             SpeckleTargets.Add(speckleTarget);
                         }
                         SpeckleTargets = new AsyncObservableCollection<SpeckleTarget>(SpeckleTargets.Where(i => i.ImageTime != null).OrderBy(i => i.ImageTime).ThenByDescending(n => n.Priority));
@@ -396,6 +488,10 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                 LoadingTargets = false;
                 return true;
             });
+        }
+
+        private DateTime RoundUp(DateTime dt, TimeSpan d) {
+            return new DateTime((dt.Ticks + d.Ticks - 1) / d.Ticks * d.Ticks, dt.Kind);
         }
 
         public ICommand DropTargetCommand { get; set; }

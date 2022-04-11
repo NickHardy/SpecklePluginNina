@@ -114,6 +114,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                 SearchRadius = profileService.ActiveProfile.PlateSolveSettings.SearchRadius,
                 BlindFailoverEnabled = profileService.ActiveProfile.PlateSolveSettings.BlindFailoverEnabled
             };
+            Logger.Debug("PlateSolve parameters: " + JsonConvert.SerializeObject(parameter));
 
             var seq = new CaptureSequence(
                 profileService.ActiveProfile.PlateSolveSettings.ExposureTime,
@@ -122,7 +123,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                 new BinningMode(profileService.ActiveProfile.PlateSolveSettings.Binning, profileService.ActiveProfile.PlateSolveSettings.Binning),
                 1
             );
-
+            
             Logger.Debug("Capturing image for platesolve.");
             var exposureData = await imagingMediator.CaptureImage(seq, token, progress);
             var imageData = await exposureData.ToImageData(progress, token);
@@ -155,10 +156,17 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                 throw new SequenceEntityFailedException("Calculation failed. Target outside of image");
             }
 
+            // Place the Roi around the star but within the image.
             var speckleContainer = ItemUtility.RetrieveSpeckleContainer(Parent);
-            speckleContainer.X = Math.Round(targetPoint.X - (speckleContainer.Width / 2), 0);
-            speckleContainer.Y = Math.Round(targetPoint.Y - (speckleContainer.Height / 2), 0);
+            speckleContainer.X = Math.Min(Math.Max(Math.Round(targetPoint.X - (speckleContainer.Width / 2), 0), 0), image.Image.PixelWidth - (speckleContainer.Width / 2));
+            speckleContainer.Y = Math.Min(Math.Max(Math.Round(targetPoint.Y - (speckleContainer.Height / 2), 0), 0), image.Image.PixelHeight - (speckleContainer.Height / 2));
             Logger.Debug("Setting roi position to " + speckleContainer.X + "x" + speckleContainer.Y);
+
+            var speckleTarget = ItemUtility.RetrieveSpeckleTarget(Parent);
+            if (speckleTarget != null) {
+                speckleTarget.Orientation = plateSolveResult.Orientation;
+                speckleTarget.ArcsecPerPix = arcsecPerPix;
+            }
         }
 
         public virtual bool Validate() {

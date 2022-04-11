@@ -226,5 +226,17 @@ namespace NINA.Plugin.Speckle.Properties {
                 this["AltitudeMax"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("15")]
+        public int CheckImageTimeWithinMinutes {
+            get {
+                return ((int)(this["CheckImageTimeWithinMinutes"]));
+            }
+            set {
+                this["CheckImageTimeWithinMinutes"] = value;
+            }
+        }
     }
 }

@@ -602,6 +602,7 @@
                             <DataGridTextColumn Width="40" Binding="{Binding Cycles}" Header="Cycles" />
                             <DataGridTextColumn Width="80" Binding="{Binding ExposureTime}" Header="ExposureTime" />
                             <DataGridTextColumn Width="70" Binding="{Binding Exposures}" Header="Exposures" />
+                            <DataGridTextColumn Width="40" Binding="{Binding Filter}" Header="Filter" />
                             <DataGridTextColumn Width="80" Binding="{Binding Ra}" Header="Ra" />
                             <DataGridTextColumn Width="80" Binding="{Binding Dec}" Header="Dec" />
                             <DataGridTextColumn Width="50" Binding="{Binding Magnitude}" Header="Mag" />

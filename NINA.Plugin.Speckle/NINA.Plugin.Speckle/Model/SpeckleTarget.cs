@@ -30,15 +30,17 @@ namespace NINA.Plugin.Speckle.Model {
         [JsonProperty]
         public string Target { get; set; }
         [JsonProperty]
-        public bool Ref { get; set; }
+        public string Ra { get; set; }
         [JsonProperty]
-        public double Ra { get; set; }
+        public string Dec { get; set; }
         [JsonProperty]
-        public double Dec { get; set; }
+        public double Orientation { get; set; }
         [JsonProperty]
-        public double Nights { get; set; }
+        public double ArcsecPerPix { get; set; }
         [JsonProperty]
-        public double Cycles { get; set; }
+        public int Nights { get; set; }
+        [JsonProperty]
+        public int Cycles { get; set; }
         [JsonProperty]
         public double Priority { get; set; }
         [JsonProperty]
@@ -50,12 +52,16 @@ namespace NINA.Plugin.Speckle.Model {
         [JsonProperty]
         public double Separation { get; set; }
         [JsonProperty]
-        public double Completed_nights { get; set; }
+        public int Completed_nights { get; set; }
         [JsonProperty]
-        public double Completed_cycles { get; set; }
+        public int Completed_cycles { get; set; }
+        [JsonProperty]
+        public int Completed_ref_cycles { get; set; }
         [JsonProperty]
         public string Template { get; set; }
         [JsonProperty]
+        public string Filter { get; set; }
+
         public List<AltTime> AltList { get; set; } = new List<AltTime>();
 
         public List<SimbadSaoStar> ReferenceStarList { get; set; }
@@ -67,7 +73,10 @@ namespace NINA.Plugin.Speckle.Model {
         public SpeckleTargetContainer SpeckleTemplate { get; set; }
 
         public Coordinates Coordinates() {
-            return new Coordinates(Angle.ByDegree(Ra), Angle.ByDegree(Dec), Epoch.J2000);
+            if (Double.TryParse(Ra, out double RaDeg) && Double.TryParse(Dec, out double DecDeg)) {
+                return new Coordinates(Angle.ByDegree(RaDeg), Angle.ByDegree(DecDeg), Epoch.J2000);
+            }
+            return new Coordinates(Angle.ByDegree(AstroUtil.HMSToDegrees(Ra)), Angle.ByDegree(AstroUtil.DMSToDegrees(Dec)), Epoch.J2000);
         }
 
         public AltTime MeridianAltTime() {
@@ -88,21 +97,19 @@ namespace NINA.Plugin.Speckle.Model {
     public sealed class SpeckleTargetMap : ClassMap<SpeckleTarget> {
 
         public SpeckleTargetMap() {
-            Map(m => m.User).Name("User");
-            Map(m => m.Target).Name("Target");
-            Map(m => m.Ref).Name("Ref");
+            Map(m => m.User).Name("User").Optional().Default("");
+            Map(m => m.Target).Name("Target").Optional().Default("");
             Map(m => m.Ra).Name("Ra");
             Map(m => m.Dec).Name("Dec");
-            Map(m => m.Nights).Name("Nights");
-            Map(m => m.Cycles).Name("Cycles");
-            Map(m => m.Priority).Name("Priority");
-            Map(m => m.ExposureTime).Name("ExposureTime");
-            Map(m => m.Exposures).Name("Exposures");
-            Map(m => m.Magnitude).Name("Magnitude");
-            Map(m => m.Separation).Name("Separation");
-            Map(m => m.Completed_nights).Name("Completed_nights");
-            Map(m => m.Completed_cycles).Name("Completed_cycles");
-            Map(m => m.Template).Name("Template");
+            Map(m => m.Nights).Name("Nights").Optional().Default(1);
+            Map(m => m.Cycles).Name("Cycles").Optional().Default(1);
+            Map(m => m.Priority).Name("Priority").Optional().Default(0);
+            Map(m => m.ExposureTime).Name("ExposureTime").Optional().Default(0);
+            Map(m => m.Exposures).Name("Exposures").Optional().Default(0);
+            Map(m => m.Magnitude).Name("Magnitude").Optional().Default(0);
+            Map(m => m.Separation).Name("Separation").Optional().Default(0);
+            Map(m => m.Template).Name("Template").Optional().Default("");
+            Map(m => m.Filter).Name("Filter").Optional().Default("");
         }
     }
 }
