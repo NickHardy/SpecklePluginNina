@@ -102,6 +102,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             Exposures = speckle.Exposures;
             ExposureTime = speckle.ExposureTime;
             SpeckleTargets = new AsyncObservableCollection<SpeckleTarget>();
+            GdsTargets = new AsyncObservableCollection<GdsTarget>();
             RetrieveTemplates();
             OpenFileCommand = new GalaSoft.MvvmLight.Command.RelayCommand<bool>((o) => { using (executeCTS = new CancellationTokenSource()) { OpenFile(); } });
             DropTargetCommand = new GalaSoft.MvvmLight.Command.RelayCommand<object>(DropTarget);
@@ -435,7 +436,6 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             return Task.Run(() => {
                 if (NighttimeData == null)
                     NighttimeData = nighttimeCalculator.Calculate();
-                GdsTargets = new AsyncObservableCollection<GdsTarget>();
                 var config = new CsvConfiguration(CultureInfo.InvariantCulture);
                 config.MissingFieldFound = null;
                 using (var reader = new StreamReader(file))

@@ -714,6 +714,14 @@
                             </StackPanel>
 
                         </StackPanel>
+
+                        <StackPanel Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="6" Margin="5" Orientation="Horizontal">
+                            <TextBlock VerticalAlignment="Center" Text="Targets total/loaded" />
+                            <TextBlock VerticalAlignment="Center" Text=": " />
+                            <TextBlock VerticalAlignment="Center" Text="{Binding GdsTargets.Count, Mode=OneWay}" />
+                            <TextBlock VerticalAlignment="Center" Text="/" />
+                            <TextBlock VerticalAlignment="Center" Text="{Binding SpeckleTargets.Count, Mode=OneWay}" />
+                        </StackPanel>
                     </Grid>
                 </Grid>
             </view:SequenceContainerView.SequenceContainerContent>
