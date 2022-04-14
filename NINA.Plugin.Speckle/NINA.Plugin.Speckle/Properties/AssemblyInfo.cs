@@ -7,8 +7,8 @@ using System.Runtime.InteropServices;
 
 // [MANDATORY] The assembly versioning
 //Should be incremented for each new release build of a plugin
-[assembly: AssemblyVersion("1.0.0.1")]
-[assembly: AssemblyFileVersion("1.0.0.1")]
+[assembly: AssemblyVersion("1.0.0.2")]
+[assembly: AssemblyFileVersion("1.0.0.2")]
 
 // [MANDATORY] The name of your plugin
 [assembly: AssemblyTitle("Speckle Interferometry")]
@@ -61,7 +61,7 @@ You can try this with just about any telescope, but of course bigger is better. 
 But make sure you can still platesolve your full image or you'll need pinpoint precision when targeting.  
 It's best if you create a separate profile for Speckle targets. There are some things you don't need for Speckle imaging.
 There's no need to guide or dither. just get rapid small images for the star. Usually the image will be 256x256 or 512x512, depending on the telescope and camera.
-Also create a separate folder for speckle images and set the filepattern to this:
+Also create a separate folder for speckle images and set the filepattern to something like this:
 $$DATEMINUS12$$\$$SEQUENCETITLE$$\$$TARGETNAME$$\$$FILTER$$\$$EXPOSURETIME$$\$$FRAMENR$$
 
 Videos explaning double star observing and speckle interferometry can be found here:  
@@ -123,7 +123,9 @@ For listing targets and processing data the following programs can be used by co
 * [GDS](https://drive.google.com/file/d/1e72E2sfvVnsYTZp0kiZyVdDZNkeV2BLB/view?usp=sharing)  
   This program contains data from Gaia and can be used to select targets for imaging.
 * [The Speckle Toolbox](https://www.dropbox.com/s/wmr58i9owd2lvja/STB%201.14.zip?dl=0)  
-  This program can be used to process the data. Here are detailed instructions on how to use it: [The Speckle Toolbox - manual](http://www.jdso.org/volume13/number1/Harshaw_52_67.pdf)
+  This program can be used to process the data. Here are detailed instructions on how to use it: [The Speckle Toolbox - manual](http://www.jdso.org/volume13/number1/Harshaw_52_67.pdf)  
+  Currently there's no way to upload data to the WDS catalog. The way to get data into the catalog is to write an academic paper en submit it to [jdso](http://www.jdso.org/).
+  Hopefully in future it will be possible to upload data for submission to the WDS catalog. (Still working on that)
 
 A big thank you goes out to Leon(@lbew#3670) for testing this plugin with me. 
 Also many thanks to the members and friends of Fairborn Institute for all the input given to create this plugin.

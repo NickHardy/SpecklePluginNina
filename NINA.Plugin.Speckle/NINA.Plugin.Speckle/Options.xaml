@@ -11,23 +11,25 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-            <Grid.RowDefinitions>
-                <RowDefinition MinHeight="25" />
-                <RowDefinition MinHeight="25" />
-                <RowDefinition MinHeight="25" />
-                <RowDefinition MinHeight="25" />
-                <RowDefinition MinHeight="25" />
-                <RowDefinition MinHeight="25" />
-                <RowDefinition MinHeight="25" />
-                <RowDefinition MinHeight="25" />
-                <RowDefinition MinHeight="25" />
-                <RowDefinition MinHeight="25" />
-                <RowDefinition MinHeight="25" />
-            </Grid.RowDefinitions>
-            <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Text="Image distance from the meridian" />
-            <ninactrl:UnitTextBox
+
+            <Grid Grid.Column="0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition MinHeight="25" />
+                    <RowDefinition MinHeight="25" />
+                    <RowDefinition MinHeight="25" />
+                    <RowDefinition MinHeight="25" />
+                    <RowDefinition MinHeight="25" />
+                    <RowDefinition MinHeight="25" />
+                    <RowDefinition MinHeight="25" />
+                </Grid.RowDefinitions>
+                <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Text="Image distance from the meridian" />
+                <ninactrl:UnitTextBox
                 Grid.Row="0"
                 Grid.Column="1"
                 MinWidth="100"
@@ -37,8 +39,8 @@
                 Text="{Binding MDistance}"
                 Unit="°" />
 
-            <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Text="Default Searchradius" />
-            <ninactrl:UnitTextBox
+                <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Text="Default Searchradius" />
+                <ninactrl:UnitTextBox
                 Grid.Row="1"
                 Grid.Column="1"
                 MinWidth="100"
@@ -48,8 +50,8 @@
                 Text="{Binding SearchRadius}"
                 Unit="°" />
 
-            <TextBlock Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Text="Altitude between:" />
-            <ninactrl:UnitTextBox
+                <TextBlock Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Text="Altitude between:" />
+                <ninactrl:UnitTextBox
                 Grid.Row="2"
                 Grid.Column="1"
                 MinWidth="100"
@@ -58,7 +60,7 @@
                 VerticalAlignment="Center"
                 Text="{Binding AltitudeMin}"
                 Unit="°" />
-            <ninactrl:UnitTextBox
+                <ninactrl:UnitTextBox
                 Grid.Row="2"
                 Grid.Column="2"
                 MinWidth="100"
@@ -68,8 +70,8 @@
                 Text="{Binding AltitudeMax}"
                 Unit="°" />
 
-            <TextBlock Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" Text="Magnitude between:" />
-            <TextBox
+                <TextBlock Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" Text="Magnitude between:" />
+                <TextBox
                 Grid.Row="3"
                 Grid.Column="1"
                 MinWidth="100"
@@ -77,7 +79,7 @@
                 HorizontalAlignment="Left"
                 VerticalAlignment="Center"
                 Text="{Binding MinMag}" />
-            <TextBox
+                <TextBox
                 Grid.Row="3"
                 Grid.Column="2"
                 MinWidth="100"
@@ -86,8 +88,8 @@
                 VerticalAlignment="Center"
                 Text="{Binding MaxMag}" />
 
-            <TextBlock Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" Text="Separation between:" />
-            <ninactrl:UnitTextBox
+                <TextBlock Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" Text="Separation between:" />
+                <ninactrl:UnitTextBox
                 Grid.Row="4"
                 Grid.Column="1"
                 MinWidth="100"
@@ -96,7 +98,7 @@
                 VerticalAlignment="Center"
                 Text="{Binding MinSep}"
                 Unit="&quot;" />
-            <ninactrl:UnitTextBox
+                <ninactrl:UnitTextBox
                 Grid.Row="4"
                 Grid.Column="2"
                 MinWidth="100"
@@ -106,67 +108,18 @@
                 Text="{Binding MaxSep}"
                 Unit="&quot;" />
 
-            <TextBlock Grid.Row="5" Grid.Column="0" VerticalAlignment="Center" Text="Default number of cycles" />
-            <TextBox
-                Grid.Row="5"
-                Grid.Column="1"
+                <TextBlock Grid.Row="5" Grid.Column="0" VerticalAlignment="Center" Text="Max magnitude for reference star" />
+                <TextBox
+                Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="2"
                 MinWidth="100"
                 Margin="5,0,0,0"
                 HorizontalAlignment="Left"
                 VerticalAlignment="Center"
-                Text="{Binding Cycles}" />
+                Text="{Binding MaxReferenceMag}" />
 
-            <TextBlock Grid.Row="6" Grid.Column="0" VerticalAlignment="Center" Text="Default number of images" />
-            <TextBox
+                <TextBlock Grid.Row="6" Grid.Column="0" VerticalAlignment="Center" Text="Check target imagetime past" />
+                <ninactrl:UnitTextBox
                 Grid.Row="6"
-                Grid.Column="1"
-                MinWidth="100"
-                Margin="5,0,0,0"
-                HorizontalAlignment="Left"
-                VerticalAlignment="Center"
-                Text="{Binding Exposures}" />
-
-            <TextBlock Grid.Row="7" Grid.Column="0" VerticalAlignment="Center" Text="Default Exposure time" />
-            <ninactrl:UnitTextBox
-                Grid.Row="7"
-                Grid.Column="1"
-                MinWidth="100"
-                Margin="5,0,0,0"
-                HorizontalAlignment="Left"
-                VerticalAlignment="Center"
-                Text="{Binding ExposureTime}"
-                Unit="s" />
-
-            <TextBlock Grid.Row="8" Grid.Column="0" VerticalAlignment="Center" Text="Default Template" />
-            <TextBox
-                Grid.Row="8" Grid.Column="1" Grid.ColumnSpan="2"
-                MinWidth="100"
-                Margin="5,0,0,0"
-                HorizontalAlignment="Left"
-                VerticalAlignment="Center"
-                Text="{Binding DefaultTemplate}" />
-
-            <TextBlock Grid.Row="9" Grid.Column="0" VerticalAlignment="Center" Text="Default User" />
-            <TextBox
-                Grid.Row="9" Grid.Column="1" Grid.ColumnSpan="2"
-                MinWidth="100"
-                Margin="5,0,0,0"
-                HorizontalAlignment="Left"
-                VerticalAlignment="Center"
-                Text="{Binding User}" />
-            
-            <TextBlock Grid.Row="10" Grid.Column="0" VerticalAlignment="Center" Text="Show every Nth Image" />
-            <TextBox
-                Grid.Row="10" Grid.Column="1" Grid.ColumnSpan="2"
-                MinWidth="100"
-                Margin="5,0,0,0"
-                HorizontalAlignment="Left"
-                VerticalAlignment="Center"
-                Text="{Binding ShowEveryNthImage}" />
-
-            <TextBlock Grid.Row="11" Grid.Column="0" VerticalAlignment="Center" Text="Check if target imagetime within" />
-            <ninactrl:UnitTextBox
-                Grid.Row="11"
                 Grid.Column="1"
                 MinWidth="100"
                 Margin="5,0,0,0"
@@ -175,6 +128,82 @@
                 Text="{Binding CheckImageTimeWithinMinutes}"
                 Unit="m" />
 
+            </Grid>
+            <Grid Grid.Column="1" Margin="10,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition MinHeight="25" />
+                    <RowDefinition MinHeight="25" />
+                    <RowDefinition MinHeight="25" />
+                    <RowDefinition MinHeight="25" />
+                    <RowDefinition MinHeight="25" />
+                    <RowDefinition MinHeight="25" />
+                    <RowDefinition MinHeight="25" />
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Text="Default number of cycles" />
+                <TextBox
+                Grid.Row="0"
+                Grid.Column="1"
+                MinWidth="100"
+                Margin="5,0,0,0"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                Text="{Binding Cycles}" />
+
+                <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Text="Default number of images" />
+                <TextBox
+                Grid.Row="1"
+                Grid.Column="1"
+                MinWidth="100"
+                Margin="5,0,0,0"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                Text="{Binding Exposures}" />
+
+                <TextBlock Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Text="Default Exposure time" />
+                <ninactrl:UnitTextBox
+                Grid.Row="2"
+                Grid.Column="1"
+                MinWidth="100"
+                Margin="5,0,0,0"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                Text="{Binding ExposureTime}"
+                Unit="s" />
+
+                <TextBlock Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" Text="Default Template" />
+                <TextBox
+                Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2"
+                MinWidth="100"
+                Margin="5,0,0,0"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                Text="{Binding DefaultTemplate}" />
+
+                <TextBlock Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" Text="Default User" />
+                <TextBox
+                Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="2"
+                MinWidth="100"
+                Margin="5,0,0,0"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                Text="{Binding User}" />
+
+                <TextBlock Grid.Row="5" Grid.Column="0" VerticalAlignment="Center" Text="Show every Nth Image" />
+                <TextBox
+                Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="2"
+                MinWidth="100"
+                Margin="5,0,0,0"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                Text="{Binding ShowEveryNthImage}" />
+
+            </Grid>
         </Grid>
     </DataTemplate>
 </ResourceDictionary>

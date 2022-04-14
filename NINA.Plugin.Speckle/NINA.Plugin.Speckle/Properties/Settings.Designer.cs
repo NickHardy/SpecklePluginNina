@@ -238,5 +238,17 @@ namespace NINA.Plugin.Speckle.Properties {
                 this["CheckImageTimeWithinMinutes"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("10")]
+        public double MaxReferenceMag {
+            get {
+                return ((double)(this["MaxReferenceMag"]));
+            }
+            set {
+                this["MaxReferenceMag"] = value;
+            }
+        }
     }
 }

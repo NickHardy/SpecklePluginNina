@@ -184,6 +184,15 @@ namespace NINA.Plugin.Speckle {
             }
         }
 
+        public double MaxReferenceMag {
+            get => Settings.Default.MaxReferenceMag;
+            set {
+                Settings.Default.MaxReferenceMag = value;
+                CoreUtil.SaveSettings(Properties.Settings.Default);
+                RaisePropertyChanged();
+            }
+        }
+
         public static string GetVersion() {
             System.Reflection.Assembly assembly = System.Reflection.Assembly.GetExecutingAssembly();
             System.Diagnostics.FileVersionInfo fvi = System.Diagnostics.FileVersionInfo.GetVersionInfo(assembly.Location);
