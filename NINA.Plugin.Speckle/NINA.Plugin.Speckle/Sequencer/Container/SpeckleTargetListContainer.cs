@@ -276,11 +276,11 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                     speckleTargetContainerRef.Items.ToList().ForEach(x => {
                         if (x is TakeRoiExposures takeRoiExposures) {
                             takeRoiExposures.ExposureTime = SpeckleTarget.ExposureTime;
-                            takeRoiExposures.TotalExposureCount = SpeckleTarget.Exposures;
+                            takeRoiExposures.TotalExposureCount = speckle.ReferenceExposures;
                         }
                         if (x is TakeLiveExposures takeLiveExposures) {
                             takeLiveExposures.ExposureTime = SpeckleTarget.ExposureTime;
-                            takeLiveExposures.TotalExposureCount = SpeckleTarget.Exposures;
+                            takeLiveExposures.TotalExposureCount = speckle.ReferenceExposures;
                         }
                         if (x is CalculateRoiExposureTime calculateRoiExposureTime) {
                             calculateRoiExposureTime.ExposureTime = SpeckleTarget.ExposureTime;

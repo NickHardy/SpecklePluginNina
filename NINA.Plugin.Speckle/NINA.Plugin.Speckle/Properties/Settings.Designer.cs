@@ -262,5 +262,17 @@ namespace NINA.Plugin.Speckle.Properties {
                 this["MoonDistance"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("300")]
+        public int ReferenceExposures {
+            get {
+                return ((int)(this["ReferenceExposures"]));
+            }
+            set {
+                this["ReferenceExposures"] = value;
+            }
+        }
     }
 }

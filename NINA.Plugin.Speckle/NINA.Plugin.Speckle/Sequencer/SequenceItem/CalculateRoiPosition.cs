@@ -42,6 +42,7 @@ using NINA.Core.Utility.Notification;
 using static NINA.Astrometry.Coordinates;
 using NINA.Plugin.Speckle.Sequencer.Utility;
 using System.Windows;
+using NINA.Image.FileFormat;
 
 namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
 
@@ -73,6 +74,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             this.filterWheelMediator = filterWheelMediator;
             this.plateSolverFactory = plateSolverFactory;
             this.windowServiceFactory = windowServiceFactory;
+            this.SaveImage = true;
         }
 
         private CalculateRoiPosition(CalculateRoiPosition cloneMe) : this(cloneMe.profileService,
@@ -85,7 +87,9 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
         }
 
         public override object Clone() {
-            return new CalculateRoiPosition(this);
+            var clone = new CalculateRoiPosition(this);
+            clone.SaveImage = SaveImage;
+            return clone;
         }
 
         private IList<string> issues = new List<string>();
@@ -97,6 +101,11 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                 RaisePropertyChanged();
             }
         }
+
+        private bool _SaveImage;
+
+        [JsonProperty]
+        public bool SaveImage { get => _SaveImage; set { _SaveImage = value; RaisePropertyChanged(); } }
 
         public override async Task Execute(IProgress<ApplicationStatus> progress, CancellationToken token) {
             var plateSolver = plateSolverFactory.GetPlateSolver(profileService.ActiveProfile.PlateSolveSettings);
@@ -167,6 +176,19 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                 speckleTarget.Orientation = plateSolveResult.Orientation;
                 speckleTarget.ArcsecPerPix = arcsecPerPix;
             }
+
+            if (SaveImage) {
+                var target = speckleContainer.Target;
+                if (target != null) {
+                    imageData.MetaData.Target.Name = target.DeepSkyObject.NameAsAscii;
+                    imageData.MetaData.Target.Coordinates = target.InputCoordinates.Coordinates;
+                    imageData.MetaData.Target.Rotation = plateSolveResult.Orientation;
+                }
+                
+                imageData.MetaData.Sequence.Title = speckleContainer.Title;
+                _ = imageData.SaveToDisk(new FileSaveInfo(profileService), token);
+            }
+
         }
 
         public virtual bool Validate() {

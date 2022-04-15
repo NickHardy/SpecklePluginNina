@@ -60,11 +60,13 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
         private IProfileService profileService;
         private IApplicationStatusMediator applicationStatusMediator;
         private IImageControlVM imageControlVM;
+        private IFilterWheelMediator filterWheelMediator;
+
         private Speckle speckle;
         private Task<IRenderedImage> _imageProcessingTask;
 
         [ImportingConstructor]
-        public TakeRoiExposures(IProfileService profileService, ICameraMediator cameraMediator, IImagingMediator imagingMediator, IImageSaveMediator imageSaveMediator, IApplicationStatusMediator applicationStatusMediator, IImageControlVM imageControlVM) {
+        public TakeRoiExposures(IProfileService profileService, ICameraMediator cameraMediator, IImagingMediator imagingMediator, IImageSaveMediator imageSaveMediator, IApplicationStatusMediator applicationStatusMediator, IImageControlVM imageControlVM, IFilterWheelMediator filterWheelMediator) {
             Gain = -1;
             Offset = -1;
             ImageType = CaptureSequence.ImageTypes.LIGHT;
@@ -74,11 +76,12 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             this.applicationStatusMediator = applicationStatusMediator;
             this.profileService = profileService;
             this.imageControlVM = imageControlVM;
+            this.filterWheelMediator = filterWheelMediator;
             CameraInfo = this.cameraMediator.GetInfo();
             speckle = new Speckle();
         }
 
-        private TakeRoiExposures(TakeRoiExposures cloneMe) : this(cloneMe.profileService, cloneMe.cameraMediator, cloneMe.imagingMediator, cloneMe.imageSaveMediator, cloneMe.applicationStatusMediator, cloneMe.imageControlVM) {
+        private TakeRoiExposures(TakeRoiExposures cloneMe) : this(cloneMe.profileService, cloneMe.cameraMediator, cloneMe.imagingMediator, cloneMe.imageSaveMediator, cloneMe.applicationStatusMediator, cloneMe.imageControlVM, cloneMe.filterWheelMediator) {
             CopyMetaData(cloneMe);
         }
 
@@ -227,6 +230,9 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                         _imageProcessingTask = imagingMediator.PrepareImage(imageData, imageParams, token);
                         Logger.Debug("Prepare: " + roiDuration.ElapsedMilliseconds);
                     }
+
+                    if (filterWheelMediator.GetInfo().Connected)
+                        imageData.MetaData.FilterWheel.Filter = filterWheelMediator.GetInfo().SelectedFilter.Name;
 
                     imageData.MetaData.Sequence.Title = title;
                     imageData.MetaData.Image.ExposureStart = DateTime.Now;

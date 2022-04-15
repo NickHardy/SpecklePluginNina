@@ -58,10 +58,11 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
         private IImageSaveMediator imageSaveMediator;
         private IImageHistoryVM imageHistoryVM;
         private IProfileService profileService;
+        private IFilterWheelMediator filterWheelMediator;
         private Speckle speckle;
 
         [ImportingConstructor]
-        public TakeLiveExposures(IProfileService profileService, ICameraMediator cameraMediator, IImagingMediator imagingMediator, IImageSaveMediator imageSaveMediator, IImageHistoryVM imageHistoryVM) {
+        public TakeLiveExposures(IProfileService profileService, ICameraMediator cameraMediator, IImagingMediator imagingMediator, IImageSaveMediator imageSaveMediator, IImageHistoryVM imageHistoryVM, IFilterWheelMediator filterWheelMediator) {
             Gain = -1;
             Offset = -1;
             ImageType = CaptureSequence.ImageTypes.LIGHT;
@@ -70,11 +71,12 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             this.imageSaveMediator = imageSaveMediator;
             this.imageHistoryVM = imageHistoryVM;
             this.profileService = profileService;
+            this.filterWheelMediator = filterWheelMediator;
             CameraInfo = this.cameraMediator.GetInfo();
             speckle = new Speckle();
         }
 
-        private TakeLiveExposures(TakeLiveExposures cloneMe) : this(cloneMe.profileService, cloneMe.cameraMediator, cloneMe.imagingMediator, cloneMe.imageSaveMediator, cloneMe.imageHistoryVM) {
+        private TakeLiveExposures(TakeLiveExposures cloneMe) : this(cloneMe.profileService, cloneMe.cameraMediator, cloneMe.imagingMediator, cloneMe.imageSaveMediator, cloneMe.imageHistoryVM, cloneMe.filterWheelMediator) {
             CopyMetaData(cloneMe);
         }
 
@@ -219,6 +221,9 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                     imageData.MetaData.Target.Coordinates = target.InputCoordinates.Coordinates;
                     imageData.MetaData.Target.Rotation = target.Rotation;
                 }
+
+                if (filterWheelMediator.GetInfo().Connected)
+                    imageData.MetaData.FilterWheel.Filter = filterWheelMediator.GetInfo().SelectedFilter.Name;
 
                 imageData.MetaData.Sequence.Title = title;
                 imageData.MetaData.Image.ExposureStart = DateTime.Now;

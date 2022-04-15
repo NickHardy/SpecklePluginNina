@@ -216,6 +216,16 @@
                 VerticalAlignment="Center"
                 Text="{Binding ShowEveryNthImage}" />
 
+                <TextBlock Grid.Row="6" Grid.Column="0" VerticalAlignment="Center" Text="Number of images for reference star" />
+                <TextBox
+                Grid.Row="6"
+                Grid.Column="1"
+                MinWidth="100"
+                Margin="5,0,0,0"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                Text="{Binding ReferenceExposures}" />
+
             </Grid>
         </Grid>
     </DataTemplate>
