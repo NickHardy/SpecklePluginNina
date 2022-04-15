@@ -470,6 +470,10 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                                 Logger.Debug("Image time not within limits. Skipping target." + record.Number);
                                 continue;
                             }
+                            if (CalculateSeparation(speckleTarget.ImageTime, speckleTarget.Coordinates()) < speckle.MoonDistance) {
+                                Logger.Debug("Target too close to moon. Skipping target." + record.Number);
+                                continue;
+                            }
                             speckleTarget.Template = Template != "" ? Template : speckle.DefaultTemplate;
                             speckleTarget.User = record.User.Trim() != "" ? record.User.Trim() : User.Trim() != "" ? User.Trim() : speckle.User;
                             speckleTarget.Target = record.Target.Trim() != "" ? record.Target.Trim() : record.WDSName != null && record.WDSName.Trim() != "" ? record.WDSName.Trim() + "_" + record.DD.Trim() :
@@ -492,6 +496,19 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
 
         private DateTime RoundUp(DateTime dt, TimeSpan d) {
             return new DateTime((dt.Ticks + d.Ticks - 1) / d.Ticks * d.Ticks, dt.Kind);
+        }
+
+        private double CalculateSeparation(DateTime time, Coordinates coords) {
+            NOVAS.SkyPosition pos = AstroUtil.GetMoonPosition(time, AstroUtil.GetJulianDate(time), new ObserverInfo { Latitude = profileService.ActiveProfile.AstrometrySettings.Latitude, Longitude = profileService.ActiveProfile.AstrometrySettings.Longitude, Elevation = profileService.ActiveProfile.AstrometrySettings.Elevation });
+            var moonRaRadians = AstroUtil.ToRadians(AstroUtil.HoursToDegrees(pos.RA));
+            var moonDecRadians = AstroUtil.ToRadians(pos.Dec);
+
+            Coordinates target = coords.Transform(Epoch.JNOW);
+            var targetRaRadians = AstroUtil.ToRadians(target.RADegrees);
+            var targetDecRadians = AstroUtil.ToRadians(target.Dec);
+
+            var theta = SOFA.Seps(moonRaRadians, moonDecRadians, targetRaRadians, targetDecRadians);
+            return AstroUtil.ToDegree(theta); // return separation
         }
 
         public ICommand DropTargetCommand { get; set; }

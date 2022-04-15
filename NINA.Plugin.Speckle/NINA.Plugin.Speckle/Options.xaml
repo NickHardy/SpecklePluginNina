@@ -27,8 +27,9 @@
                     <RowDefinition MinHeight="25" />
                     <RowDefinition MinHeight="25" />
                     <RowDefinition MinHeight="25" />
+                    <RowDefinition MinHeight="25" />
                 </Grid.RowDefinitions>
-                <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Text="Image distance from the meridian" />
+                <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Text="Minimum image distance from the meridian" />
                 <ninactrl:UnitTextBox
                 Grid.Row="0"
                 Grid.Column="1"
@@ -39,9 +40,20 @@
                 Text="{Binding MDistance}"
                 Unit="°" />
 
-                <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Text="Default Searchradius" />
+                <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Text="Minimum image distance from the moon" />
                 <ninactrl:UnitTextBox
                 Grid.Row="1"
+                Grid.Column="1"
+                MinWidth="100"
+                Margin="5,0,0,0"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                Text="{Binding MoonDistance}"
+                Unit="°" />
+
+                <TextBlock Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Text="Default Searchradius" />
+                <ninactrl:UnitTextBox
+                Grid.Row="2"
                 Grid.Column="1"
                 MinWidth="100"
                 Margin="5,0,0,0"
@@ -50,9 +62,9 @@
                 Text="{Binding SearchRadius}"
                 Unit="°" />
 
-                <TextBlock Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Text="Altitude between:" />
+                <TextBlock Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" Text="Altitude between:" />
                 <ninactrl:UnitTextBox
-                Grid.Row="2"
+                Grid.Row="3"
                 Grid.Column="1"
                 MinWidth="100"
                 Margin="5,0,0,0"
@@ -61,7 +73,7 @@
                 Text="{Binding AltitudeMin}"
                 Unit="°" />
                 <ninactrl:UnitTextBox
-                Grid.Row="2"
+                Grid.Row="3"
                 Grid.Column="2"
                 MinWidth="100"
                 Margin="5,0,0,0"
@@ -70,9 +82,9 @@
                 Text="{Binding AltitudeMax}"
                 Unit="°" />
 
-                <TextBlock Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" Text="Magnitude between:" />
+                <TextBlock Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" Text="Magnitude between:" />
                 <TextBox
-                Grid.Row="3"
+                Grid.Row="4"
                 Grid.Column="1"
                 MinWidth="100"
                 Margin="5,0,0,0"
@@ -80,7 +92,7 @@
                 VerticalAlignment="Center"
                 Text="{Binding MinMag}" />
                 <TextBox
-                Grid.Row="3"
+                Grid.Row="4"
                 Grid.Column="2"
                 MinWidth="100"
                 Margin="5,0,0,0"
@@ -88,9 +100,9 @@
                 VerticalAlignment="Center"
                 Text="{Binding MaxMag}" />
 
-                <TextBlock Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" Text="Separation between:" />
+                <TextBlock Grid.Row="5" Grid.Column="0" VerticalAlignment="Center" Text="Separation between:" />
                 <ninactrl:UnitTextBox
-                Grid.Row="4"
+                Grid.Row="5"
                 Grid.Column="1"
                 MinWidth="100"
                 Margin="5,0,0,0"
@@ -99,7 +111,7 @@
                 Text="{Binding MinSep}"
                 Unit="&quot;" />
                 <ninactrl:UnitTextBox
-                Grid.Row="4"
+                Grid.Row="5"
                 Grid.Column="2"
                 MinWidth="100"
                 Margin="5,0,0,0"
@@ -108,18 +120,18 @@
                 Text="{Binding MaxSep}"
                 Unit="&quot;" />
 
-                <TextBlock Grid.Row="5" Grid.Column="0" VerticalAlignment="Center" Text="Max magnitude for reference star" />
+                <TextBlock Grid.Row="6" Grid.Column="0" VerticalAlignment="Center" Text="Max magnitude for reference star" />
                 <TextBox
-                Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="2"
+                Grid.Row="6" Grid.Column="1" Grid.ColumnSpan="2"
                 MinWidth="100"
                 Margin="5,0,0,0"
                 HorizontalAlignment="Left"
                 VerticalAlignment="Center"
                 Text="{Binding MaxReferenceMag}" />
 
-                <TextBlock Grid.Row="6" Grid.Column="0" VerticalAlignment="Center" Text="Check target imagetime past" />
+                <TextBlock Grid.Row="7" Grid.Column="0" VerticalAlignment="Center" Text="Check target imagetime past" />
                 <ninactrl:UnitTextBox
-                Grid.Row="6"
+                Grid.Row="7"
                 Grid.Column="1"
                 MinWidth="100"
                 Margin="5,0,0,0"
@@ -136,6 +148,7 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <Grid.RowDefinitions>
+                    <RowDefinition MinHeight="25" />
                     <RowDefinition MinHeight="25" />
                     <RowDefinition MinHeight="25" />
                     <RowDefinition MinHeight="25" />

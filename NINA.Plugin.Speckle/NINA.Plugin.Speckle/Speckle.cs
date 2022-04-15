@@ -40,6 +40,15 @@ namespace NINA.Plugin.Speckle {
             }
         }
 
+        public double MoonDistance {
+            get => Settings.Default.MoonDistance;
+            set {
+                Settings.Default.MoonDistance = value;
+                CoreUtil.SaveSettings(Properties.Settings.Default);
+                RaisePropertyChanged();
+            }
+        }
+
         public double SearchRadius {
             get => Settings.Default.SearchRadius;
             set {
