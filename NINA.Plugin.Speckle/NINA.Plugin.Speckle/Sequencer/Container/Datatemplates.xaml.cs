@@ -14,7 +14,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.ComponentModel.Composition;
+using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -31,15 +33,15 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
         }
 
         private void DataGrid_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e) {
-            if (sender is DataGrid dataGrid && e.AddedItems.Count > 0)
+            if (sender is System.Windows.Controls.DataGrid dataGrid && e.AddedItems.Count > 0)
                 dataGrid.ScrollIntoView(e.AddedItems[0]);
         }
 
         private void DataGridCell_Selected(object sender, RoutedEventArgs e) {
             // Lookup for the source to be DataGridCell
-            if (e.OriginalSource.GetType() == typeof(DataGridCell)) {
+            if (e.OriginalSource.GetType() == typeof(System.Windows.Controls.DataGridCell)) {
                 // Starts the Edit on the row;
-                DataGrid grd = (DataGrid)sender;
+                System.Windows.Controls.DataGrid grd = (System.Windows.Controls.DataGrid)sender;
                 grd.BeginEdit(e);
             }
         }
@@ -48,7 +50,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             // Lookup for the source to be DataGridCell
             if (e.OriginalSource.GetType() == typeof(DataGridRow)) {
                 // Starts the Edit on the row;
-                DataGrid grd = (DataGrid)sender;
+                System.Windows.Controls.DataGrid grd = (System.Windows.Controls.DataGrid)sender;
                 grd.BeginEdit(e);
             }
         }

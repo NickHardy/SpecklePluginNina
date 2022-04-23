@@ -573,6 +573,16 @@
     </DataTemplate>
 
     <DataTemplate DataType="{x:Type local:SpeckleTargetListContainer}">
+        <DataTemplate.Resources>
+            <!-- This is not working yet -->
+            <ContextMenu  x:Key="RowMenu" DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+                <MenuItem Header="Load target" CommandParameter="{Binding}" Command="{Binding LoadTargetCommand}" />
+                <MenuItem Header="Delete target" CommandParameter="{Binding}" Command="{Binding DeleteTargetCommand}" />
+            </ContextMenu>
+            <Style x:Key="DefaultRowStyle" BasedOn="{StaticResource StandardDataGridRow}" TargetType="{x:Type DataGridRow}">
+                <Setter Property="ContextMenu" Value="{StaticResource RowMenu}" />
+            </Style>
+        </DataTemplate.Resources>
         <view:SequenceContainerView>
             <view:SequenceContainerView.SequenceContainerContent>
                 <Grid DataContext="{Binding}">
@@ -585,7 +595,7 @@
                         <ColumnDefinition Width="300" />
                     </Grid.ColumnDefinitions>
 
-                    <DataGrid
+                    <DataGrid 
                         Margin="5,10,5,5"
                         Height="150"
                         AutoGenerateColumns="False"

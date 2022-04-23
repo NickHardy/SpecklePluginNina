@@ -94,6 +94,8 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             this.cameraMediator = cameraMediator;
             this.applicationMediator = applicationMediator;
             this.framingAssistantVM = framingAssistantVM;
+
+            //Task.Run(() => NighttimeData = nighttimeCalculator.Calculate(DateTime.Now.AddHours(4)));
             speckle = new Speckle();
             TargetNr = 0;
             User = speckle.User;
@@ -106,11 +108,16 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             RetrieveTemplates();
             OpenFileCommand = new GalaSoft.MvvmLight.Command.RelayCommand<bool>((o) => { using (executeCTS = new CancellationTokenSource()) { OpenFile(); } });
             DropTargetCommand = new GalaSoft.MvvmLight.Command.RelayCommand<object>(DropTarget);
-            // Task.Run(() => NighttimeData = nighttimeCalculator.Calculate());
+            LoadTargetCommand = new GalaSoft.MvvmLight.Command.RelayCommand<object>(LoadTarget);
+            DeleteTargetCommand = new GalaSoft.MvvmLight.Command.RelayCommand<object>(DeleteTarget);
         }
 
         private Dispatcher _dispatcher = System.Windows.Application.Current?.Dispatcher ?? Dispatcher.CurrentDispatcher;
         public ICommand OpenFileCommand { get; private set; }
+        public ICommand DropTargetCommand { get; set; }
+        public ICommand LoadTargetCommand { get; set; }
+        public ICommand DeleteTargetCommand { get; set; }
+
         public NighttimeData NighttimeData { get; private set; }
         public ObserveAllCollection<FilterInfo> Filters => profileService.ActiveProfile.FilterWheelSettings.FilterWheelFilters;
 
@@ -198,6 +205,13 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             }
         }
 
+        public void LoadTarget(Object o) {
+            Logger.Debug("Object" + o.GetType());
+        }
+        public void DeleteTarget(Object o) {
+            Logger.Debug("Object" + o.GetType());
+        }
+
         public void RetrieveTemplates() {
             if (sequenceMediator.Initialized) {
                 SpeckleTemplates.Clear();
@@ -218,13 +232,19 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             CurrentSpeckleTarget = SpeckleTarget;
             TargetNr++;
 
-            Items = new ObservableCollection<ISequenceItem>();
+            foreach (ISequenceItem item in Items) {
+                _dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() => { item.Detach(); item.AfterParentChanged(); }));
+            }
 
             var templates = sequenceMediator.GetDeepSkyObjectContainerTemplates();
 
             for (int i = 1; i <= SpeckleTarget.Cycles; i++) {
                 // Set target
                 var template = templates.FirstOrDefault(x => x.Name == (SpeckleTarget.Template != "" ? SpeckleTarget.Template : speckle.DefaultTemplate));
+                if (template == null) {
+                    Notification.ShowError("No template found. Check the selected template: " + SpeckleTarget.Template);
+                    return;
+                }
                 SpeckleTargetContainer speckleTargetContainer = (SpeckleTargetContainer)template.Clone();
                 speckleTargetContainer.Target = new InputTarget(Angle.ByDegree(profileService.ActiveProfile.AstrometrySettings.Latitude), Angle.ByDegree(profileService.ActiveProfile.AstrometrySettings.Longitude), profileService.ActiveProfile.AstrometrySettings.Horizon) {
                     TargetName = SpeckleTarget.Target + "_c" + i,
@@ -298,6 +318,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
 
                     _dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() => { Items.Add(speckleTargetContainerRef); speckleTargetContainerRef.AttachNewParent(this); speckleTargetContainerRef.AfterParentChanged(); }));
                 }
+                Thread.Sleep(200);
                 RaiseAllPropertiesChanged();
             }
 
@@ -310,8 +331,13 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             SpeckleTarget = SpeckleTargets.ElementAt(TargetNr);
             TimeSpan span = DateTime.Now.Subtract(SpeckleTarget.ImageTime);
             if (span.Minutes > speckle.CheckImageTimeWithinMinutes) {
-                // Reorder targets to see what's best again ! TODO Save progress for targets first
-                SpeckleTargets = new AsyncObservableCollection<SpeckleTarget>(SpeckleTargets.Where(i => i.ImageTime != null && i.Completed_nights == 0).OrderBy(i => i.ImageTime).ThenByDescending(n => n.Priority));
+                // Reorder targets to see what's best again !
+                foreach (SpeckleTarget speckleTarget in SpeckleTargets) {
+                    AltTime imageTo = speckleTarget.ImageTo(NighttimeData, speckle.AltitudeMax, speckle.MDistance);
+                    speckleTarget.ImageTime = imageTo.datetime;
+                    speckleTarget.ImageTimeAlt = imageTo.alt;
+                }
+                SpeckleTargets = new AsyncObservableCollection<SpeckleTarget>(SpeckleTargets.Where(i => i.ImageTime != null && i.Completed_nights == 0).OrderBy(i => i.ImageTime).ThenByDescending(n => n.Priority).ThenBy(i => i.ImageTimeAlt));
                 if (SpeckleTargets.Count > 0) {
                     TargetNr = 0;
                     SpeckleTarget = SpeckleTargets.ElementAt(TargetNr);
@@ -395,17 +421,23 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
         }
 
         private List<AltTime> GetAltList(Coordinates coords) {
-            var start = DateTime.Now;
+            var start = NighttimeData.NauticalTwilightRiseAndSet.Set ?? DateTime.Now;
             var siderealTime = AstroUtil.GetLocalSiderealTime(start, profileService.ActiveProfile.AstrometrySettings.Longitude);
             var hourAngle = AstroUtil.GetHourAngle(siderealTime, coords.RA);
+            var end = NighttimeData.NauticalTwilightRiseAndSet.Rise ?? DateTime.Now.AddHours(24);
+            var siderealEndTime = AstroUtil.GetLocalSiderealTime(end, profileService.ActiveProfile.AstrometrySettings.Longitude);
+            var hourEndAngle = AstroUtil.GetHourAngle(siderealEndTime, coords.RA);
+            if (hourEndAngle < hourAngle) {
+                hourEndAngle += 24;
+            }
 
             List<AltTime> altList = new List<AltTime>();
-            for (double angle = hourAngle; angle < hourAngle + 24; angle += 0.1) {
+            for (double angle = hourAngle; angle < hourEndAngle; angle += 0.1) {
                 var degAngle = AstroUtil.HoursToDegrees(angle);
                 var altitude = AstroUtil.GetAltitude(degAngle, profileService.ActiveProfile.AstrometrySettings.Latitude, coords.Dec);
                 //var azimuth = AstroUtil.GetAzimuth(degAngle, altitude, profileService.ActiveProfile.AstrometrySettings.Latitude, coords.Dec);
                 // Run the whole thing and get the top value
-                altList.Add(new AltTime(altitude, start));
+                altList.Add(new AltTime(altitude, degAngle, start));
                 start = start.AddHours(0.1);
             }
             return altList;
@@ -463,9 +495,10 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                             speckleTarget.Ra = record.RA0.Trim();
                             speckleTarget.Dec = record.Decl0.Trim();
                             speckleTarget.AltList = GetAltList(speckleTarget.Coordinates());
-                            var imageTo = speckleTarget.ImageTo(speckle.AltitudeMax, speckle.MDistance);
+                            var imageTo = speckleTarget.ImageTo(NighttimeData, speckle.AltitudeMax, speckle.MDistance);
                             if (imageTo != null && imageTo.alt > speckle.AltitudeMin && imageTo.datetime > NighttimeData.TwilightRiseAndSet.Set && imageTo.datetime < NighttimeData.TwilightRiseAndSet.Rise) {
                                 speckleTarget.ImageTime = RoundUp(imageTo.datetime, TimeSpan.FromMinutes(5));
+                                speckleTarget.ImageTimeAlt = imageTo.alt;
                             } else {
                                 Logger.Debug("Image time not within limits. Skipping target." + record.Number);
                                 continue;
@@ -486,7 +519,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                             speckleTarget.Filter = record.Filter;
                             SpeckleTargets.Add(speckleTarget);
                         }
-                        SpeckleTargets = new AsyncObservableCollection<SpeckleTarget>(SpeckleTargets.Where(i => i.ImageTime != null).OrderBy(i => i.ImageTime).ThenByDescending(n => n.Priority));
+                        SpeckleTargets = new AsyncObservableCollection<SpeckleTarget>(SpeckleTargets.Where(i => i.ImageTime != null).OrderBy(i => i.ImageTime).ThenByDescending(n => n.Priority).ThenBy(i => i.ImageTimeAlt));
                     }
                 }
                 LoadingTargets = false;
@@ -510,8 +543,6 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             var theta = SOFA.Seps(moonRaRadians, moonDecRadians, targetRaRadians, targetDecRadians);
             return AstroUtil.ToDegree(theta); // return separation
         }
-
-        public ICommand DropTargetCommand { get; set; }
 
         public override object Clone() {
             var clone = new SpeckleTargetListContainer(profileService, sequenceMediator, nighttimeCalculator, applicationStatusMediator, cameraMediator, framingAssistantVM, applicationMediator) {

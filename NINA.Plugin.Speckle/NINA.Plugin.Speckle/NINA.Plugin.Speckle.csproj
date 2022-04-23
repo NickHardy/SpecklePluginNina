@@ -394,7 +394,7 @@ if not exist "%25localappdata%25\NINA\Plugins\$(TargetName)" (
     mkdir  "%25localappdata%25\NINA\Plugins\$(TargetName)"
 )
 
-copy "$(TargetDir)$(TargetFileName)" "%25localappdata%25\NINA\Plugins\$(TargetName)\$(TargetName).1.0.0.4.dll" /Y
+copy "$(TargetDir)$(TargetFileName)" "%25localappdata%25\NINA\Plugins\$(TargetName)\$(TargetName).1.0.0.6.dll" /Y
 </PostBuildEvent>
   </PropertyGroup>
   <Import Project="..\packages\Google.Protobuf.Tools.3.18.1\build\Google.Protobuf.Tools.targets" Condition="Exists('..\packages\Google.Protobuf.Tools.3.18.1\build\Google.Protobuf.Tools.targets')" />

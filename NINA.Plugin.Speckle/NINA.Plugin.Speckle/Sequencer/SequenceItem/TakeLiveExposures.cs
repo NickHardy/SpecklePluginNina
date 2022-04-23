@@ -213,35 +213,38 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             var liveViewEnumerable = cameraMediator.LiveView(capture, localCTS.Token);
             Stopwatch seqDuration = Stopwatch.StartNew();
             await liveViewEnumerable.ForEachAsync(async exposureData => {
-                if (ExposureCount == 1) { seqDuration = Stopwatch.StartNew(); }
-                var imageData = await exposureData.ToImageData(progress, localCTS.Token);
+                token.ThrowIfCancellationRequested();
+                if (exposureData != null) {
+                    if (ExposureCount == 1) { seqDuration = Stopwatch.StartNew(); }
+                    var imageData = await exposureData.ToImageData(progress, localCTS.Token);
 
-                if (target != null) {
-                    imageData.MetaData.Target.Name = target.DeepSkyObject.NameAsAscii;
-                    imageData.MetaData.Target.Coordinates = target.InputCoordinates.Coordinates;
-                    imageData.MetaData.Target.Rotation = target.Rotation;
+                    if (target != null) {
+                        imageData.MetaData.Target.Name = target.DeepSkyObject.NameAsAscii;
+                        imageData.MetaData.Target.Coordinates = target.InputCoordinates.Coordinates;
+                        imageData.MetaData.Target.Rotation = target.Rotation;
+                    }
+
+                    if (filterWheelMediator.GetInfo().Connected)
+                        imageData.MetaData.FilterWheel.Filter = filterWheelMediator.GetInfo().SelectedFilter.Name;
+
+                    imageData.MetaData.Sequence.Title = title;
+                    imageData.MetaData.Image.ExposureStart = DateTime.Now;
+                    imageData.MetaData.Image.ExposureNumber = ExposureCount;
+                    imageData.MetaData.Image.ExposureTime = ExposureTime;
+
+                    // Only show first and last image in Imaging window
+                    if (ExposureCount == 1 || ExposureCount % speckle.ShowEveryNthImage == 0 || ExposureCount == TotalExposureCount) {
+                        _ = imagingMediator.PrepareImage(imageData, imageParams, token);
+                    }
+
+                    _ = imageData.SaveToDisk(new FileSaveInfo(profileService), token);
+
+                    if (ExposureCount >= TotalExposureCount) {
+                        double fps = ExposureCount / (((double)seqDuration.ElapsedMilliseconds) / 1000);
+                        Logger.Info("Captured " + ExposureCount + " times " + ExposureTime + "s live images in " + seqDuration.ElapsedMilliseconds + " ms. : " + Math.Round(fps, 2) + " fps");
+                        localCTS.Cancel();
+                    } else { ExposureCount++; }
                 }
-
-                if (filterWheelMediator.GetInfo().Connected)
-                    imageData.MetaData.FilterWheel.Filter = filterWheelMediator.GetInfo().SelectedFilter.Name;
-
-                imageData.MetaData.Sequence.Title = title;
-                imageData.MetaData.Image.ExposureStart = DateTime.Now;
-                imageData.MetaData.Image.ExposureNumber = ExposureCount;
-                imageData.MetaData.Image.ExposureTime = ExposureTime;
-
-                // Only show first and last image in Imaging window
-                if (ExposureCount == 1 || ExposureCount % speckle.ShowEveryNthImage == 0 || ExposureCount == TotalExposureCount) {
-                    _ = imagingMediator.PrepareImage(imageData, imageParams, token);
-                }
-
-                _ = imageData.SaveToDisk(new FileSaveInfo(profileService), token);
-
-                if (ExposureCount >= TotalExposureCount) {
-                    double fps = ExposureCount / (((double)seqDuration.ElapsedMilliseconds) / 1000);
-                    Logger.Info("Captured " + ExposureCount + " times " + ExposureTime + "s live images in " + seqDuration.ElapsedMilliseconds + " ms. : " + Math.Round(fps, 2) + " fps");
-                    localCTS.Cancel();
-                } else { ExposureCount++; }
             });
 
             // wait till camera reconnects

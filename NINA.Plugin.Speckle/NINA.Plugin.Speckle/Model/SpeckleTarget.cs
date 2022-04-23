@@ -88,8 +88,15 @@ namespace NINA.Plugin.Speckle.Model {
         }
 
         public DateTime ImageTime { get; set; }
-        public AltTime ImageTo(double alt = 80d, double mDistance = 5d) {
-            return AltList.Where(x => x.datetime > DateTime.Now).Where((x) => x.alt < Math.Min(alt, MeridianAltTime().alt - mDistance)).OrderByDescending((x) => x.alt).FirstOrDefault();
+        public double ImageTimeAlt { get; set; }
+        public AltTime ImageTo(NighttimeData nighttimeData, double alt = 80d, double mDistance = 5d) {
+            DateTime twilightSet = nighttimeData.TwilightRiseAndSet.Set ?? DateTime.Now;
+            DateTime twilightRise = nighttimeData.TwilightRiseAndSet.Rise ?? DateTime.Now.AddHours(24);
+            DateTime minTime = new DateTime(Math.Max(twilightSet.Ticks, DateTime.Now.Ticks));
+            return AltList.Where(x => x.datetime > minTime && x.datetime < twilightRise)
+                .Where(x => x.alt < alt)
+                .Where(x => x.deg < MeridianAltTime().deg - mDistance || x.deg > MeridianAltTime().deg + mDistance)
+                .OrderByDescending(x => x.alt).FirstOrDefault();
         }
 
     }
