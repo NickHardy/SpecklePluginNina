@@ -109,6 +109,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
 
         public override async Task Execute(IProgress<ApplicationStatus> progress, CancellationToken token) {
             var plateSolver = plateSolverFactory.GetPlateSolver(profileService.ActiveProfile.PlateSolveSettings);
+            var speckleContainer = ItemUtility.RetrieveSpeckleContainer(Parent);
 
             var parameter = new CaptureSolverParameter() {
                 Attempts = profileService.ActiveProfile.PlateSolveSettings.NumberOfAttempts,
@@ -132,7 +133,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                 new BinningMode(profileService.ActiveProfile.PlateSolveSettings.Binning, profileService.ActiveProfile.PlateSolveSettings.Binning),
                 1
             );
-            
+
             Logger.Debug("Capturing image for platesolve.");
             var exposureData = await imagingMediator.CaptureImage(seq, token, progress);
             var imageData = await exposureData.ToImageData(progress, token);
@@ -144,51 +145,52 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
 
             Logger.Debug("Solving image");
             var plateSolveResult = await imageSolver.Solve(image.RawImageData, parameter, progress, token);
-            if (!plateSolveResult.Success) {
-                throw new SequenceEntityFailedException(Loc.Instance["LblPlatesolveFailed"]);
-            }
+            if (plateSolveResult.Success) {
 
-            Logger.Debug("Calculating target position");
-            var arcsecPerPix = AstroUtil.ArcsecPerPixel(profileService.ActiveProfile.CameraSettings.PixelSize * profileService.ActiveProfile.PlateSolveSettings.Binning, profileService.ActiveProfile.TelescopeSettings.FocalLength);
-            var width = image.Image.PixelWidth;
-            var height = image.Image.PixelHeight;
-            var center = new Point(width / 2, height / 2);
+                Logger.Debug("Calculating target position");
+                var arcsecPerPix = AstroUtil.ArcsecPerPixel(profileService.ActiveProfile.CameraSettings.PixelSize * profileService.ActiveProfile.PlateSolveSettings.Binning, profileService.ActiveProfile.TelescopeSettings.FocalLength);
+                var width = image.Image.PixelWidth;
+                var height = image.Image.PixelHeight;
+                var center = new Point(width / 2, height / 2);
 
-            //Translate your coordinates to x/y in relation to center coordinates
-            var inputTarget = ItemUtility.RetrieveInputTarget(Parent);
-            Point targetPoint = inputTarget.InputCoordinates.Coordinates.XYProjection(plateSolveResult.Coordinates, center, arcsecPerPix, arcsecPerPix, plateSolveResult.Orientation, ProjectionType.Stereographic);
-            Logger.Debug("Found target at " + targetPoint.X + "x" + targetPoint.Y);
+                //Translate your coordinates to x/y in relation to center coordinates
+                var inputTarget = ItemUtility.RetrieveInputTarget(Parent);
+                Point targetPoint = inputTarget.InputCoordinates.Coordinates.XYProjection(plateSolveResult.Coordinates, center, arcsecPerPix, arcsecPerPix, plateSolveResult.Orientation, ProjectionType.Stereographic);
+                Logger.Debug("Found target at " + targetPoint.X + "x" + targetPoint.Y);
 
-            // Check if the target is in the image
-            if (targetPoint.X < 0 || targetPoint.X > width || targetPoint.Y < 0 || targetPoint.Y > height) {
-                Notification.ShowError("TargetPoint is not within the image.");
-                throw new SequenceEntityFailedException("Calculation failed. Target outside of image");
-            }
+                // Check if the target is in the image
+                if (targetPoint.X < 0 || targetPoint.X > width || targetPoint.Y < 0 || targetPoint.Y > height) {
+                    Notification.ShowError("TargetPoint is not within the image.");
+                    throw new SequenceEntityFailedException("Calculation failed. Target outside of image");
+                }
 
-            // Place the Roi around the star but within the image.
-            var speckleContainer = ItemUtility.RetrieveSpeckleContainer(Parent);
-            speckleContainer.X = Math.Min(Math.Max(Math.Round(targetPoint.X - (speckleContainer.Width / 2), 0), 0), image.Image.PixelWidth - (speckleContainer.Width / 2));
-            speckleContainer.Y = Math.Min(Math.Max(Math.Round(targetPoint.Y - (speckleContainer.Height / 2), 0), 0), image.Image.PixelHeight - (speckleContainer.Height / 2));
-            Logger.Debug("Setting roi position to " + speckleContainer.X + "x" + speckleContainer.Y);
+                // Place the Roi around the star but within the image.
+                speckleContainer.X = Math.Min(Math.Max(Math.Round(targetPoint.X - (speckleContainer.Width / 2), 0), 0), image.Image.PixelWidth - (speckleContainer.Width / 2));
+                speckleContainer.Y = Math.Min(Math.Max(Math.Round(targetPoint.Y - (speckleContainer.Height / 2), 0), 0), image.Image.PixelHeight - (speckleContainer.Height / 2));
+                Logger.Debug("Setting roi position to " + speckleContainer.X + "x" + speckleContainer.Y);
 
-            var speckleTarget = ItemUtility.RetrieveSpeckleTarget(Parent);
-            if (speckleTarget != null) {
-                speckleTarget.Orientation = plateSolveResult.Orientation;
-                speckleTarget.ArcsecPerPix = arcsecPerPix;
+                var speckleTarget = ItemUtility.RetrieveSpeckleTarget(Parent);
+                if (speckleTarget != null) {
+                    speckleTarget.Orientation = plateSolveResult.Orientation;
+                    speckleTarget.ArcsecPerPix = arcsecPerPix;
+                }
             }
 
             if (SaveImage) {
                 var target = speckleContainer.Target;
                 if (target != null) {
-                    imageData.MetaData.Target.Name = target.DeepSkyObject.NameAsAscii;
+                    imageData.MetaData.Target.Name = !plateSolveResult.Success ? target.TargetName + "_failed" : target.TargetName;
                     imageData.MetaData.Target.Coordinates = target.InputCoordinates.Coordinates;
                     imageData.MetaData.Target.Rotation = plateSolveResult.Orientation;
                 }
-                
+
                 imageData.MetaData.Sequence.Title = speckleContainer.Title;
                 _ = imageData.SaveToDisk(new FileSaveInfo(profileService), token);
             }
 
+            if (!plateSolveResult.Success) {
+                throw new SequenceEntityFailedException("Calculation failed to platesolve.");
+            }
         }
 
         public virtual bool Validate() {
