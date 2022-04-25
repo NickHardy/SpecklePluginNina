@@ -42,7 +42,7 @@ namespace NINA.Plugin.Speckle.Model {
         [JsonProperty]
         public int Cycles { get; set; }
         [JsonProperty]
-        public double Priority { get; set; }
+        public int Priority { get; set; }
         [JsonProperty]
         public double ExposureTime { get; set; }
         [JsonProperty]

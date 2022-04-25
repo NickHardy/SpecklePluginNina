@@ -325,13 +325,18 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
         }
 
         private SpeckleTarget GetNextTarget() {
-            if (TargetNr > SpeckleTargets.Count - 1)
+            Logger.Debug("Getting next target from list:" + SpeckleTargets.Count + " targets total.");
+            if (TargetNr > SpeckleTargets.Count - 1) {
+                Logger.Debug("TargetNr: " + TargetNr + " No more speckletargets loaded");
                 return null;
+            }
 
             SpeckleTarget = SpeckleTargets.ElementAt(TargetNr);
+            Logger.Debug("Loaded new target: " + SpeckleTarget.Target);
             TimeSpan span = DateTime.Now.Subtract(SpeckleTarget.ImageTime);
             if (span.Minutes > speckle.CheckImageTimeWithinMinutes) {
                 // Reorder targets to see what's best again !
+                Logger.Debug("SpeckleTarget to far past imaging time. Recalculating imaging time for targets.");
                 foreach (SpeckleTarget speckleTarget in SpeckleTargets) {
                     AltTime imageTo = speckleTarget.ImageTo(NighttimeData, speckle.AltitudeMax, speckle.MDistance);
                     speckleTarget.ImageTime = imageTo.datetime;
@@ -339,10 +344,13 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                 }
                 SpeckleTargets = new AsyncObservableCollection<SpeckleTarget>(SpeckleTargets.Where(i => i.ImageTime != null && i.Completed_nights == 0).OrderBy(i => i.ImageTime).ThenByDescending(n => n.Priority).ThenBy(i => i.ImageTimeAlt));
                 if (SpeckleTargets.Count > 0) {
+                    Logger.Debug("Targets left after reordering:" + SpeckleTargets.Count);
                     TargetNr = 0;
                     SpeckleTarget = SpeckleTargets.ElementAt(TargetNr);
+                    Logger.Debug("Loaded new target: " + SpeckleTarget.Target);
                 } else {
                     SpeckleTarget = null;
+                    Logger.Debug("No more speckle targets left.");
                 }
             }
             return SpeckleTarget;
@@ -416,6 +424,9 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                 double magnitude = SpeckleTarget.Magnitude > 1 ? SpeckleTarget.Magnitude - 1 : 8d;
                 SpeckleTarget.ReferenceStarList = simUtils.FindSimbadSaoStars(externalProgress, token, SpeckleTarget.Coordinates(), speckle.SearchRadius, magnitude, speckle.MaxReferenceMag).Result;
                 SpeckleTarget.ReferenceStar = SpeckleTarget.ReferenceStarList.FirstOrDefault();
+                if (SpeckleTarget.ReferenceStar == null) {
+                    Logger.Debug("Couldn't find reference SAO star for SpeckleTarget within " + speckle.SearchRadius + " degrees and magnitudes: " + magnitude + " and " + speckle.MaxReferenceMag);
+                }
                 RaiseAllPropertiesChanged();
             }
         }
@@ -517,9 +528,15 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                             speckleTarget.Separation = record.GaiaSep;
                             speckleTarget.Cycles = record.Cycles > 0 ? record.Cycles : Cycles;
                             speckleTarget.Filter = record.Filter;
+                            speckleTarget.Priority = record.Priority;
                             SpeckleTargets.Add(speckleTarget);
                         }
-                        SpeckleTargets = new AsyncObservableCollection<SpeckleTarget>(SpeckleTargets.Where(i => i.ImageTime != null).OrderBy(i => i.ImageTime).ThenByDescending(n => n.Priority).ThenBy(i => i.ImageTimeAlt));
+                        Logger.Debug("Loaded " + SpeckleTargets.Count + " speckletargets");
+                        SpeckleTargets = new AsyncObservableCollection<SpeckleTarget>(
+                            SpeckleTargets.Where(i => i.ImageTime != null).GroupBy(i => i.ImageTime)
+                            .SelectMany(g => g.OrderByDescending(n => n.Priority).ThenByDescending(i => i.ImageTimeAlt).Take(2).ToList())
+                            .OrderBy(i => i.ImageTime).ThenBy(i => i.ImageTimeAlt) );
+                        Logger.Debug("Filtered some targets that had the same imaging time. Now " + SpeckleTargets.Count + " speckletargets");
                     }
                 }
                 LoadingTargets = false;

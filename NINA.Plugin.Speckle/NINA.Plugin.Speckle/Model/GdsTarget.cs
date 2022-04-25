@@ -88,6 +88,7 @@ namespace NINA.Plugin.Speckle.Model {
         public double ExposureTime { get; set; }
         public int Exposures { get; set; }
         public string Filter { get; set; }
+        public int Priority { get; set; }
     }
 
     public class GdsTargetClassMap : ClassMap<GdsTarget> {
@@ -157,6 +158,7 @@ namespace NINA.Plugin.Speckle.Model {
             Map(m => m.ExposureTime).Name("ExposureTime").Optional().Default(0);
             Map(m => m.Exposures).Name("Exposures").Optional().Default(0);
             Map(m => m.Filter).Name("Filter").Optional().Default("");
+            Map(m => m.Priority).Name("Priority").Optional().Default(0);
         }
     }
 }
