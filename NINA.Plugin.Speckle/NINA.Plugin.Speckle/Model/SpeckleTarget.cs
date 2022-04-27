@@ -80,7 +80,7 @@ namespace NINA.Plugin.Speckle.Model {
         }
 
         public AltTime MeridianAltTime() {
-            return AltList.Where(x => x.datetime > DateTime.Now).OrderByDescending((x) => x.alt).FirstOrDefault();
+            return AltList.OrderByDescending((x) => x.alt).FirstOrDefault();
         }
 
         public AltTime ImageFrom(double alt = 40d) {
@@ -99,6 +99,15 @@ namespace NINA.Plugin.Speckle.Model {
                 .OrderByDescending(x => x.alt).FirstOrDefault();
         }
 
+        public AltTime getCurrentAltTime(double alt = 80d, double mDistance = 5d) {
+            DateTime begin = DateTime.Now;
+            DateTime end = DateTime.Now.AddMinutes(8);
+            return AltList
+                .Where(x => x.datetime > begin && x.datetime < end)
+                .Where(x => x.alt < alt)
+                .Where(x => x.deg < MeridianAltTime().deg - mDistance || x.deg > MeridianAltTime().deg + mDistance)
+                .OrderByDescending(x => x.alt).FirstOrDefault();
+        }
     }
 
     public sealed class SpeckleTargetMap : ClassMap<SpeckleTarget> {
