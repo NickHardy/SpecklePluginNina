@@ -43,6 +43,8 @@ using static NINA.Astrometry.Coordinates;
 using NINA.Plugin.Speckle.Sequencer.Utility;
 using System.Windows;
 using NINA.Image.FileFormat;
+using NINA.WPF.Base.Interfaces.ViewModel;
+using NINA.WPF.Base.Interfaces.Mediator;
 
 namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
 
@@ -59,6 +61,8 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
         private IFilterWheelMediator filterWheelMediator;
         private IPlateSolverFactory plateSolverFactory;
         private IWindowServiceFactory windowServiceFactory;
+        private IImageHistoryVM imageHistoryVM;
+        private IImageSaveMediator imageSaveMediator;
         public PlateSolvingStatusVM PlateSolveStatusVM { get; } = new PlateSolvingStatusVM();
 
         [ImportingConstructor]
@@ -67,13 +71,17 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                             IImagingMediator imagingMediator,
                             IFilterWheelMediator filterWheelMediator,
                             IPlateSolverFactory plateSolverFactory,
-                            IWindowServiceFactory windowServiceFactory) {
+                            IWindowServiceFactory windowServiceFactory,
+                            IImageHistoryVM imageHistoryVM,
+                            IImageSaveMediator imageSaveMediator) {
             this.profileService = profileService;
             this.telescopeMediator = telescopeMediator;
             this.imagingMediator = imagingMediator;
             this.filterWheelMediator = filterWheelMediator;
             this.plateSolverFactory = plateSolverFactory;
             this.windowServiceFactory = windowServiceFactory;
+            this.imageHistoryVM = imageHistoryVM;
+            this.imageSaveMediator = imageSaveMediator;
             this.SaveImage = true;
         }
 
@@ -82,7 +90,9 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                                                           cloneMe.imagingMediator,
                                                           cloneMe.filterWheelMediator,
                                                           cloneMe.plateSolverFactory,
-                                                          cloneMe.windowServiceFactory) {
+                                                          cloneMe.windowServiceFactory,
+                                                          cloneMe.imageHistoryVM,
+                                                          cloneMe.imageSaveMediator) {
             CopyMetaData(cloneMe);
         }
 
@@ -128,7 +138,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
 
             var seq = new CaptureSequence(
                 profileService.ActiveProfile.PlateSolveSettings.ExposureTime,
-                CaptureSequence.ImageTypes.SNAPSHOT,
+                CaptureSequence.ImageTypes.LIGHT,
                 profileService.ActiveProfile.PlateSolveSettings.Filter,
                 new BinningMode(profileService.ActiveProfile.PlateSolveSettings.Binning, profileService.ActiveProfile.PlateSolveSettings.Binning),
                 1
@@ -138,7 +148,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             var exposureData = await imagingMediator.CaptureImage(seq, token, progress);
             var imageData = await exposureData.ToImageData(progress, token);
 
-            var prepareTask = imagingMediator.PrepareImage(imageData, new PrepareImageParameters(true, false), token);
+            var prepareTask = imagingMediator.PrepareImage(imageData, new PrepareImageParameters(true, true), token);
             var image = prepareTask.Result;
 
             var imageSolver = new ImageSolver(plateSolver, null);
@@ -176,17 +186,17 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                 }
             }
 
-            if (SaveImage) {
-                var target = speckleContainer.Target;
-                if (target != null) {
-                    imageData.MetaData.Target.Name = !plateSolveResult.Success ? target.TargetName + "_failed" : target.TargetName;
-                    imageData.MetaData.Target.Coordinates = target.InputCoordinates.Coordinates;
-                    imageData.MetaData.Target.Rotation = plateSolveResult.Orientation;
-                }
-
-                imageData.MetaData.Sequence.Title = speckleContainer.Title;
-                _ = imageData.SaveToDisk(new FileSaveInfo(profileService), token);
+            var target = speckleContainer.Target;
+            if (target != null) {
+                imageData.MetaData.Target.Name = !plateSolveResult.Success ? target.TargetName + "_failed" : target.TargetName;
+                imageData.MetaData.Target.Coordinates = target.InputCoordinates.Coordinates;
+                imageData.MetaData.Target.Rotation = plateSolveResult.Orientation;
             }
+
+            imageData.MetaData.Sequence.Title = speckleContainer.Title;
+
+            await imageSaveMediator.Enqueue(imageData, prepareTask, progress, token);
+            imageHistoryVM.Add(imageData.MetaData.Image.Id, await imageData.Statistics, CaptureSequence.ImageTypes.LIGHT);
 
             if (!plateSolveResult.Success) {
                 throw new SequenceEntityFailedException("Calculation failed to platesolve.");

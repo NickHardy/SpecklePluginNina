@@ -281,25 +281,6 @@
                         Text="|" />
 
                     <ContentPresenter Content="{StaticResource TakeExposureDetails}" />
-                    <TextBlock
-                        Margin="7.5,0,7.5,0"
-                        HorizontalAlignment="Center"
-                        VerticalAlignment="Center"
-                        Text="|" />
-
-                    <TextBlock
-                        VerticalAlignment="Center"
-                        Text="Wait for reconnect" />
-                    <CheckBox
-                        Width="80"
-                        HorizontalAlignment="Right"
-                        IsChecked="{Binding WaitForCameraReconnect}">
-                        <CheckBox.ToolTip>
-                            <ToolTip ToolTipService.ShowOnDisabled="False">
-                                <TextBlock Text="Wait for the camera to reconnect before continuing." />
-                            </ToolTip>
-                        </CheckBox.ToolTip>
-                    </CheckBox>
                     
                 </WrapPanel>
             </view:SequenceBlockView.SequenceItemContent>
@@ -404,19 +385,4 @@
         </view:SequenceBlockView>
     </DataTemplate>
 
-    <DataTemplate DataType="{x:Type local:CalculateRoiPosition}">
-        <view:SequenceBlockView>
-            <view:SequenceBlockView.SequenceItemContent>
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock VerticalAlignment="Center" Text="Save image" />
-                    <CheckBox
-                        MinWidth="40"
-                        Margin="5,0,0,0"
-                        VerticalAlignment="Center"
-                        IsChecked="{Binding SaveImage}" />
-
-                </StackPanel>
-            </view:SequenceBlockView.SequenceItemContent>
-        </view:SequenceBlockView>
-    </DataTemplate>
 </ResourceDictionary>

@@ -90,8 +90,8 @@ namespace NINA.Plugin.Speckle.Model {
         public DateTime ImageTime { get; set; }
         public double ImageTimeAlt { get; set; }
         public AltTime ImageTo(NighttimeData nighttimeData, double alt = 80d, double mDistance = 5d) {
-            DateTime twilightSet = nighttimeData.TwilightRiseAndSet.Set ?? DateTime.Now;
-            DateTime twilightRise = nighttimeData.TwilightRiseAndSet.Rise ?? DateTime.Now.AddHours(24);
+            DateTime twilightSet = nighttimeData.NauticalTwilightRiseAndSet.Set ?? DateTime.Now;
+            DateTime twilightRise = nighttimeData.NauticalTwilightRiseAndSet.Rise ?? DateTime.Now.AddHours(24);
             DateTime minTime = new DateTime(Math.Max(twilightSet.Ticks, DateTime.Now.Ticks));
             return AltList.Where(x => x.datetime > minTime && x.datetime < twilightRise)
                 .Where(x => x.alt < alt)

@@ -46,8 +46,8 @@ using NINA.Plugin.Speckle.Sequencer.Utility;
 
 namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
 
-    [ExportMetadata("Name", "QHY live exposures")]
-    [ExportMetadata("Description", "Lbl_SequenceItem_Imaging_TakeExposure_Description")]
+    [ExportMetadata("Name", "Take Video Roi Exposures")]
+    [ExportMetadata("Description", "Currently only QHY, ZWO and Touptek are supported for video imaging.")]
     [ExportMetadata("Icon", "CameraSVG")]
     [ExportMetadata("Category", "Speckle Interferometry")]
     [Export(typeof(ISequenceItem))]
@@ -88,8 +88,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                 Gain = Gain,
                 Offset = Offset,
                 ImageType = ImageType,
-                TotalExposureCount = TotalExposureCount,
-                WaitForCameraReconnect = WaitForCameraReconnect
+                TotalExposureCount = TotalExposureCount
             };
 
             if (clone.Binning == null) {
@@ -149,11 +148,6 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
 
         [JsonProperty]
         public int TotalExposureCount { get => totalExposureCount; set { totalExposureCount = value; RaisePropertyChanged(); } }
-
-        private bool waitForCameraReconnect;
-
-        [JsonProperty]
-        public bool WaitForCameraReconnect { get => waitForCameraReconnect; set { waitForCameraReconnect = value; RaisePropertyChanged(); } }
 
         private CameraInfo cameraInfo;
 
@@ -247,13 +241,11 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                 }
             });
 
-            // wait till camera reconnects
-            if (WaitForCameraReconnect) {
+            // wait till camera reconnects. Specifically for QHY camera's
+            Thread.Sleep(100);
+            while (!cameraInfo.Connected) {
+                token.ThrowIfCancellationRequested();
                 Thread.Sleep(100);
-                while (!cameraInfo.Connected) {
-                    token.ThrowIfCancellationRequested();
-                    Thread.Sleep(100);
-                }
             }
         }
 
