@@ -459,9 +459,14 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             for (double angle = hourAngle; angle < hourEndAngle; angle += 0.05) {
                 var degAngle = AstroUtil.HoursToDegrees(angle);
                 var altitude = AstroUtil.GetAltitude(degAngle, profileService.ActiveProfile.AstrometrySettings.Latitude, coords.Dec);
-                //var azimuth = AstroUtil.GetAzimuth(degAngle, altitude, profileService.ActiveProfile.AstrometrySettings.Latitude, coords.Dec);
+                var azimuth = AstroUtil.GetAzimuth(degAngle, altitude, profileService.ActiveProfile.AstrometrySettings.Latitude, coords.Dec);
+                var horizonAltitude = 0d;
+                if (profileService.ActiveProfile.AstrometrySettings.Horizon != null) {
+                    horizonAltitude = profileService.ActiveProfile.AstrometrySettings.Horizon.GetAltitude(azimuth);
+                }
                 // Run the whole thing and get the top value
-                altList.Add(new AltTime(altitude, degAngle, start));
+                if (altitude > horizonAltitude)
+                    altList.Add(new AltTime(altitude, degAngle, start));
                 start = start.AddHours(0.05);
             }
             return altList;
