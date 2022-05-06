@@ -156,7 +156,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             Logger.Debug("Solving image");
             var plateSolveResult = await imageSolver.Solve(image.RawImageData, parameter, progress, token);
             if (plateSolveResult.Success) {
-
+                Logger.Debug("PlateSolveResult: " + JsonConvert.SerializeObject(plateSolveResult));
                 Logger.Debug("Calculating target position");
                 var arcsecPerPix = AstroUtil.ArcsecPerPixel(profileService.ActiveProfile.CameraSettings.PixelSize * profileService.ActiveProfile.PlateSolveSettings.Binning, profileService.ActiveProfile.TelescopeSettings.FocalLength);
                 var width = image.Image.PixelWidth;
@@ -165,7 +165,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
 
                 //Translate your coordinates to x/y in relation to center coordinates
                 var inputTarget = ItemUtility.RetrieveInputTarget(Parent);
-                Point targetPoint = inputTarget.InputCoordinates.Coordinates.XYProjection(plateSolveResult.Coordinates, center, arcsecPerPix, arcsecPerPix, plateSolveResult.Orientation, ProjectionType.Stereographic);
+                Point targetPoint = inputTarget.InputCoordinates.Coordinates.XYProjection(plateSolveResult.Coordinates, center, arcsecPerPix, arcsecPerPix, plateSolveResult.Orientation, ProjectionType.Gnomonic);
                 Logger.Debug("Found target at " + targetPoint.X + "x" + targetPoint.Y);
 
                 // Check if the target is in the image
@@ -184,6 +184,11 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                     speckleTarget.Orientation = plateSolveResult.Orientation;
                     speckleTarget.ArcsecPerPix = arcsecPerPix;
                 }
+/*                DetectedStar TargetStar = new DetectedStar() { Position = new Accord.Point((float)targetPoint.X, (float)targetPoint.Y) };
+                var starAnnotator = new Utility.StarAnnotator();
+                string saveAnnotationJpg = profileService.ActiveProfile.ImageFileSettings.FilePath + "\\" + inputTarget.TargetName + "_fov.jpg";
+                var annotatedImage = await starAnnotator.GetAnnotatedImage(TargetStar, new List<DetectedStar>(), new List<DetectedStar>(), new List<DetectedStar>(), new List<DetectedStar>(), image.Image, saveAnnotationJpg, seq.ExposureTime, token);
+                imagingMediator.SetImage(annotatedImage);*/
             }
 
             var target = speckleContainer.Target;

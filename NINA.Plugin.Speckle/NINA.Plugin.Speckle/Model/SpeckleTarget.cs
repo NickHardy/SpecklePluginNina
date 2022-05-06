@@ -73,10 +73,15 @@ namespace NINA.Plugin.Speckle.Model {
         public SpeckleTargetContainer SpeckleTemplate { get; set; }
 
         public Coordinates Coordinates() {
-            if (Double.TryParse(Ra, out double RaDeg) && Double.TryParse(Dec, out double DecDeg)) {
-                return new Coordinates(Angle.ByDegree(RaDeg), Angle.ByDegree(DecDeg), Epoch.J2000);
+            double RaDeg;
+            double DecDeg;
+            if (!Double.TryParse(Ra, out RaDeg)) {
+                RaDeg = AstroUtil.HMSToDegrees(Ra);
             }
-            return new Coordinates(Angle.ByDegree(AstroUtil.HMSToDegrees(Ra)), Angle.ByDegree(AstroUtil.DMSToDegrees(Dec)), Epoch.J2000);
+            if (!Double.TryParse(Dec, out DecDeg)) {
+                DecDeg = AstroUtil.DMSToDegrees(Dec);
+            }
+            return new Coordinates(Angle.ByDegree(RaDeg), Angle.ByDegree(DecDeg), Epoch.J2000);
         }
 
         public AltTime MeridianAltTime() {
