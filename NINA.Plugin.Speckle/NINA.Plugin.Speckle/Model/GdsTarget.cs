@@ -85,10 +85,14 @@ namespace NINA.Plugin.Speckle.Model {
         public string User { get; set; }
         public string Target { get; set; }
         public int Cycles { get; set; }
+        public int Nights { get; set; }
         public double ExposureTime { get; set; }
         public int Exposures { get; set; }
         public string Filter { get; set; }
         public int Priority { get; set; }
+        public int Completed_nights { get; set; }
+        public int Completed_cycles { get; set; }
+        public int Completed_ref_cycles { get; set; }
     }
 
     public class GdsTargetClassMap : ClassMap<GdsTarget> {
@@ -155,10 +159,14 @@ namespace NINA.Plugin.Speckle.Model {
             Map(m => m.User).Name("User").Optional().Default("");
             Map(m => m.Target).Name("Target").Optional().Default("");
             Map(m => m.Cycles).Name("Cycles").Optional().Default(0);
+            Map(m => m.Nights).Name("Nights").Optional().Default(0);
             Map(m => m.ExposureTime).Name("ExposureTime").Optional().Default(0);
             Map(m => m.Exposures).Name("Exposures").Optional().Default(0);
             Map(m => m.Filter).Name("Filter").Optional().Default("");
             Map(m => m.Priority).Name("Priority").Optional().Default(0);
+            Map(m => m.Completed_cycles).Name("Completed_cycles").Optional().Default(0);
+            Map(m => m.Completed_ref_cycles).Name("Completed_ref_cycles").Optional().Default(0);
+            Map(m => m.Completed_nights).Name("Completed_nights").Optional().Default(0);
         }
     }
 }

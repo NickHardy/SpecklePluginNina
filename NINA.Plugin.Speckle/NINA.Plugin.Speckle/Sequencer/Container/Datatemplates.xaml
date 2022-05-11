@@ -609,7 +609,27 @@
                         <DataGrid.Columns>
                             <DataGridTextColumn Width="auto" Binding="{Binding User}" Header="User" />
                             <DataGridTextColumn Width="*" Binding="{Binding Target}" Header="Target" />
-                            <DataGridTextColumn Width="40" Binding="{Binding Cycles}" Header="Cycles" />
+                            <DataGridTemplateColumn Width="50">
+                                <DataGridTemplateColumn.Header>
+                                    <StackPanel HorizontalAlignment="Center">
+                                        <TextBlock Padding="5,0" Foreground="{StaticResource ButtonForegroundBrush}" Text="Cycles" />
+                                    </StackPanel>
+                                </DataGridTemplateColumn.Header>
+                                <DataGridTemplateColumn.CellEditingTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                            <TextBlock Padding="5,0" Foreground="{StaticResource ButtonForegroundBrush}" Text="{Binding Cycles}" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellEditingTemplate>
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                            <TextBlock Foreground="{StaticResource ButtonForegroundBrush}" Text="{Binding Cycles}" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
                             <DataGridTextColumn Width="80" Binding="{Binding ExposureTime}" Header="ExposureTime" />
                             <DataGridTextColumn Width="70" Binding="{Binding Exposures}" Header="Exposures" />
                             <DataGridTextColumn Width="40" Binding="{Binding Filter}" Header="Filter" />

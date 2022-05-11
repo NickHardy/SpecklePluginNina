@@ -369,47 +369,45 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
 
         private void RegisterStatusCurrentTarget() {
             if (CurrentSpeckleTarget == null) return;
+            SpeckleTarget = SpeckleTargets.Where(x => x.TargetId == CurrentSpeckleTarget.TargetId).FirstOrDefault();
             var nights = false;
             foreach (ISequenceItem item in Items) {
                 var container = item as SpeckleTargetContainer;
                 if (container != null && !container.Target.TargetName.Contains("_ref_")) {
                     List<ISequenceItem> nonFinishedItems = container.Items.Where(x => x.Status != SequenceEntityStatus.FINISHED).Cast<ISequenceItem>().ToList();
                     if (nonFinishedItems.Count == 0) {
-                        CurrentSpeckleTarget.Completed_cycles += 1;
+                        SpeckleTarget.Completed_cycles += 1;
                     } else {
                         var exposures = nonFinishedItems.Where(x => x is TakeLiveExposures || x is TakeRoiExposures).FirstOrDefault();
                         if (exposures != null) {
-                            CurrentSpeckleTarget.Completed_cycles += 1; // TODO maybe add an error marker or something
+                            SpeckleTarget.Completed_cycles += 1; // TODO maybe add an error marker or something
                         }
                     }
-                    if (nights == false && CurrentSpeckleTarget.Completed_cycles == CurrentSpeckleTarget.Cycles) {
-                        CurrentSpeckleTarget.Completed_nights += 1;
+                    if (nights == false && SpeckleTarget.Completed_cycles == SpeckleTarget.Cycles) {
+                        SpeckleTarget.Completed_nights += 1;
                         nights = true;
                     }
                 }
                 if (container != null && container.Target.TargetName.Contains("_ref_")) {
                     List<ISequenceItem> nonFinishedItems = container.Items.Where(x => x.Status != SequenceEntityStatus.FINISHED).Cast<ISequenceItem>().ToList();
                     if (nonFinishedItems.Count == 0) {
-                        CurrentSpeckleTarget.Completed_ref_cycles += 1;
+                        SpeckleTarget.Completed_ref_cycles += 1;
                     } else {
                         var exposures = nonFinishedItems.Where(x => x is TakeLiveExposures || x is TakeRoiExposures).FirstOrDefault();
                         if (exposures == null) {
-                            CurrentSpeckleTarget.Completed_ref_cycles += 1; // TODO maybe add an error marker or something
+                            SpeckleTarget.Completed_ref_cycles += 1; // TODO maybe add an error marker or something
                         }
                     }
                 }
             }
-
-            // Write data to json textfile. TODO Clean up this ugly code
-            string path = Path.Combine(profileService.ActiveProfile.ImageFileSettings.FilePath, Guid.NewGuid().ToString());
-            string uniquePath = CoreUtil.GetUniqueFilePath(path + ".json");
-            File.WriteAllText(uniquePath, JsonConvert.SerializeObject(CurrentSpeckleTarget));
-            ImageMetaData metaData = new ImageMetaData();
-            metaData.Target.Name = CurrentSpeckleTarget.Target + "_c" + CurrentSpeckleTarget.Completed_cycles;
-            metaData.Sequence.Title = CurrentSpeckleTarget.User;
-            metaData.Image.ExposureStart = DateTime.Now;
-            BaseImageData baseImageData = new BaseImageData(new ushort[0], 0, 0, 0, false, metaData, profileService, new StarDetection(), null);
-            baseImageData.FinalizeSave(uniquePath, profileService.ActiveProfile.ImageFileSettings.FilePattern.Replace("$$FRAMENR$$", ""));
+            RaiseAllPropertiesChanged();
+            // Write current status to the target csv file
+            string csvfile = Path.Combine(profileService.ActiveProfile.ImageFileSettings.FilePath, "TargetList-" + DateTime.Now.AddHours(-12).ToString("yyyy-MM-dd") + ".csv");
+            using (var writer = new StreamWriter(csvfile))
+            using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture)) {
+                csv.Context.RegisterClassMap<SpeckleTargetMap>();
+                csv.WriteRecords(SpeckleTargets);
+            }
         }
 
         private void DropTarget(object obj) {
@@ -515,6 +513,10 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                                 return false;
                             }
                             GdsTargets.Add(record);
+                            if (record.Nights > 0 && record.Nights <= record.Completed_nights) {
+                                Logger.Debug("Target already imaged enough nights. Skipping target." + record.Number);
+                                continue;
+                            }
                             if (record.Gmag0 > 0 && (record.Gmag0 < speckle.MinMag || record.Gmag0 > speckle.MaxMag)) {
                                 Logger.Debug("Magnitude not within limits. Skipping target." + record.Number);
                                 continue;
@@ -526,6 +528,8 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                             SpeckleTarget speckleTarget = new SpeckleTarget();
                             speckleTarget.Ra = record.RA0.Trim();
                             speckleTarget.Dec = record.Decl0.Trim();
+                            speckleTarget.RA0 = record.RA0.Trim();
+                            speckleTarget.Decl0 = record.Decl0.Trim();
                             speckleTarget.AltList = GetAltList(speckleTarget.Coordinates());
                             var imageTo = speckleTarget.ImageTo(NighttimeData, speckle.AltitudeMax, speckle.MDistance);
                             if (imageTo != null && imageTo.alt > speckle.AltitudeMin && imageTo.datetime >= NighttimeData.NauticalTwilightRiseAndSet.Set && imageTo.datetime <= NighttimeData.NauticalTwilightRiseAndSet.Rise) {
@@ -548,6 +552,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                             speckleTarget.Magnitude = record.Gmag0;
                             speckleTarget.Separation = record.GaiaSep;
                             speckleTarget.Cycles = record.Cycles > 0 ? record.Cycles : Cycles;
+                            speckleTarget.Nights = record.Nights > 0 ? record.Nights : speckle.Nights;
                             speckleTarget.Filter = record.Filter;
                             speckleTarget.Priority = record.Priority;
                             SpeckleTargets.Add(speckleTarget);

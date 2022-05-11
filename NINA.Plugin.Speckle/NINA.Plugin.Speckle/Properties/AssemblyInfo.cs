@@ -82,32 +82,34 @@ Videos explaning double star observing and speckle interferometry can be found h
 * Calculate exposure time  
   Use this instruction to check if your Roi image is not to bright. The speckle star should not exceed 1/3 of the camera ADU.
   The max time will be set to the ExposureTime set for the target in the list container. It will check the brightness and lower the exposuretime until it reaches the target ADU.
-  When it finds a good exposure time it will copy that time into the 'Take Roi Exposures' and 'Qhy live exposures' instructions in the Speckle Target Container.
+  When it finds a good exposure time it will copy that time into the 'Take Video Roi Exposures' and 'Take Roi Exposures' instructions in the same Speckle Target Container.
+
+* Take Video Roi Exposures  
+  Only for QHY, ZWO and Altair astro cameras. It will take rapid exposures using video mode of the target Roi using the Roi settings in the Speckle Target Container.
+  To keep the speed up, it will not show every image in the imaging tab. Rather it will show the first and last image and every Nth image set in the plugin options.
+  Also the images will not show up in the image history or the Hfr history. The speed of capturing images will depend on the speed of the imaging pc.
+  Images could potentially show 8 bit bitdepth in the statistics instead of the actual 16 bit.
 
 * Take Roi Exposures  
-  Fit for most cameras. It will take rapid single exposures of the target Roi using the Roi settings in the Speckle Target Container.
+  Fit for most astro cameras. DSLRs can't do this. It will take rapid single exposures of the target Roi using the Roi settings in the Speckle Target Container.
   To keep the speed up, it will not show every image in the imaging tab. Rather it will show the first and last image and every Nth image set in the plugin options.
   Also the images will not show up in the image history or the Hfr history. The speed of capturing images will depend on the speed of the imaging pc.
-
-* QHY live exposures  
-  Only for qhy cameras. It will take rapid exposures using video mode of the target Roi using the Roi settings in the Speckle Target Container.
-  To keep the speed up, it will not show every image in the imaging tab. Rather it will show the first and last image and every Nth image set in the plugin options.
-  Also the images will not show up in the image history or the Hfr history. The speed of capturing images will depend on the speed of the imaging pc.
+  Images could potentially show 8 bit bitdepth in the statistics instead of the actual 16 bit.
 
 * Speckle Target List Container  
   This is the main target container. Here you can load a list of targets to run through the night.
   First create and choose the Speckle Target Template and enter the preferred values for the target list.
   Next press Load target set to select the csv file with the targets.
   The csv you provide will be filtered based on your location and the targets altitude during the night.
-  The target needs to reach an altitude between 40 and 80 degrees during the night, which is best for speckle image aquisition.
+  The target needs to reach an altitude between 40 and 80 degrees during the night, which is best for speckle image aquisition, but can be altered in the options to suite your situation.
   All loaded targets will be checked for the best imaging time and sorted accordingly.  
 
   When you start the sequence it will load the first target using the chosen template and it will fill in some values into the instructions, like Wait for time, Exposure times.
   It will also retrieve a reference star nearby the target and use the same Template to create the sequence. The reference star is needed as a baseline for the target double star.
   The reference star is retrieved from the [Simbad Astronomical Database](http://simbad.u-strasbg.fr/simbad/).
   It must be an SAO single star, near the target and preferebly a little brighter than the target.
-  If you have multiple cycles it will add multiple templates to the sequence alternating between target and reference star.
-  After the target and reference sequences have all been done, it will remove the sequences and load the next target until it has finished all targets or until a condition ends the loop.
+  After the target and reference containers have run through, it will remove the containers and load the next target until it has finished all targets or until a condition ends the loop.
+  When the next target is more than 5 minutes away, it will select a previous target which is highest in altitude and has had the least cycles to fill up the time.
 
 * Center on StarCluster  
   Speckle interferometry is typically done using really long focal lengths and a small fov.

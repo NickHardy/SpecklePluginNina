@@ -20,11 +20,18 @@ using System;
 using System.Collections.Generic;
 using NINA.Plugin.Speckle.Sequencer.Container;
 using System.Linq;
+using System.Threading;
 
 namespace NINA.Plugin.Speckle.Model {
 
     [JsonObject(MemberSerialization.OptIn)]
     public class SpeckleTarget {
+        static int nextId;
+        public int TargetId { get; private set; }
+        public SpeckleTarget() {
+            TargetId = Interlocked.Increment(ref nextId);
+        }
+
         [JsonProperty]
         public string User { get; set; }
         [JsonProperty]
@@ -33,6 +40,10 @@ namespace NINA.Plugin.Speckle.Model {
         public string Ra { get; set; }
         [JsonProperty]
         public string Dec { get; set; }
+        [JsonProperty]
+        public string RA0 { get; set; }
+        [JsonProperty]
+        public string Decl0 { get; set; }
         [JsonProperty]
         public double Orientation { get; set; }
         [JsonProperty]
@@ -122,6 +133,8 @@ namespace NINA.Plugin.Speckle.Model {
             Map(m => m.Target).Name("Target").Optional().Default("");
             Map(m => m.Ra).Name("Ra");
             Map(m => m.Dec).Name("Dec");
+            Map(m => m.RA0).Name("RA0");
+            Map(m => m.Decl0).Name("Decl0");
             Map(m => m.Nights).Name("Nights").Optional().Default(1);
             Map(m => m.Cycles).Name("Cycles").Optional().Default(1);
             Map(m => m.Priority).Name("Priority").Optional().Default(0);
@@ -131,6 +144,9 @@ namespace NINA.Plugin.Speckle.Model {
             Map(m => m.Separation).Name("Separation").Optional().Default(0);
             Map(m => m.Template).Name("Template").Optional().Default("");
             Map(m => m.Filter).Name("Filter").Optional().Default("");
+            Map(m => m.Completed_cycles).Name("Completed_cycles").Optional().Default(0);
+            Map(m => m.Completed_ref_cycles).Name("Completed_ref_cycles").Optional().Default(0);
+            Map(m => m.Completed_nights).Name("Completed_nights").Optional().Default(0);
         }
     }
 }
