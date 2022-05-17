@@ -38,31 +38,26 @@ using NINA.Astrometry;
 using NINA.Equipment.Equipment.MyCamera;
 using NINA.WPF.Base.Interfaces.ViewModel;
 using NINA.Sequencer.Interfaces;
-using Dasync.Collections;
-using System.Diagnostics;
-using NINA.Image.FileFormat;
 using NINA.Sequencer.SequenceItem;
 using NINA.Plugin.Speckle.Sequencer.Utility;
 
 namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
 
-    [ExportMetadata("Name", "Take Video Roi Exposures")]
-    [ExportMetadata("Description", "Currently only QHY, ZWO and Touptek are supported for video imaging.")]
+    [ExportMetadata("Name", "Take Single Exposure")]
+    [ExportMetadata("Description", "Lbl_SequenceItem_Imaging_TakeExposure_Description")]
     [ExportMetadata("Icon", "CameraSVG")]
     [ExportMetadata("Category", "Speckle Interferometry")]
     [Export(typeof(ISequenceItem))]
     [JsonObject(MemberSerialization.OptIn)]
-    public class TakeLiveExposures : NINA.Sequencer.SequenceItem.SequenceItem, IExposureItem, IValidatable {
+    public class TakeSingleExposure : NINA.Sequencer.SequenceItem.SequenceItem, IExposureItem, IValidatable {
         private ICameraMediator cameraMediator;
         private IImagingMediator imagingMediator;
         private IImageSaveMediator imageSaveMediator;
         private IImageHistoryVM imageHistoryVM;
         private IProfileService profileService;
-        private IFilterWheelMediator filterWheelMediator;
-        private Speckle speckle;
 
         [ImportingConstructor]
-        public TakeLiveExposures(IProfileService profileService, ICameraMediator cameraMediator, IImagingMediator imagingMediator, IImageSaveMediator imageSaveMediator, IImageHistoryVM imageHistoryVM, IFilterWheelMediator filterWheelMediator) {
+        public TakeSingleExposure(IProfileService profileService, ICameraMediator cameraMediator, IImagingMediator imagingMediator, IImageSaveMediator imageSaveMediator, IImageHistoryVM imageHistoryVM) {
             Gain = -1;
             Offset = -1;
             ImageType = CaptureSequence.ImageTypes.LIGHT;
@@ -71,24 +66,21 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             this.imageSaveMediator = imageSaveMediator;
             this.imageHistoryVM = imageHistoryVM;
             this.profileService = profileService;
-            this.filterWheelMediator = filterWheelMediator;
             CameraInfo = this.cameraMediator.GetInfo();
-            speckle = new Speckle();
         }
 
-        private TakeLiveExposures(TakeLiveExposures cloneMe) : this(cloneMe.profileService, cloneMe.cameraMediator, cloneMe.imagingMediator, cloneMe.imageSaveMediator, cloneMe.imageHistoryVM, cloneMe.filterWheelMediator) {
+        private TakeSingleExposure(TakeSingleExposure cloneMe) : this(cloneMe.profileService, cloneMe.cameraMediator, cloneMe.imagingMediator, cloneMe.imageSaveMediator, cloneMe.imageHistoryVM) {
             CopyMetaData(cloneMe);
         }
 
         public override object Clone() {
-            var clone = new TakeLiveExposures(this) {
+            var clone = new TakeSingleExposure(this) {
                 ExposureTime = ExposureTime,
                 ExposureCount = 0,
                 Binning = Binning,
                 Gain = Gain,
                 Offset = Offset,
                 ImageType = ImageType,
-                TotalExposureCount = TotalExposureCount
             };
 
             if (clone.Binning == null) {
@@ -144,11 +136,6 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
         [JsonProperty]
         public int ExposureCount { get => exposureCount; set { exposureCount = value; RaisePropertyChanged(); } }
 
-        private int totalExposureCount;
-
-        [JsonProperty]
-        public int TotalExposureCount { get => totalExposureCount; set { totalExposureCount = value; RaisePropertyChanged(); } }
-
         private CameraInfo cameraInfo;
 
         public CameraInfo CameraInfo {
@@ -181,7 +168,6 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
         }
 
         public override async Task Execute(IProgress<ApplicationStatus> progress, CancellationToken token) {
-            ExposureCount = 1;
             var capture = new CaptureSequence() {
                 ExposureTime = ExposureTime,
                 Binning = Binning,
@@ -189,64 +175,36 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                 Offset = Offset,
                 ImageType = ImageType,
                 ProgressExposureCount = ExposureCount,
-                TotalExposureCount = TotalExposureCount,
-                EnableSubSample = true,
-                SubSambleRectangle = ItemUtility.RetrieveSpeckleTargetRoi(Parent),
+                TotalExposureCount = ExposureCount + 1,
             };
 
             var imageParams = new PrepareImageParameters(null, false);
             if (IsLightSequence()) {
-                imageParams = new PrepareImageParameters(true, false);
+                imageParams = new PrepareImageParameters(true, true);
             }
 
-            var target = RetrieveTarget(Parent);
-            var title = ItemUtility.RetrieveSpeckleTitle(Parent);
+            var target = RetrieveTarget(this.Parent);
 
-            var localCTS = CancellationTokenSource.CreateLinkedTokenSource(token);
+            var exposureData = await imagingMediator.CaptureImage(capture, token, progress);
 
-            var liveViewEnumerable = cameraMediator.LiveView(capture, localCTS.Token);
-            Stopwatch seqDuration = Stopwatch.StartNew();
-            await liveViewEnumerable.ForEachAsync(async exposureData => {
-                token.ThrowIfCancellationRequested();
-                if (exposureData != null) {
-                    if (ExposureCount == 1) { seqDuration = Stopwatch.StartNew(); }
-                    var imageData = await exposureData.ToImageData(progress, localCTS.Token);
+            var imageData = await exposureData.ToImageData(progress, token);
 
-                    if (target != null) {
-                        imageData.MetaData.Target.Name = target.DeepSkyObject.NameAsAscii;
-                        imageData.MetaData.Target.Coordinates = target.InputCoordinates.Coordinates;
-                        imageData.MetaData.Target.Rotation = target.Rotation;
-                    }
+            var prepareTask = imagingMediator.PrepareImage(imageData, imageParams, token);
 
-                    if (filterWheelMediator.GetInfo().Connected)
-                        imageData.MetaData.FilterWheel.Filter = filterWheelMediator.GetInfo().SelectedFilter.Name;
-
-                    imageData.MetaData.Sequence.Title = title;
-                    imageData.MetaData.Image.ExposureStart = DateTime.Now;
-                    imageData.MetaData.Image.ExposureNumber = ExposureCount;
-                    imageData.MetaData.Image.ExposureTime = ExposureTime;
-
-                    // Only show first and last image in Imaging window
-                    if (ExposureCount == 1 || ExposureCount % speckle.ShowEveryNthImage == 0 || ExposureCount == TotalExposureCount) {
-                        _ = imagingMediator.PrepareImage(imageData, imageParams, token);
-                    }
-
-                    _ = imageData.SaveToDisk(new FileSaveInfo(profileService), token);
-
-                    if (ExposureCount >= TotalExposureCount) {
-                        double fps = ExposureCount / (((double)seqDuration.ElapsedMilliseconds) / 1000);
-                        Logger.Info("Captured " + ExposureCount + " times " + ExposureTime + "s live images in " + seqDuration.ElapsedMilliseconds + " ms. : " + Math.Round(fps, 2) + " fps");
-                        localCTS.Cancel();
-                    } else { ExposureCount++; }
-                }
-            });
-
-            // wait till camera reconnects. Specifically for QHY camera's
-            Thread.Sleep(100);
-            while (!cameraInfo.Connected) {
-                token.ThrowIfCancellationRequested();
-                Thread.Sleep(100);
+            if (target != null) {
+                imageData.MetaData.Target.Name = target.DeepSkyObject.NameAsAscii;
+                imageData.MetaData.Target.Coordinates = target.InputCoordinates.Coordinates;
+                imageData.MetaData.Target.Rotation = target.Rotation;
             }
+            imageData.MetaData.Sequence.Title = ItemUtility.RetrieveSpeckleTitle(Parent);
+
+            await imageSaveMediator.Enqueue(imageData, prepareTask, progress, token);
+
+            if (IsLightSequence()) {
+                imageHistoryVM.Add(imageData.MetaData.Image.Id, await imageData.Statistics, ImageType);
+            }
+
+            ExposureCount++;
         }
 
         private bool IsLightSequence() {
@@ -283,6 +241,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                     i.Add(string.Format(Loc.Instance["Lbl_SequenceItem_Imaging_TakeExposure_Validation_Offset"], CameraInfo.OffsetMin, CameraInfo.OffsetMax, Offset));
                 }
             }
+
             if (ItemUtility.RetrieveSpeckleContainer(Parent) == null) {
                 i.Add("This instruction only works within a SpeckleTargetContainer.");
             }
@@ -300,11 +259,11 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
         }
 
         public override TimeSpan GetEstimatedDuration() {
-            return TimeSpan.FromSeconds(this.ExposureTime * this.TotalExposureCount);
+            return TimeSpan.FromSeconds(this.ExposureTime);
         }
 
         public override string ToString() {
-            return $"Category: {Category}, Item: {nameof(TakeLiveExposures)}, ExposureTime {ExposureTime}, Gain {Gain}, Offset {Offset}, ImageType {ImageType}, Binning {Binning?.Name}";
+            return $"Category: {Category}, Item: {nameof(TakeSingleExposure)}, ExposureTime {ExposureTime}, Gain {Gain}, Offset {Offset}, ImageType {ImageType}, Binning {Binning?.Name}";
         }
     }
 }

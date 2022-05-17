@@ -346,17 +346,30 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                 .OrderBy(t => t.Completed_cycles)
                 .ThenBy(t => t.ImageTime)
                 .FirstOrDefault();
-            Logger.Debug("Getting next target " + SpeckleTarget.Target);
+            if (SpeckleTarget != null) {
+                Logger.Debug("Getting next target " + SpeckleTarget.Target);
 
-            // When the target is more than 6 minutes away, check for earlier targets that can be used as a fill in.
-            if (SpeckleTarget.ImageTime > DateTime.Now.AddMinutes(6)) {
-                maxImageTime = SpeckleTarget.ImageTime;
+                // When the target is more than 6 minutes away, check for earlier targets that can be used as a fill in.
+                if (SpeckleTarget.ImageTime > DateTime.Now.AddMinutes(6)) {
+                    maxImageTime = SpeckleTarget.ImageTime;
+                    var fillinTarget = SpeckleTargets.Where(t => t.Completed_nights == 0)
+                        .Where(t => t.Cycles > t.Completed_cycles)
+                        .Where(t => t.ImageTime < maxImageTime)
+                        .Where(t => t.getCurrentAltTime(speckle.AltitudeMax, speckle.MDistance) != null && t.getCurrentAltTime(speckle.AltitudeMax, speckle.MDistance).alt > speckle.AltitudeMin)
+                        .OrderBy(t => t.Completed_cycles)
+                        .ThenByDescending(t => t.getCurrentAltTime(speckle.AltitudeMax, speckle.MDistance).alt)
+                        .FirstOrDefault();
+                    if (fillinTarget != null) {
+                        Logger.Debug("Getting fillin target " + fillinTarget.Target);
+                        SpeckleTarget = fillinTarget;
+                    }
+                }
+            } else {
+                Logger.Debug("No next target. Looking for highest next target.");
                 var fillinTarget = SpeckleTargets.Where(t => t.Completed_nights == 0)
                     .Where(t => t.Cycles > t.Completed_cycles)
-                    .Where(t => t.ImageTime < maxImageTime)
                     .Where(t => t.getCurrentAltTime(speckle.AltitudeMax, speckle.MDistance) != null && t.getCurrentAltTime(speckle.AltitudeMax, speckle.MDistance).alt > speckle.AltitudeMin)
-                    .OrderBy(t => t.Completed_cycles)
-                    .ThenByDescending(t => t.getCurrentAltTime(speckle.AltitudeMax, speckle.MDistance).alt)
+                    .OrderByDescending(t => t.getCurrentAltTime(speckle.AltitudeMax, speckle.MDistance).alt)
                     .FirstOrDefault();
                 if (fillinTarget != null) {
                     Logger.Debug("Getting fillin target " + fillinTarget.Target);
@@ -430,7 +443,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
         private void RetrieveReferenceStars(IProgress<ApplicationStatus> externalProgress, CancellationToken token) {
             if (SpeckleTarget.ReferenceStarList == null || !SpeckleTarget.ReferenceStarList.Any()) {
                 SimbadUtils simUtils = new SimbadUtils();
-                double magnitude = SpeckleTarget.Magnitude > 1 ? SpeckleTarget.Magnitude - 1 : 8d;
+                double magnitude = SpeckleTarget.Magnitude > 1 ? Math.Min(SpeckleTarget.Magnitude - 1, 8d) : 8d;
                 SpeckleTarget.ReferenceStarList = simUtils.FindSimbadSaoStars(externalProgress, token, SpeckleTarget.Coordinates(), speckle.SearchRadius, magnitude, speckle.MaxReferenceMag).Result;
                 SpeckleTarget.ReferenceStar = SpeckleTarget.ReferenceStarList.FirstOrDefault();
                 if (SpeckleTarget.ReferenceStar == null) {
@@ -513,46 +526,48 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                                 return false;
                             }
                             GdsTargets.Add(record);
-                            if (record.Nights > 0 && record.Nights <= record.Completed_nights) {
-                                Logger.Debug("Target already imaged enough nights. Skipping target." + record.Number);
-                                continue;
-                            }
-                            if (record.Gmag0 > 0 && (record.Gmag0 < speckle.MinMag || record.Gmag0 > speckle.MaxMag)) {
-                                Logger.Debug("Magnitude not within limits. Skipping target." + record.Number);
-                                continue;
-                            }
-                            if (record.GaiaSep > 0 && (record.GaiaSep < speckle.MinSep || record.GaiaSep > speckle.MaxSep)) {
-                                Logger.Debug("Seperation not within limits. Skipping target." + record.Number);
-                                continue;
-                            }
                             SpeckleTarget speckleTarget = new SpeckleTarget();
                             speckleTarget.Ra = record.RA0.Trim();
                             speckleTarget.Dec = record.Decl0.Trim();
                             speckleTarget.RA0 = record.RA0.Trim();
                             speckleTarget.Decl0 = record.Decl0.Trim();
+                            speckleTarget.User = record.User.Trim() != "" ? record.User.Trim() : User.Trim() != "" ? User.Trim() : speckle.User;
+                            speckleTarget.Target = record.Target.Trim() != "" ? record.Target.Trim() : record.WDSName != null && record.WDSName.Trim() != "" ? record.WDSName.Trim() + "_" + record.DD.Trim() :
+                                "Ra" + speckleTarget.Coordinates().RAString.Replace(":", "_") + "_Dec" + speckleTarget.Coordinates().DecString.Replace(" ", "_");
+                            if (record.Nights > 0 && record.Nights <= record.Completed_nights) {
+                                Logger.Debug("Target already imaged enough nights. Skipping target " + speckleTarget.Target + " for user " + speckleTarget.User);
+                                continue;
+                            }
+                            if (record.Gmag0 > 0 && (record.Gmag0 < speckle.MinMag || record.Gmag0 > speckle.MaxMag)) {
+                                Logger.Debug("Magnitude not within limits. Skipping target " + speckleTarget.Target + " for user " + speckleTarget.User);
+                                continue;
+                            }
+                            if (record.GaiaSep > 0 && (record.GaiaSep < speckle.MinSep || record.GaiaSep > speckle.MaxSep)) {
+                                Logger.Debug("Seperation not within limits. Skipping target " + speckleTarget.Target + " for user " + speckleTarget.User);
+                                continue;
+                            }
                             speckleTarget.AltList = GetAltList(speckleTarget.Coordinates());
                             var imageTo = speckleTarget.ImageTo(NighttimeData, speckle.AltitudeMax, speckle.MDistance);
                             if (imageTo != null && imageTo.alt > speckle.AltitudeMin && imageTo.datetime >= NighttimeData.NauticalTwilightRiseAndSet.Set && imageTo.datetime <= NighttimeData.NauticalTwilightRiseAndSet.Rise) {
                                 speckleTarget.ImageTime = RoundUp(imageTo.datetime, TimeSpan.FromMinutes(5));
                                 speckleTarget.ImageTimeAlt = imageTo.alt;
                             } else {
-                                Logger.Debug("Image time not within limits. Skipping target." + record.Number);
+                                Logger.Debug("Image time not within limits. Skipping target " + speckleTarget.Target + " for user " + speckleTarget.User);
                                 continue;
                             }
-                            if (CalculateSeparation(speckleTarget.ImageTime, speckleTarget.Coordinates()) < speckle.MoonDistance) {
-                                Logger.Debug("Target too close to moon. Skipping target." + record.Number);
+                            var moonDistance = CalculateSeparation(speckleTarget.ImageTime, speckleTarget.Coordinates());
+                            if (moonDistance < speckle.MoonDistance) {
+                                Logger.Debug("Target too close to moon(" + moonDistance + "). Skipping target " + speckleTarget.Target + " for user " + speckleTarget.User);
                                 continue;
                             }
                             speckleTarget.Template = Template != "" ? Template : speckle.DefaultTemplate;
-                            speckleTarget.User = record.User.Trim() != "" ? record.User.Trim() : User.Trim() != "" ? User.Trim() : speckle.User;
-                            speckleTarget.Target = record.Target.Trim() != "" ? record.Target.Trim() : record.WDSName != null && record.WDSName.Trim() != "" ? record.WDSName.Trim() + "_" + record.DD.Trim() :
-                                "Ra" + speckleTarget.Coordinates().RAString.Replace(":", "_") + "_Dec" + speckleTarget.Coordinates().DecString.Replace(" ", "_");
                             speckleTarget.Exposures = record.Exposures > 0 ? record.Exposures : Exposures;
                             speckleTarget.ExposureTime = record.ExposureTime > 0 ? record.ExposureTime : ExposureTime;
                             speckleTarget.Magnitude = record.Gmag0;
                             speckleTarget.Separation = record.GaiaSep;
                             speckleTarget.Cycles = record.Cycles > 0 ? record.Cycles : Cycles;
                             speckleTarget.Nights = record.Nights > 0 ? record.Nights : speckle.Nights;
+                            speckleTarget.Completed_nights = record.Completed_nights;
                             speckleTarget.Filter = record.Filter;
                             speckleTarget.Priority = record.Priority;
                             SpeckleTargets.Add(speckleTarget);

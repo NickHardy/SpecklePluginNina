@@ -385,4 +385,23 @@
         </view:SequenceBlockView>
     </DataTemplate>
 
+    <DataTemplate x:Key="NINA.Plugin.Speckle.Sequencer.SequenceItem.TakeSingleExposure_Mini">
+        <mini:MiniSequenceItem>
+            <mini:MiniSequenceItem.SequenceItemContent>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock VerticalAlignment="Center" Text="{Binding ExposureTime}" />
+                    <TextBlock VerticalAlignment="Center" Text="s" />
+                </StackPanel>
+            </mini:MiniSequenceItem.SequenceItemContent>
+        </mini:MiniSequenceItem>
+    </DataTemplate>
+
+    <DataTemplate DataType="{x:Type local:TakeSingleExposure}">
+        <view:SequenceBlockView>
+            <view:SequenceBlockView.SequenceItemContent>
+                <ContentPresenter Content="{StaticResource TakeExposureDetails}" />
+            </view:SequenceBlockView.SequenceItemContent>
+        </view:SequenceBlockView>
+    </DataTemplate>
+    
 </ResourceDictionary>

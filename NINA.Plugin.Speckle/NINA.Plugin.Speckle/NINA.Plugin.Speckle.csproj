@@ -316,6 +316,7 @@
       <DependentUpon>DataTemplates.xaml</DependentUpon>
     </Compile>
     <Compile Include="Sequencer\SequenceItem\CalculateRoiPosition.cs" />
+    <Compile Include="Sequencer\SequenceItem\TakeSingleExposure.cs" />
     <Compile Include="Sequencer\SequenceItem\TakeLiveExposures.cs" />
     <Compile Include="Sequencer\SequenceItem\TakeRoiExposures.cs" />
     <Compile Include="Sequencer\Utility\SimbadUtils.cs" />
@@ -395,7 +396,7 @@ if not exist "%25localappdata%25\NINA\Plugins\$(TargetName)" (
     mkdir  "%25localappdata%25\NINA\Plugins\$(TargetName)"
 )
 
-copy "$(TargetDir)$(TargetFileName)" "%25localappdata%25\NINA\Plugins\$(TargetName)\$(TargetName).1.0.1.2.dll" /Y
+copy "$(TargetDir)$(TargetFileName)" "%25localappdata%25\NINA\Plugins\$(TargetName)\$(TargetName).1.0.1.6.dll" /Y
 </PostBuildEvent>
   </PropertyGroup>
   <Import Project="..\packages\Google.Protobuf.Tools.3.18.1\build\Google.Protobuf.Tools.targets" Condition="Exists('..\packages\Google.Protobuf.Tools.3.18.1\build\Google.Protobuf.Tools.targets')" />
