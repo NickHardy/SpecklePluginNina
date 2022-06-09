@@ -227,14 +227,20 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
         public void LoadNewTarget() {
             RegisterStatusCurrentTarget();
             SpeckleTarget = GetNextTarget();
-            if (SpeckleTarget == null)
-                return;
-            CurrentSpeckleTarget = SpeckleTarget;
-            TargetNr++;
 
+            // Remove finished instructions
             foreach (ISequenceItem item in Items) {
                 _ = _dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() => { item.Detach(); item.AfterParentChanged(); })).Result;
             }
+
+            if (SpeckleTarget == null) {
+                CurrentSpeckleTarget = null;
+                CoreUtil.Wait(TimeSpan.FromMilliseconds(300));
+                RaiseAllPropertiesChanged();
+                return;
+            }
+            CurrentSpeckleTarget = SpeckleTarget;
+            TargetNr++;
 
             var templates = sequenceMediator.GetDeepSkyObjectContainerTemplates();
 
@@ -277,10 +283,12 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             });
 
             _ = _dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() => { 
-                Items.Add(speckleTargetContainer); 
-                speckleTargetContainer.AttachNewParent(this); 
-                speckleTargetContainer.AfterParentChanged(); 
-                Logger.Debug("Adding target container: " + speckleTargetContainer);
+                lock(Items) {
+                    Items.Add(speckleTargetContainer);
+                    speckleTargetContainer.AttachNewParent(this);
+                    speckleTargetContainer.AfterParentChanged();
+                    Logger.Debug("Adding target container: " + speckleTargetContainer);
+                }
             })).Result;
 
             // Set Reference
@@ -320,11 +328,13 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                     }
                 });
 
-                _ = _dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() => { 
-                    Items.Add(speckleTargetContainerRef); 
-                    speckleTargetContainerRef.AttachNewParent(this); 
-                    speckleTargetContainerRef.AfterParentChanged();
-                    Logger.Debug("Adding reference container: " + speckleTargetContainerRef);
+                _ = _dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() => {
+                    lock (Items) {
+                        Items.Add(speckleTargetContainerRef);
+                        speckleTargetContainerRef.AttachNewParent(this);
+                        speckleTargetContainerRef.AfterParentChanged();
+                        Logger.Debug("Adding reference container: " + speckleTargetContainerRef);
+                    }
                 })).Result;
             }
             RaiseAllPropertiesChanged();
@@ -383,37 +393,43 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
         private void RegisterStatusCurrentTarget() {
             if (CurrentSpeckleTarget == null) return;
             SpeckleTarget = SpeckleTargets.Where(x => x.TargetId == CurrentSpeckleTarget.TargetId).FirstOrDefault();
-            var nights = false;
-            foreach (ISequenceItem item in Items) {
-                var container = item as SpeckleTargetContainer;
-                if (container != null && !container.Target.TargetName.Contains("_ref_")) {
-                    List<ISequenceItem> nonFinishedItems = container.Items.Where(x => x.Status != SequenceEntityStatus.FINISHED).Cast<ISequenceItem>().ToList();
-                    if (nonFinishedItems.Count == 0) {
-                        SpeckleTarget.Completed_cycles += 1;
-                    } else {
-                        var exposures = nonFinishedItems.Where(x => x is TakeLiveExposures || x is TakeRoiExposures).FirstOrDefault();
-                        if (exposures != null) {
-                            SpeckleTarget.Completed_cycles += 1; // TODO maybe add an error marker or something
-                        }
-                    }
-                    if (nights == false && SpeckleTarget.Completed_cycles == SpeckleTarget.Cycles) {
-                        SpeckleTarget.Completed_nights += 1;
-                        nights = true;
-                    }
-                }
-                if (container != null && container.Target.TargetName.Contains("_ref_")) {
-                    List<ISequenceItem> nonFinishedItems = container.Items.Where(x => x.Status != SequenceEntityStatus.FINISHED).Cast<ISequenceItem>().ToList();
-                    if (nonFinishedItems.Count == 0) {
-                        SpeckleTarget.Completed_ref_cycles += 1;
-                    } else {
-                        var exposures = nonFinishedItems.Where(x => x is TakeLiveExposures || x is TakeRoiExposures).FirstOrDefault();
-                        if (exposures == null) {
-                            SpeckleTarget.Completed_ref_cycles += 1; // TODO maybe add an error marker or something
-                        }
-                    }
+            if (SpeckleTarget != null) {
+                SpeckleTarget.Completed_cycles += 1;
+                if (SpeckleTarget.Completed_cycles == SpeckleTarget.Cycles) {
+                    SpeckleTarget.Completed_nights += 1;
                 }
             }
-            RaiseAllPropertiesChanged();
+            /*            var nights = false;
+                        foreach (ISequenceItem item in Items) {
+                            var container = item as SpeckleTargetContainer;
+                            if (container != null && !container.Target.TargetName.Contains("_ref_")) {
+                                List<ISequenceItem> nonFinishedItems = container.Items.Where(x => x.Status != SequenceEntityStatus.FINISHED).Cast<ISequenceItem>().ToList();
+                                if (nonFinishedItems.Count == 0) {
+                                    SpeckleTarget.Completed_cycles += 1;
+                                } else {
+                                    var exposures = nonFinishedItems.Where(x => x is TakeLiveExposures || x is TakeRoiExposures).FirstOrDefault();
+                                    if (exposures != null) {
+                                        SpeckleTarget.Completed_cycles += 1; // TODO maybe add an error marker or something
+                                    }
+                                }
+                                if (nights == false && SpeckleTarget.Completed_cycles == SpeckleTarget.Cycles) {
+                                    SpeckleTarget.Completed_nights += 1;
+                                    nights = true;
+                                }
+                            }
+                            if (container != null && container.Target.TargetName.Contains("_ref_")) {
+                                List<ISequenceItem> nonFinishedItems = container.Items.Where(x => x.Status != SequenceEntityStatus.FINISHED).Cast<ISequenceItem>().ToList();
+                                if (nonFinishedItems.Count == 0) {
+                                    SpeckleTarget.Completed_ref_cycles += 1;
+                                } else {
+                                    var exposures = nonFinishedItems.Where(x => x is TakeLiveExposures || x is TakeRoiExposures).FirstOrDefault();
+                                    if (exposures == null) {
+                                        SpeckleTarget.Completed_ref_cycles += 1; // TODO maybe add an error marker or something
+                                    }
+                                }
+                            }
+                        }*/
+
             // Write current status to the target csv file
             string csvfile = Path.Combine(profileService.ActiveProfile.ImageFileSettings.FilePath, "TargetList-" + DateTime.Now.AddHours(-12).ToString("yyyy-MM-dd") + ".csv");
             using (var writer = new StreamWriter(csvfile))

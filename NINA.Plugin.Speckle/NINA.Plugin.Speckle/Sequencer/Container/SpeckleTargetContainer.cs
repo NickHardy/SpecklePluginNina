@@ -194,9 +194,6 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             get => SubSampleRectangle.Width;
             set {
                 SubSampleRectangle.Width = value;
-                if (LinkedDimensions && cameraInfo.Connected) {
-                    SubSampleRectangle.Height = cameraInfo.YSize / (cameraInfo.XSize / value);
-                }
                 RaiseAllPropertiesChanged();
             }
         }
@@ -205,21 +202,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             get => SubSampleRectangle.Height;
             set {
                 SubSampleRectangle.Height = value;
-                if (LinkedDimensions && cameraInfo.Connected) {
-                    SubSampleRectangle.Width = cameraInfo.XSize / (cameraInfo.YSize / value);
-                }
                 RaiseAllPropertiesChanged();
-            }
-        }
-
-        private bool _linkedDimensions = true;
-
-        [JsonProperty]
-        public bool LinkedDimensions {
-            get => _linkedDimensions;
-            set {
-                _linkedDimensions = value;
-                RaisePropertyChanged();
             }
         }
 

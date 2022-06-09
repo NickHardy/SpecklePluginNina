@@ -82,7 +82,6 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             this.windowServiceFactory = windowServiceFactory;
             this.imageHistoryVM = imageHistoryVM;
             this.imageSaveMediator = imageSaveMediator;
-            this.SaveImage = true;
         }
 
         private CalculateRoiPosition(CalculateRoiPosition cloneMe) : this(cloneMe.profileService,
@@ -98,7 +97,8 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
 
         public override object Clone() {
             var clone = new CalculateRoiPosition(this);
-            clone.SaveImage = SaveImage;
+            clone.ImageFlippedX = ImageFlippedX;
+            clone.ImageFlippedY = ImageFlippedY;
             return clone;
         }
 
@@ -112,10 +112,13 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             }
         }
 
-        private bool _SaveImage;
-
+        private bool _ImageFlippedX;
         [JsonProperty]
-        public bool SaveImage { get => _SaveImage; set { _SaveImage = value; RaisePropertyChanged(); } }
+        public bool ImageFlippedX { get => _ImageFlippedX; set { _ImageFlippedX = value; RaisePropertyChanged(); } }
+
+        private bool _ImageFlippedY;
+        [JsonProperty]
+        public bool ImageFlippedY { get => _ImageFlippedY; set { _ImageFlippedY = value; RaisePropertyChanged(); } }
 
         public override async Task Execute(IProgress<ApplicationStatus> progress, CancellationToken token) {
             var plateSolver = plateSolverFactory.GetPlateSolver(profileService.ActiveProfile.PlateSolveSettings);
@@ -174,6 +177,10 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                     throw new SequenceEntityFailedException("Calculation failed. Target outside of image");
                 }
 
+                // Check if we need to flip the targetPoint
+                if (ImageFlippedX) { targetPoint.X = width - targetPoint.X; }
+                if (ImageFlippedY) { targetPoint.Y = height - targetPoint.Y; }
+
                 // Place the Roi around the star but within the image.
                 speckleContainer.X = Math.Min(Math.Max(Math.Round(targetPoint.X - (speckleContainer.Width / 2), 0), 0), image.Image.PixelWidth - (speckleContainer.Width / 2));
                 speckleContainer.Y = Math.Min(Math.Max(Math.Round(targetPoint.Y - (speckleContainer.Height / 2), 0), 0), image.Image.PixelHeight - (speckleContainer.Height / 2));
@@ -184,6 +191,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                     speckleTarget.Orientation = plateSolveResult.Orientation;
                     speckleTarget.ArcsecPerPix = arcsecPerPix;
                 }
+
 /*                DetectedStar TargetStar = new DetectedStar() { Position = new Accord.Point((float)targetPoint.X, (float)targetPoint.Y) };
                 var starAnnotator = new Utility.StarAnnotator();
                 string saveAnnotationJpg = profileService.ActiveProfile.ImageFileSettings.FilePath + "\\" + inputTarget.TargetName + "_fov.jpg";

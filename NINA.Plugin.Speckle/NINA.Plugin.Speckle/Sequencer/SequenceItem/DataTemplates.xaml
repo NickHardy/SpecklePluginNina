@@ -403,5 +403,35 @@
             </view:SequenceBlockView.SequenceItemContent>
         </view:SequenceBlockView>
     </DataTemplate>
-    
+
+    <DataTemplate DataType="{x:Type local:CalculateRoiPosition}">
+        <view:SequenceBlockView>
+            <view:SequenceBlockView.SequenceItemContent>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock
+                            VerticalAlignment="Center"
+                            Text="Image flipped: " />
+                    <TextBlock
+                            VerticalAlignment="Center"
+                            Text="X" />
+                    <CheckBox
+                            Width="80"
+                            HorizontalAlignment="Right"
+                            IsChecked="{Binding ImageFlippedX}">
+                    </CheckBox>
+
+                    <TextBlock
+                            VerticalAlignment="Center"
+                            Text="Y" />
+                    <CheckBox
+                            Width="80"
+                            HorizontalAlignment="Right"
+                            IsChecked="{Binding ImageFlippedY}">
+                    </CheckBox>
+
+                </StackPanel>
+            </view:SequenceBlockView.SequenceItemContent>
+        </view:SequenceBlockView>
+    </DataTemplate>
+
 </ResourceDictionary>

@@ -7,8 +7,8 @@ using System.Runtime.InteropServices;
 
 // [MANDATORY] The assembly versioning
 //Should be incremented for each new release build of a plugin
-[assembly: AssemblyVersion("1.0.1.6")]
-[assembly: AssemblyFileVersion("1.0.1.6")]
+[assembly: AssemblyVersion("1.0.2.0")]
+[assembly: AssemblyFileVersion("1.0.2.0")]
 
 // [MANDATORY] The name of your plugin
 [assembly: AssemblyTitle("Speckle Interferometry")]
@@ -131,6 +131,8 @@ For listing targets and processing data the following programs can be used by co
 
 A big thank you goes out to Leon(@lbew#3670) for testing this plugin with me. 
 Also many thanks to the members and friends of Fairborn Institute for all the input given to create this plugin.
+
+I'd also like to thank Jocelyn Serot, for his help with image processing. You can visit his [website](http://www.astrosurf.com/legalet/Astro/Welcome.html) or try out his [LiveSpeckle plugin](http://www.astrosurf.com/legalet/Astro/LiveSpeckle.html) for [Genika Astro](https://airylab.com/genika-astro/).
 
 If you have any ideas or want to report an issue, please contact me in the [Nina discord server](https://discord.gg/rWRbVbw) and tag me: @NickHolland#5257 
 

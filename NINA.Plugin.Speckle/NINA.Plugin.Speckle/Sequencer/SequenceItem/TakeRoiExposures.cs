@@ -227,8 +227,10 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
 
                     // Only show first and last image in Imaging window
                     if (ExposureCount == 1 || ExposureCount % speckle.ShowEveryNthImage == 0 || ExposureCount == TotalExposureCount) {
-                        _imageProcessingTask = imagingMediator.PrepareImage(imageData, imageParams, token);
-                        Logger.Debug("Prepare: " + roiDuration.ElapsedMilliseconds);
+                        _ = Task.Run(async () => {
+                            var renderedImage = await imagingMediator.PrepareImage(imageData, imageParams, token);
+                            //imagingMediator.SetImage(ItemUtility.GetDFTImage(renderedImage.Image));
+                        });
                     }
 
                     if (filterWheelMediator.GetInfo().Connected)

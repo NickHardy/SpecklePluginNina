@@ -456,25 +456,6 @@
                                 </TextBox>
                                 <TextBlock VerticalAlignment="Center">°</TextBlock>
                             </StackPanel>
-                            <StackPanel
-                                Grid.Row="6"
-                                Grid.Column="0"
-                                Margin="0,0,10,10"
-                                VerticalAlignment="Bottom"
-                                HorizontalAlignment="Right"
-                                Orientation="Horizontal">
-                                <TextBlock
-                                    Width="100"
-                                    Margin="0"
-                                    VerticalAlignment="Center"
-                                    HorizontalAlignment="Right"
-                                    Text="Link dimensions" />
-                                <CheckBox
-                                    Margin="5,0,0,0"
-                                    HorizontalAlignment="Left"
-                                    VerticalAlignment="Center"
-                                    IsChecked="{Binding LinkedDimensions}" />
-                            </StackPanel>
 
                             <alt:AltitudeChart
                                 Grid.Row="0"

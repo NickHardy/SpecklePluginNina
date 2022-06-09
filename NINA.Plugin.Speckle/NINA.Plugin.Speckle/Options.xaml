@@ -129,17 +129,6 @@
                 VerticalAlignment="Center"
                 Text="{Binding MaxReferenceMag}" />
 
-                <TextBlock Grid.Row="7" Grid.Column="0" VerticalAlignment="Center" Text="Check target imagetime past" />
-                <ninactrl:UnitTextBox
-                Grid.Row="7"
-                Grid.Column="1"
-                MinWidth="100"
-                Margin="5,0,0,0"
-                HorizontalAlignment="Left"
-                VerticalAlignment="Center"
-                Text="{Binding CheckImageTimeWithinMinutes}"
-                Unit="m" />
-
             </Grid>
             <Grid Grid.Column="1" Margin="10,0">
                 <Grid.ColumnDefinitions>
