@@ -308,11 +308,11 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                 speckleTargetContainerRef.Items.ToList().ForEach(x => {
                     if (x is TakeRoiExposures takeRoiExposures) {
                         takeRoiExposures.ExposureTime = SpeckleTarget.ExposureTime;
-                        takeRoiExposures.TotalExposureCount = speckle.ReferenceExposures;
+                        takeRoiExposures.TotalExposureCount = Math.Min(speckle.ReferenceExposures, SpeckleTarget.Exposures);
                     }
                     if (x is TakeLiveExposures takeLiveExposures) {
                         takeLiveExposures.ExposureTime = SpeckleTarget.ExposureTime;
-                        takeLiveExposures.TotalExposureCount = speckle.ReferenceExposures;
+                        takeLiveExposures.TotalExposureCount = Math.Min(speckle.ReferenceExposures, SpeckleTarget.Exposures);
                     }
                     if (x is CalculateRoiExposureTime calculateRoiExposureTime) {
                         calculateRoiExposureTime.ExposureTime = SpeckleTarget.ExposureTime;
@@ -349,7 +349,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             }
             
             // First get the next target with an imageTime in the future
-            DateTime maxImageTime = DateTime.Now;
+            DateTime maxImageTime = DateTime.Now.AddMinutes(-5);
             SpeckleTarget = SpeckleTargets.Where(t => t.Completed_nights == 0)
                 .Where(t => t.Cycles > t.Completed_cycles)
                 .Where(t => t.ImageTime > maxImageTime)

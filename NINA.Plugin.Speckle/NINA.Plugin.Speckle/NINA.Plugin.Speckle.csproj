@@ -304,6 +304,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Locale.resx</DependentUpon>
     </Compile>
+    <Compile Include="Model\SimbadGalaxy.cs" />
     <Compile Include="Model\SimbadBinaryStar.cs" />
     <Compile Include="Model\AltTime.cs" />
     <Compile Include="Model\SimbadSaoStar.cs" />
@@ -406,7 +407,7 @@ if not exist "%25localappdata%25\NINA\Plugins\$(TargetName)" (
     mkdir  "%25localappdata%25\NINA\Plugins\$(TargetName)\dll\dll"
 )
 
-copy "$(TargetDir)$(TargetFileName)" "%25localappdata%25\NINA\Plugins\$(TargetName)\$(TargetName).1.0.2.0.dll" /Y
+copy "$(TargetDir)$(TargetFileName)" "%25localappdata%25\NINA\Plugins\$(TargetName)\$(TargetName).1.0.2.2.dll" /Y
 copy "$(TargetDir)OpenCvSharp.*" "%25localappdata%25\NINA\Plugins\$(TargetName)\dll\" /Y
 xcopy "$(TargetDir)\dll" "%25localappdata%25\NINA\Plugins\$(TargetName)\dll\dll" /y /s</PostBuildEvent>
   </PropertyGroup>

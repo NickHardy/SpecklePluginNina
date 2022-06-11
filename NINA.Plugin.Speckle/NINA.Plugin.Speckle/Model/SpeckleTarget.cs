@@ -109,7 +109,7 @@ namespace NINA.Plugin.Speckle.Model {
             DateTime twilightSet = nighttimeData.NauticalTwilightRiseAndSet.Set ?? DateTime.Now;
             DateTime twilightRise = nighttimeData.NauticalTwilightRiseAndSet.Rise ?? DateTime.Now.AddHours(24);
             DateTime minTime = new DateTime(Math.Max(twilightSet.Ticks, DateTime.Now.Ticks));
-            return AltList.Where(x => x.datetime > minTime && x.datetime < twilightRise)
+            return AltList.Where(x => x.datetime > minTime && x.datetime < twilightRise.AddMinutes(-15))
                 .Where(x => x.alt < alt)
                 .Where(x => x.deg < MeridianAltTime().deg - mDistance || x.deg > MeridianAltTime().deg + mDistance)
                 .OrderByDescending(x => x.alt).FirstOrDefault();

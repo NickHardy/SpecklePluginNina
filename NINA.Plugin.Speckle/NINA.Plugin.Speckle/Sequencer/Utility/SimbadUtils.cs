@@ -148,6 +148,50 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
             return Task.FromResult(stars);
         }
 
+        public Task<List<SimbadGalaxy>> FindSimbadGalaxies(IProgress<ApplicationStatus> externalProgress, CancellationToken token, Coordinates coords, double maxDistance = 10d, double maxMag = 18.0d) {
+            List<SimbadGalaxy> galaxies = new List<SimbadGalaxy>();
+            try {
+                using (var localCTS = CancellationTokenSource.CreateLinkedTokenSource(token)) {
+                    localCTS.CancelAfter(TimeSpan.FromSeconds(30));
+                    externalProgress.Report(new ApplicationStatus() { Status = "Retrieving galaxies from simbad" });
+                    var url = $"http://simbad.u-strasbg.fr/simbad/sim-tap/sync";
+
+                    Dictionary<string, string> dictionary = new Dictionary<string, string>();
+                    dictionary.Add("request", "doQuery");
+                    dictionary.Add("lang", "adql");
+                    dictionary.Add("format", "json");
+                    dictionary.Add("maxrec", "100");
+                    dictionary.Add("runid", "");
+                    dictionary.Add("phase", "run");
+                    dictionary.Add("query", "SELECT TOP 100 basic.main_id, basic.ra, basic.dec, allfluxes.v, DISTANCE(POINT('ICRS', " + coords.RADegrees + ", " + coords.Dec + "), POINT('ICRS', basic.ra, basic.dec)) as dist, galdim_majaxis as sizemax , galdim_minaxis as sizemin " +
+                        "FROM basic " +
+                        "JOIN ident on(basic.oid = ident.oidref) " +
+                        "JOIN allfluxes using (oidref) " +
+                        "WHERE basic.otype = 'Galaxy..' and allfluxes.v <= " + maxMag + " " +
+                        "AND CONTAINS(POINT('ICRS', basic.ra, basic.dec), CIRCLE('ICRS', " + coords.RADegrees + ", " + coords.Dec + ", " + maxDistance + ")) = 1 " +
+                        "AND basic.ra IS NOT NULL " +
+                        "AND basic.dec IS NOT NULL " +
+                        "ORDER BY dist;");
+                    VoTable voTable = PostForm(url, dictionary);
+                    if (voTable != null) {
+                        foreach (List<object> obj in voTable.Data) {
+                            galaxies.Add(new SimbadGalaxy(obj));
+                        }
+                    }
+                }
+            }
+            catch (OperationCanceledException) {
+            }
+            catch (Exception ex) {
+                Logger.Error(ex);
+                Notification.ShowError(ex.Message);
+            }
+            finally {
+                externalProgress.Report(new ApplicationStatus() { Status = "" });
+            }
+            return Task.FromResult(galaxies);
+        }
+
         private VoTable PostForm(string url, Dictionary<string, string> dictionary) {
             var boundary = "---------------------------" + DateTime.Now.Ticks.ToString("x");
             string FormDataTemplate = "--{0}\r\nContent-Disposition: form-data; name=\"{1}\"\r\n\r\n{2}\r\n";
