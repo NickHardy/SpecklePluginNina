@@ -72,9 +72,14 @@ namespace NINA.Plugin.Speckle.Model {
         public string Template { get; set; }
         [JsonProperty]
         public string Filter { get; set; }
+        [JsonProperty]
+        public double Rotation { get; set; } = 0d;
 
         public List<AltTime> AltList { get; set; } = new List<AltTime>();
+        public bool RegisterTarget { get; set; } = true;
 
+        [JsonProperty]
+        public bool GetReference { get; set; } = true;
         public List<SimbadSaoStar> ReferenceStarList { get; set; }
         public SimbadSaoStar ReferenceStar { get; set; } = new SimbadSaoStar();
 

@@ -274,5 +274,41 @@ namespace NINA.Plugin.Speckle.Properties {
                 this["ReferenceExposures"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool GetGalaxyFillins {
+            get {
+                return ((bool)(this["GetGalaxyFillins"]));
+            }
+            set {
+                this["GetGalaxyFillins"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("16")]
+        public double MaxGalaxyMag {
+            get {
+                return ((double)(this["MaxGalaxyMag"]));
+            }
+            set {
+                this["MaxGalaxyMag"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string GalaxyTemplate {
+            get {
+                return ((string)(this["GalaxyTemplate"]));
+            }
+            set {
+                this["GalaxyTemplate"] = value;
+            }
+        }
     }
 }

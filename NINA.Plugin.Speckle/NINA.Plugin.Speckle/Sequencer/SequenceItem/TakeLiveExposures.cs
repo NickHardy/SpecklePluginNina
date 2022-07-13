@@ -43,6 +43,7 @@ using System.Diagnostics;
 using NINA.Image.FileFormat;
 using NINA.Sequencer.SequenceItem;
 using NINA.Plugin.Speckle.Sequencer.Utility;
+using NINA.Image.ImageData;
 
 namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
 
@@ -225,6 +226,9 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                     imageData.MetaData.Image.ExposureStart = DateTime.Now;
                     imageData.MetaData.Image.ExposureNumber = ExposureCount;
                     imageData.MetaData.Image.ExposureTime = ExposureTime;
+
+                    imageData.MetaData.GenericHeaders.Add(new DoubleMetaDataHeader("ROIX", capture.SubSambleRectangle.X, "X-position of the ROI"));
+                    imageData.MetaData.GenericHeaders.Add(new DoubleMetaDataHeader("ROIY", capture.SubSambleRectangle.Y, "Y-position of the ROI"));
 
                     // Only show first and last image in Imaging window
                     if (ExposureCount == 1 || ExposureCount % speckle.ShowEveryNthImage == 0 || ExposureCount == TotalExposureCount) {

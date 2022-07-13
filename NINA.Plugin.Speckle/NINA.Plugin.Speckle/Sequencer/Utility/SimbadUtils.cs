@@ -163,7 +163,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
                     dictionary.Add("maxrec", "100");
                     dictionary.Add("runid", "");
                     dictionary.Add("phase", "run");
-                    dictionary.Add("query", "SELECT TOP 100 basic.main_id, basic.ra, basic.dec, allfluxes.v, DISTANCE(POINT('ICRS', " + coords.RADegrees + ", " + coords.Dec + "), POINT('ICRS', basic.ra, basic.dec)) as dist, galdim_majaxis as sizemax , galdim_minaxis as sizemin " +
+                    dictionary.Add("query", "SELECT DISTINCT TOP 10 basic.main_id, basic.ra, basic.dec, allfluxes.v, DISTANCE(POINT('ICRS', " + coords.RADegrees + ", " + coords.Dec + "), POINT('ICRS', basic.ra, basic.dec)) as dist, galdim_majaxis as sizemax , galdim_minaxis as sizemin " +
                         "FROM basic " +
                         "JOIN ident on(basic.oid = ident.oidref) " +
                         "JOIN allfluxes using (oidref) " +

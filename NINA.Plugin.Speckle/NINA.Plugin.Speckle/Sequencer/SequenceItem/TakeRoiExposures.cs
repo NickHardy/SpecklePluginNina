@@ -44,6 +44,7 @@ using NINA.Image.Interfaces;
 using NINA.Image.FileFormat;
 using NINA.Core.Utility.Notification;
 using System.Diagnostics;
+using NINA.Image.ImageData;
 
 namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
 
@@ -240,6 +241,10 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                     imageData.MetaData.Image.ExposureStart = DateTime.Now;
                     imageData.MetaData.Image.ExposureNumber = ExposureCount;
                     imageData.MetaData.Image.ExposureTime = ExposureTime;
+
+                    imageData.MetaData.GenericHeaders.Add(new DoubleMetaDataHeader("ROIX", capture.SubSambleRectangle.X, "X-position of the ROI"));
+                    imageData.MetaData.GenericHeaders.Add(new DoubleMetaDataHeader("ROIY", capture.SubSambleRectangle.Y, "Y-position of the ROI"));
+
                     //_ = imageData.SaveToDisk(new FileSaveInfo(profileService), token);
                     Logger.Debug("Metadata: " + roiDuration.ElapsedMilliseconds);
                     _ = Task.Run(() => {

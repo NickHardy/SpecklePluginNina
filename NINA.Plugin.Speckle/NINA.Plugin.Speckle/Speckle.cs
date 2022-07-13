@@ -10,6 +10,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using NINA.Core.Model;
+using NINA.WPF.Base.Interfaces.ViewModel;
 
 namespace NINA.Plugin.Speckle {
     /// <summary>
@@ -22,7 +24,23 @@ namespace NINA.Plugin.Speckle {
     [Export(typeof(IPluginManifest))]
     public class Speckle : PluginBase {
 
+        ImagePattern roiXPattern = new ImagePattern("$$ROIX$$", "X-position of the ROI", "Speckle");
+        ImagePattern roiYPattern = new ImagePattern("$$ROIY$$", "Y-position of the ROI", "Speckle");
+
         [ImportingConstructor]
+        public Speckle(IOptionsVM options) {
+            if (Settings.Default.UpdateSettings) {
+                Settings.Default.Upgrade();
+                Settings.Default.UpdateSettings = false;
+                CoreUtil.SaveSettings(Settings.Default);
+            }
+            roiXPattern.Value = "0";
+            roiYPattern.Value = "0";
+
+            options.AddImagePattern(roiXPattern);
+            options.AddImagePattern(roiYPattern);
+        }
+
         public Speckle() {
             if (Settings.Default.UpdateSettings) {
                 Settings.Default.Upgrade();
@@ -206,6 +224,31 @@ namespace NINA.Plugin.Speckle {
             get => Settings.Default.ReferenceExposures;
             set {
                 Settings.Default.ReferenceExposures = value;
+                CoreUtil.SaveSettings(Properties.Settings.Default);
+                RaisePropertyChanged();
+            }
+        }
+
+        public bool GetGalaxyFillins {
+            get => Settings.Default.GetGalaxyFillins;
+            set {
+                Settings.Default.GetGalaxyFillins = value;
+                CoreUtil.SaveSettings(Properties.Settings.Default);
+                RaisePropertyChanged();
+            }
+        }
+        public double MaxGalaxyMag {
+            get => Settings.Default.MaxGalaxyMag;
+            set {
+                Settings.Default.MaxGalaxyMag = value;
+                CoreUtil.SaveSettings(Properties.Settings.Default);
+                RaisePropertyChanged();
+            }
+        }
+        public string GalaxyTemplate {
+            get => Settings.Default.GalaxyTemplate;
+            set {
+                Settings.Default.GalaxyTemplate = value;
                 CoreUtil.SaveSettings(Properties.Settings.Default);
                 RaisePropertyChanged();
             }

@@ -11,6 +11,7 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
             <Grid Grid.Column="0">
@@ -214,6 +215,54 @@
                 HorizontalAlignment="Left"
                 VerticalAlignment="Center"
                 Text="{Binding ReferenceExposures}" />
+
+            </Grid>
+            <Grid Grid.Column="2" Margin="10,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition MinHeight="25" />
+                    <RowDefinition MinHeight="25" />
+                    <RowDefinition MinHeight="25" />
+                    <RowDefinition MinHeight="25" />
+                    <RowDefinition MinHeight="25" />
+                    <RowDefinition MinHeight="25" />
+                    <RowDefinition MinHeight="25" />
+                    <RowDefinition MinHeight="25" />
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Text="Get galaxy fillins" />
+                <CheckBox
+                Grid.Row="0"
+                Grid.Column="1"
+                MinWidth="80"
+                Margin="5,0,0,0"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                IsChecked="{Binding GetGalaxyFillins}" />
+
+                <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Text="Max magnitude for galaxies" />
+                <TextBox
+                Grid.Row="1"
+                Grid.Column="1"
+                MinWidth="100"
+                Margin="5,0,0,0"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                Text="{Binding MaxGalaxyMag}" />
+
+                <TextBlock Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Text="Template for galaxies" />
+                <TextBox
+                Grid.Row="2"
+                Grid.Column="1"
+                MinWidth="100"
+                Margin="5,0,0,0"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                Text="{Binding GalaxyTemplate}" />
 
             </Grid>
         </Grid>

@@ -45,6 +45,7 @@ using System.Windows;
 using NINA.Image.FileFormat;
 using NINA.WPF.Base.Interfaces.ViewModel;
 using NINA.WPF.Base.Interfaces.Mediator;
+using NINA.Image.ImageData;
 
 namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
 
@@ -121,6 +122,8 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
         public bool ImageFlippedY { get => _ImageFlippedY; set { _ImageFlippedY = value; RaisePropertyChanged(); } }
 
         public override async Task Execute(IProgress<ApplicationStatus> progress, CancellationToken token) {
+            // save filter to restore after positioning
+            var filter = filterWheelMediator.GetInfo()?.SelectedFilter;
             var plateSolver = plateSolverFactory.GetPlateSolver(profileService.ActiveProfile.PlateSolveSettings);
             var speckleContainer = ItemUtility.RetrieveSpeckleContainer(Parent);
 
@@ -191,12 +194,6 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                     speckleTarget.Orientation = plateSolveResult.Orientation;
                     speckleTarget.ArcsecPerPix = arcsecPerPix;
                 }
-
-/*                DetectedStar TargetStar = new DetectedStar() { Position = new Accord.Point((float)targetPoint.X, (float)targetPoint.Y) };
-                var starAnnotator = new Utility.StarAnnotator();
-                string saveAnnotationJpg = profileService.ActiveProfile.ImageFileSettings.FilePath + "\\" + inputTarget.TargetName + "_fov.jpg";
-                var annotatedImage = await starAnnotator.GetAnnotatedImage(TargetStar, new List<DetectedStar>(), new List<DetectedStar>(), new List<DetectedStar>(), new List<DetectedStar>(), image.Image, saveAnnotationJpg, seq.ExposureTime, token);
-                imagingMediator.SetImage(annotatedImage);*/
             }
 
             var target = speckleContainer.Target;
@@ -206,11 +203,18 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                 imageData.MetaData.Target.Rotation = plateSolveResult.Orientation;
             }
 
+            imageData.MetaData.GenericHeaders.Add(new DoubleMetaDataHeader("ROIX", speckleContainer.X, "X-position of the ROI"));
+            imageData.MetaData.GenericHeaders.Add(new DoubleMetaDataHeader("ROIY", speckleContainer.Y, "Y-position of the ROI"));
+
             imageData.MetaData.Sequence.Title = speckleContainer.Title;
 
             await imageSaveMediator.Enqueue(imageData, prepareTask, progress, token);
             imageHistoryVM.Add(imageData.MetaData.Image.Id, await imageData.Statistics, CaptureSequence.ImageTypes.LIGHT);
 
+            // Switch filter back to the saved position
+            if (filter != null) {
+                _ = await filterWheelMediator.ChangeFilter(filter, token, progress);
+            }
             if (!plateSolveResult.Success) {
                 throw new SequenceEntityFailedException("Calculation failed to platesolve.");
             }

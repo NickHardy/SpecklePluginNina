@@ -93,6 +93,7 @@ namespace NINA.Plugin.Speckle.Model {
         public int Completed_nights { get; set; }
         public int Completed_cycles { get; set; }
         public int Completed_ref_cycles { get; set; }
+        public double Rotation { get; set; }
     }
 
     public class GdsTargetClassMap : ClassMap<GdsTarget> {
@@ -167,6 +168,7 @@ namespace NINA.Plugin.Speckle.Model {
             Map(m => m.Completed_cycles).Name("Completed_cycles").Optional().Default(0);
             Map(m => m.Completed_ref_cycles).Name("Completed_ref_cycles").Optional().Default(0);
             Map(m => m.Completed_nights).Name("Completed_nights").Optional().Default(0);
+            Map(m => m.Rotation).Name("Rotation").Optional().Default(0);
         }
     }
 }

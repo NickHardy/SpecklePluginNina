@@ -14,10 +14,12 @@
 
 using NINA.Core.Enum;
 using NINA.Core.Model;
+using NINA.Core.Utility;
 using NINA.Sequencer.Conditions;
 using NINA.Sequencer.Container;
 using NINA.Sequencer.Container.ExecutionStrategy;
 using NINA.Sequencer.SequenceItem;
+using NINA.Sequencer.SequenceItem.Utility;
 using NINA.Sequencer.Trigger;
 using NINA.Sequencer.Utility;
 using System;
@@ -126,9 +128,8 @@ namespace NINA.Plugin.Speckle.Sequencer.Container.ExecutionStrategy {
 
             var listContainer = context as SpeckleTargetListContainer;
             if (next == null && listContainer != null) {
-                listContainer.LoadNewTarget();
-                items = listContainer.GetItemsSnapshot();
-                next = items.FirstOrDefault(x => x.Status == SequenceEntityStatus.CREATED);
+                if (listContainer.LoadNewTarget())
+                    next = new WaitForTimeSpan();
             }
             var canContinue = false;
             if (next != null) {
