@@ -327,6 +327,7 @@
     <Compile Include="Sequencer\SequenceItem\TakeSingleExposure.cs" />
     <Compile Include="Sequencer\SequenceItem\TakeLiveExposures.cs" />
     <Compile Include="Sequencer\SequenceItem\TakeRoiExposures.cs" />
+    <Compile Include="Sequencer\Trigger\AutofocusStarClusterAfterTimeTrigger.cs" />
     <Compile Include="Sequencer\Utility\SimbadUtils.cs" />
     <Compile Include="Sequencer\Utility\ItemUtility.cs" />
     <Compile Include="Sequencer\Utility\StarAnnotator.cs" />
@@ -407,8 +408,8 @@ if not exist "%25localappdata%25\NINA\Plugins\$(TargetName)" (
     mkdir  "%25localappdata%25\NINA\Plugins\$(TargetName)\dll\dll"
 )
 
-copy "$(TargetDir)$(TargetFileName)" "%25localappdata%25\NINA\Plugins\$(TargetName)\$(TargetName).1.0.3.0.dll" /Y
-copy "$(TargetDir)OpenCvSharp.*" "%25localappdata%25\NINA\Plugins\$(TargetName)\dll\" /Y
+copy "$(TargetDir)$(TargetFileName)" "%25localappdata%25\NINA\Plugins\$(TargetName)\$(TargetName).1.0.3.1.dll" /Y
+copy "$(TargetDir)OpenCvSharp.*.dll" "%25localappdata%25\NINA\Plugins\$(TargetName)\dll\" /Y
 xcopy "$(TargetDir)\dll" "%25localappdata%25\NINA\Plugins\$(TargetName)\dll\dll" /y /s</PostBuildEvent>
   </PropertyGroup>
   <Import Project="..\packages\Google.Protobuf.Tools.3.18.1\build\Google.Protobuf.Tools.targets" Condition="Exists('..\packages\Google.Protobuf.Tools.3.18.1\build\Google.Protobuf.Tools.targets')" />
