@@ -385,6 +385,40 @@
         </view:SequenceBlockView>
     </DataTemplate>
 
+    <DataTemplate DataType="{x:Type local:SynchOnStarCluster}">
+        <view:SequenceBlockView>
+            <view:SequenceBlockView.SequenceItemContent>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock VerticalAlignment="Center" Text="Searchradius" />
+                    <ninactrl:UnitTextBox
+                        MinWidth="40"
+                        Margin="5,0,0,0"
+                        VerticalAlignment="Center"
+                        VerticalContentAlignment="Center"
+                        Text="{Binding SearchRadius}"
+                        TextAlignment="Right"
+                        Unit="°" />
+
+                    <TextBlock
+                        Margin="7.5,0,7.5,0"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Text="|" />
+
+                    <TextBlock
+                            VerticalAlignment="Center"
+                            Text="Slew back to target" />
+                    <CheckBox
+                            Width="80"
+                            HorizontalAlignment="Right"
+                            IsChecked="{Binding SlewBackToTarget}">
+                    </CheckBox>
+
+                </StackPanel>
+            </view:SequenceBlockView.SequenceItemContent>
+        </view:SequenceBlockView>
+    </DataTemplate>
+
     <DataTemplate x:Key="NINA.Plugin.Speckle.Sequencer.SequenceItem.TakeSingleExposure_Mini">
         <mini:MiniSequenceItem>
             <mini:MiniSequenceItem.SequenceItemContent>

@@ -225,7 +225,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             if (!telescopeMediator.GetInfo().Connected) {
                 i.Add(Loc.Instance["LblTelescopeNotConnected"]);
             }
-            if (ItemUtility.RetrieveSpeckleContainer(Parent) == null) {
+            if (ItemUtility.RetrieveSpeckleContainer(Parent) == null && ItemUtility.RetrieveSpeckleListContainer(Parent) == null) {
                 i.Add("This instruction only works within a SpeckleTargetContainer.");
             }
 

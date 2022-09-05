@@ -44,6 +44,7 @@ using NINA.Image.FileFormat;
 using NINA.Sequencer.SequenceItem;
 using NINA.Plugin.Speckle.Sequencer.Utility;
 using NINA.Image.ImageData;
+using NINA.Equipment.Equipment.MyTelescope;
 
 namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
 
@@ -60,10 +61,11 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
         private IImageHistoryVM imageHistoryVM;
         private IProfileService profileService;
         private IFilterWheelMediator filterWheelMediator;
+        private ITelescopeMediator telescopeMediator;
         private Speckle speckle;
 
         [ImportingConstructor]
-        public TakeLiveExposures(IProfileService profileService, ICameraMediator cameraMediator, IImagingMediator imagingMediator, IImageSaveMediator imageSaveMediator, IImageHistoryVM imageHistoryVM, IFilterWheelMediator filterWheelMediator) {
+        public TakeLiveExposures(IProfileService profileService, ICameraMediator cameraMediator, IImagingMediator imagingMediator, IImageSaveMediator imageSaveMediator, IImageHistoryVM imageHistoryVM, IFilterWheelMediator filterWheelMediator, ITelescopeMediator telescopeMediator) {
             Gain = -1;
             Offset = -1;
             ImageType = CaptureSequence.ImageTypes.LIGHT;
@@ -73,11 +75,12 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             this.imageHistoryVM = imageHistoryVM;
             this.profileService = profileService;
             this.filterWheelMediator = filterWheelMediator;
+            this.telescopeMediator = telescopeMediator;
             CameraInfo = this.cameraMediator.GetInfo();
             speckle = new Speckle();
         }
 
-        private TakeLiveExposures(TakeLiveExposures cloneMe) : this(cloneMe.profileService, cloneMe.cameraMediator, cloneMe.imagingMediator, cloneMe.imageSaveMediator, cloneMe.imageHistoryVM, cloneMe.filterWheelMediator) {
+        private TakeLiveExposures(TakeLiveExposures cloneMe) : this(cloneMe.profileService, cloneMe.cameraMediator, cloneMe.imagingMediator, cloneMe.imageSaveMediator, cloneMe.imageHistoryVM, cloneMe.filterWheelMediator, cloneMe.telescopeMediator) {
             CopyMetaData(cloneMe);
         }
 
@@ -160,6 +163,16 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             }
         }
 
+        private TelescopeInfo telescopeInfo;
+
+        public TelescopeInfo TelescopeInfo {
+            get => telescopeInfo;
+            private set {
+                telescopeInfo = value;
+                RaisePropertyChanged();
+            }
+        }
+
         private ObservableCollection<string> _imageTypes;
 
         public ObservableCollection<string> ImageTypes {
@@ -202,6 +215,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
 
             var target = RetrieveTarget(Parent);
             var title = ItemUtility.RetrieveSpeckleTitle(Parent);
+            TelescopeInfo = this.telescopeMediator.GetInfo();
 
             var localCTS = CancellationTokenSource.CreateLinkedTokenSource(token);
 
@@ -226,6 +240,8 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                     imageData.MetaData.Image.ExposureStart = DateTime.Now;
                     imageData.MetaData.Image.ExposureNumber = ExposureCount;
                     imageData.MetaData.Image.ExposureTime = ExposureTime;
+
+                    ItemUtility.FromTelescopeInfo(imageData.MetaData, TelescopeInfo);
 
                     imageData.MetaData.GenericHeaders.Add(new DoubleMetaDataHeader("ROIX", capture.SubSambleRectangle.X, "X-position of the ROI"));
                     imageData.MetaData.GenericHeaders.Add(new DoubleMetaDataHeader("ROIY", capture.SubSambleRectangle.Y, "Y-position of the ROI"));
@@ -287,7 +303,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                     i.Add(string.Format(Loc.Instance["Lbl_SequenceItem_Imaging_TakeExposure_Validation_Offset"], CameraInfo.OffsetMin, CameraInfo.OffsetMax, Offset));
                 }
             }
-            if (ItemUtility.RetrieveSpeckleContainer(Parent) == null) {
+            if (ItemUtility.RetrieveSpeckleContainer(Parent) == null && ItemUtility.RetrieveSpeckleListContainer(Parent) == null) {
                 i.Add("This instruction only works within a SpeckleTargetContainer.");
             }
 

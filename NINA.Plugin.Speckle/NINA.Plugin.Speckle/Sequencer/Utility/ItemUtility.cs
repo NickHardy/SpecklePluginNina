@@ -30,6 +30,8 @@ using System.Windows.Media;
 using System.IO;
 using NINA.Image.ImageAnalysis;
 using OpenCvSharp.Extensions;
+using NINA.Image.ImageData;
+using NINA.Equipment.Equipment.MyTelescope;
 
 namespace NINA.Plugin.Speckle.Sequencer.Utility {
 
@@ -122,6 +124,20 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
             }
             else {
                 return null;
+            }
+        }
+
+        public static void FromTelescopeInfo(ImageMetaData data, TelescopeInfo info) {
+            if (info.Connected) {
+                if (string.IsNullOrWhiteSpace(data.Telescope.Name)) {
+                    data.Telescope.Name = info.Name;
+                }
+                data.Observer.Elevation = info.SiteElevation;
+                data.Telescope.Coordinates = info.Coordinates;
+                data.Telescope.Altitude = info.Altitude;
+                data.Telescope.Azimuth = info.Azimuth;
+                data.Telescope.Airmass = Astrometry.AstroUtil.Airmass(info.Altitude);
+                data.Telescope.SideOfPier = info.SideOfPier;
             }
         }
 

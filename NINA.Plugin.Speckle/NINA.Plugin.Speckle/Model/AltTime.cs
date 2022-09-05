@@ -29,11 +29,14 @@ namespace NINA.Plugin.Speckle.Model {
         public double alt { get; set; }
         [JsonProperty]
         public double deg { get; set; }
+        [JsonProperty]
+        public double airmass { get; set; }
 
-        public AltTime(double alt, double deg, DateTime datetime) {
+        public AltTime(double alt, double deg, DateTime datetime, double airmass) {
             this.alt = alt;
             this.deg = deg;
             this.datetime = datetime;
+            this.airmass = airmass;
         }
 
     }

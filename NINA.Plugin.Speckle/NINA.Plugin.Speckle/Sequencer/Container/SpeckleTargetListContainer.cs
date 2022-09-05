@@ -499,7 +499,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             }
         }
 
-        private List<AltTime> GetAltList(Coordinates coords, double maxAlt = 90d) {
+        private List<AltTime> GetAltList(Coordinates coords) {
             var start = NighttimeData.NauticalTwilightRiseAndSet.Set ?? DateTime.Now;
             start = start.AddHours(-1);
             var siderealTime = AstroUtil.GetLocalSiderealTime(start, profileService.ActiveProfile.AstrometrySettings.Longitude);
@@ -522,8 +522,8 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                     horizonAltitude = profileService.ActiveProfile.AstrometrySettings.Horizon.GetAltitude(azimuth);
                 }
                 // Run the whole thing and get the top value
-                if (altitude > horizonAltitude && altitude < maxAlt)
-                    altList.Add(new AltTime(altitude, degAngle, start));
+                if (altitude > horizonAltitude)
+                    altList.Add(new AltTime(altitude, degAngle, start, AstroUtil.Airmass(altitude)));
                 start = start.AddHours(0.05);
             }
             return altList;
@@ -592,9 +592,9 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                                 Logger.Debug("Seperation not within limits. Skipping target " + speckleTarget.Target + " for user " + speckleTarget.User);
                                 continue;
                             }
-                            speckleTarget.MaxAlt = record.MaxAlt;
-                            speckleTarget.AltList = GetAltList(speckleTarget.Coordinates(), speckleTarget.MaxAlt);
-                            var imageTo = speckleTarget.ImageTo(NighttimeData, speckle.AltitudeMax, speckle.MDistance);
+                            speckleTarget.Airmass = record.Airmass;
+                            speckleTarget.AltList = GetAltList(speckleTarget.Coordinates());
+                            var imageTo = speckleTarget.ImageTo(NighttimeData, speckle.AltitudeMax, speckle.MDistance, speckleTarget.Airmass);
                             if (imageTo != null && imageTo.alt > speckle.AltitudeMin && imageTo.datetime >= NighttimeData.NauticalTwilightRiseAndSet.Set && imageTo.datetime <= NighttimeData.NauticalTwilightRiseAndSet.Rise) {
                                 speckleTarget.ImageTime = RoundUp(imageTo.datetime, TimeSpan.FromMinutes(5));
                                 speckleTarget.ImageTimeAlt = imageTo.alt;

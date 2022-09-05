@@ -319,6 +319,7 @@
     <Compile Include="Sequencer\Container\SpeckleTargetListContainer.cs" />
     <Compile Include="Sequencer\Container\SpeckleTargetContainer.cs" />
     <Compile Include="Sequencer\SequenceItem\CalculateRoiExposureTime.cs" />
+    <Compile Include="Sequencer\SequenceItem\SynchOnStarCluster.cs" />
     <Compile Include="Sequencer\SequenceItem\CenterOnStarCluster.cs" />
     <Compile Include="Sequencer\SequenceItem\DataTemplates.xaml.cs">
       <DependentUpon>DataTemplates.xaml</DependentUpon>
@@ -327,7 +328,6 @@
     <Compile Include="Sequencer\SequenceItem\TakeSingleExposure.cs" />
     <Compile Include="Sequencer\SequenceItem\TakeLiveExposures.cs" />
     <Compile Include="Sequencer\SequenceItem\TakeRoiExposures.cs" />
-    <Compile Include="Sequencer\Trigger\AutofocusStarClusterAfterTimeTrigger.cs" />
     <Compile Include="Sequencer\Utility\SimbadUtils.cs" />
     <Compile Include="Sequencer\Utility\ItemUtility.cs" />
     <Compile Include="Sequencer\Utility\StarAnnotator.cs" />
