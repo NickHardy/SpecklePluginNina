@@ -580,6 +580,10 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                             speckleTarget.User = record.User.Trim() != "" ? record.User.Trim() : User.Trim() != "" ? User.Trim() : speckle.User;
                             speckleTarget.Target = record.Target.Trim() != "" ? record.Target.Trim() : record.WDSName != null && record.WDSName.Trim() != "" ? record.WDSName.Trim() + "_" + record.DD.Trim() :
                                 "Ra" + speckleTarget.Coordinates().RAString.Replace(":", "_") + "_Dec" + speckleTarget.Coordinates().DecString.Replace(" ", "_");
+                            if (speckleTarget.Coordinates().RADegrees == 0d && speckleTarget.Coordinates().Dec == 0d) {
+                                Logger.Debug("No coordinates found. Skipping target " + speckleTarget.Target + " for user " + speckleTarget.User);
+                                continue;
+                            }
                             if (record.Nights > 0 && record.Nights <= record.Completed_nights) {
                                 Logger.Debug("Target already imaged enough nights. Skipping target " + speckleTarget.Target + " for user " + speckleTarget.User);
                                 continue;
