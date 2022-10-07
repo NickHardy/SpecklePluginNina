@@ -126,6 +126,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             var filter = filterWheelMediator.GetInfo()?.SelectedFilter;
             var plateSolver = plateSolverFactory.GetPlateSolver(profileService.ActiveProfile.PlateSolveSettings);
             var speckleContainer = ItemUtility.RetrieveSpeckleContainer(Parent);
+            var speckleTarget = ItemUtility.RetrieveSpeckleTarget(Parent);
 
             var parameter = new CaptureSolverParameter() {
                 Attempts = profileService.ActiveProfile.PlateSolveSettings.NumberOfAttempts,
@@ -156,6 +157,10 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
 
             var prepareTask = imagingMediator.PrepareImage(imageData, new PrepareImageParameters(true, true), token);
             var image = prepareTask.Result;
+            var width = image.Image.PixelWidth;
+            var height = image.Image.PixelHeight;
+            var center = new Point(width / 2, height / 2);
+            var arcsecPerPix = AstroUtil.ArcsecPerPixel(profileService.ActiveProfile.CameraSettings.PixelSize * profileService.ActiveProfile.PlateSolveSettings.Binning, profileService.ActiveProfile.TelescopeSettings.FocalLength);
 
             var imageSolver = new ImageSolver(plateSolver, null);
 
@@ -164,10 +169,6 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             if (plateSolveResult.Success) {
                 Logger.Debug("PlateSolveResult: " + JsonConvert.SerializeObject(plateSolveResult));
                 Logger.Debug("Calculating target position");
-                var arcsecPerPix = AstroUtil.ArcsecPerPixel(profileService.ActiveProfile.CameraSettings.PixelSize * profileService.ActiveProfile.PlateSolveSettings.Binning, profileService.ActiveProfile.TelescopeSettings.FocalLength);
-                var width = image.Image.PixelWidth;
-                var height = image.Image.PixelHeight;
-                var center = new Point(width / 2, height / 2);
 
                 //Translate your coordinates to x/y in relation to center coordinates
                 var inputTarget = ItemUtility.RetrieveInputTarget(Parent);
@@ -189,11 +190,25 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                 speckleContainer.Y = Math.Min(Math.Max(Math.Round(targetPoint.Y - (speckleContainer.Height / 2), 0), 0), image.Image.PixelHeight - (speckleContainer.Height / 2));
                 Logger.Debug("Setting roi position to " + speckleContainer.X + "x" + speckleContainer.Y);
 
-                var speckleTarget = ItemUtility.RetrieveSpeckleTarget(Parent);
                 if (speckleTarget != null) {
                     speckleTarget.Orientation = plateSolveResult.Orientation;
                     speckleTarget.ArcsecPerPix = arcsecPerPix;
                 }
+            }
+
+            if (!plateSolveResult.Success) {
+                // Platesolve failed so try to get the biggest star in the image
+                var starDetection = new Utility.StarDetection();
+                var starDetectionParams = new StarDetectionParams() {
+                    Sensitivity = StarSensitivityEnum.Normal,
+                    NoiseReduction = NoiseReductionEnum.None
+                };
+                var biggestStar = await starDetection.GetBiggestStar(image, image.Image.Format, starDetectionParams, progress, token);
+
+                // Place the Roi around the star but within the image.
+                speckleContainer.X = Math.Min(Math.Max(Math.Round(biggestStar.Position.X - (speckleContainer.Width / 2), 0), 0), image.Image.PixelWidth - (speckleContainer.Width / 2));
+                speckleContainer.Y = Math.Min(Math.Max(Math.Round(biggestStar.Position.Y - (speckleContainer.Height / 2), 0), 0), image.Image.PixelHeight - (speckleContainer.Height / 2));
+                Logger.Debug("Setting roi position to biggest star position " + speckleContainer.X + "x" + speckleContainer.Y);
             }
 
             var target = speckleContainer.Target;

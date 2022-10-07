@@ -68,13 +68,14 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
             state._originalBitmapSource = renderedImage.Image;
 
             state._resizefactor = 1.0;
-/*            if (state.imageProperties.Width > _maxWidth) {
+            if (state.imageProperties.Width > _maxWidth) {
                 if (p.Sensitivity == StarSensitivityEnum.Highest) {
                     state._resizefactor = Math.Max(0.625, (double)_maxWidth / state.imageProperties.Width);
-                } else {
+                }
+                else {
                     state._resizefactor = (double)_maxWidth / state.imageProperties.Width;
                 }
-            }*/
+            }
             state._inverseResizefactor = 1.0 / state._resizefactor;
 
             state._minStarSize = (int)Math.Floor(5 * state._resizefactor);
@@ -223,12 +224,55 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
 
                     _blobCounter = null;
                 }
-            } catch (OperationCanceledException) {
-            } finally {
+            }
+            catch (OperationCanceledException) {
+            }
+            finally {
                 progress?.Report(new ApplicationStatus() { Status = string.Empty });
                 _bitmapToAnalyze?.Dispose();
             }
             return result;
+        }
+
+        public async Task<DetectedStar> GetBiggestStar(IRenderedImage image, PixelFormat pf, StarDetectionParams p, IProgress<ApplicationStatus> progress, CancellationToken token) {
+            var result = new StarDetectionResult();
+            Bitmap _bitmapToAnalyze = null;
+            try {
+                using (MyStopWatch.Measure()) {
+                    progress?.Report(new ApplicationStatus() { Status = "Preparing image for star detection" });
+
+                    var state = GetInitialState(image, pf, p);
+                    _bitmapToAnalyze = ImageUtility.Convert16BppTo8Bpp(state._originalBitmapSource);
+
+                    token.ThrowIfCancellationRequested();
+
+                    /* Resize to speed up manipulation */
+                    _bitmapToAnalyze = DetectionUtility.ResizeForDetection(_bitmapToAnalyze, _maxWidth, state._resizefactor);
+
+                    /* prepare image for structure detection */
+                    PrepareForStructureDetection(_bitmapToAnalyze, p, state, token);
+
+                    progress?.Report(new ApplicationStatus() { Status = "Detecting structures" });
+
+                    /* get structure info */
+                    _blobCounter = DetectStructures(_bitmapToAnalyze, token);
+
+                    progress?.Report(new ApplicationStatus() { Status = "Analyzing stars" });
+
+                    result.StarList = IdentifyLargestStars(p, state, _bitmapToAnalyze, result, token, out var detectedStars);
+
+                    token.ThrowIfCancellationRequested();
+
+                    _blobCounter = null;
+                }
+            }
+            catch (OperationCanceledException) {
+            }
+            finally {
+                progress?.Report(new ApplicationStatus() { Status = string.Empty });
+                _bitmapToAnalyze?.Dispose();
+            }
+            return result.StarList.FirstOrDefault();
         }
 
         private List<DetectedStar> IdentifyStars(StarDetectionParams p, State state, Bitmap _bitmapToAnalyze, StarDetectionResult result, CancellationToken token, out int detectedStars) {
@@ -266,12 +310,13 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
                 Star s;
                 if (checker.IsCircle(points, out centerpoint, out radius)) {
                     s = new Star { Position = new Accord.Point(centerpoint.X * (float)state._inverseResizefactor, centerpoint.Y * (float)state._inverseResizefactor), radius = radius * state._inverseResizefactor, Rectangle = rect };
-                } else { //Star is elongated
-/*                    var eccentricity = CalculateEccentricity(rect.Width, rect.Height);
-                    //Discard highly elliptical shapes.
-                    if (eccentricity > 0.8) {
-                        continue;
-                    }*/
+                }
+                else { //Star is elongated
+                    /*                    var eccentricity = CalculateEccentricity(rect.Width, rect.Height);
+                                        //Discard highly elliptical shapes.
+                                        if (eccentricity > 0.8) {
+                                            continue;
+                                        }*/
                     s = new Star { Position = new Accord.Point(centerpoint.X * (float)state._inverseResizefactor, centerpoint.Y * (float)state._inverseResizefactor), radius = Math.Max(rect.Width, rect.Height) / 2, Rectangle = rect };
                 }
 
@@ -295,7 +340,8 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
                             ushort value = pixelValue;
                             PixelData pd = new PixelData { PosX = x, PosY = y, value = (ushort)value };
                             s.AddPixelData(pd);
-                        } else { //We're in the larger surrounding holed rectangle, providing local background
+                        }
+                        else { //We're in the larger surrounding holed rectangle, providing local background
                             largeRectPixelSum += pixelValue;
                             largeRectPixelSumSquares += pixelValue * pixelValue;
                         }
@@ -324,7 +370,97 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
 
             // Ensure we provide the list of detected stars, even if NumberOfAF stars is used
             detectedStars = starlist.Count;
-          
+
+            return starlist.Select(s => s.ToDetectedStar()).ToList();
+        }
+
+        private List<DetectedStar> IdentifyLargestStars(StarDetectionParams p, State state, Bitmap _bitmapToAnalyze, StarDetectionResult result, CancellationToken token, out int detectedStars) {
+            detectedStars = 0;
+            Blob[] blobs = _blobCounter.GetObjectsInformation().OrderByDescending(x => x.Area).ToArray();
+            SimpleShapeChecker checker = new SimpleShapeChecker();
+            List<Star> starlist = new List<Star>();
+            double sumRadius = 0;
+            double sumSquares = 0;
+            foreach (Blob blob in blobs) {
+                token.ThrowIfCancellationRequested();
+
+                var points = _blobCounter.GetBlobsEdgePoints(blob);
+                Accord.Point centerpoint;
+                float radius;
+                var rect = new Rectangle((int)Math.Floor(blob.Rectangle.X * state._inverseResizefactor), (int)Math.Floor(blob.Rectangle.Y * state._inverseResizefactor), (int)Math.Ceiling(blob.Rectangle.Width * state._inverseResizefactor), (int)Math.Ceiling(blob.Rectangle.Height * state._inverseResizefactor));
+
+                //Build a rectangle that encompasses the blob
+                int largeRectXPos = Math.Max(rect.X - rect.Width, 0);
+                int largeRectYPos = Math.Max(rect.Y - rect.Height, 0);
+                int largeRectWidth = rect.Width * 3;
+                if (largeRectXPos + largeRectWidth > state.imageProperties.Width) { largeRectWidth = state.imageProperties.Width - largeRectXPos; }
+                int largeRectHeight = rect.Height * 3;
+                if (largeRectYPos + largeRectHeight > state.imageProperties.Height) { largeRectHeight = state.imageProperties.Height - largeRectYPos; }
+                var largeRect = new Rectangle(largeRectXPos, largeRectYPos, largeRectWidth, largeRectHeight);
+
+                //Star is circle
+                Star s;
+                if (checker.IsCircle(points, out centerpoint, out radius)) {
+                    s = new Star { Position = new Accord.Point(centerpoint.X * (float)state._inverseResizefactor, centerpoint.Y * (float)state._inverseResizefactor), radius = radius * state._inverseResizefactor, Rectangle = rect };
+                }
+                else { //Star is elongated
+                    s = new Star { Position = new Accord.Point(centerpoint.X * (float)state._inverseResizefactor, centerpoint.Y * (float)state._inverseResizefactor), radius = Math.Max(rect.Width, rect.Height) / 2, Rectangle = rect };
+                }
+
+                /* get pixeldata */
+                double starPixelSum = 0;
+                int starPixelCount = 0;
+                double largeRectPixelSum = 0;
+                double largeRectPixelSumSquares = 0;
+                List<ushort> innerStarPixelValues = new List<ushort>();
+
+                for (int x = largeRect.X; x < largeRect.X + largeRect.Width; x++) {
+                    for (int y = largeRect.Y; y < largeRect.Y + largeRect.Height; y++) {
+                        var pixelValue = state._iarr.FlatArray[x + (state.imageProperties.Width * y)];
+                        if (x >= s.Rectangle.X && x < s.Rectangle.X + s.Rectangle.Width && y >= s.Rectangle.Y && y < s.Rectangle.Y + s.Rectangle.Height) { //We're in the small rectangle directly surrounding the star
+                            if (s.InsideCircle(x, y, s.Position.X, s.Position.Y, s.radius)) { // We're in the inner sanctum of the star
+                                starPixelSum += pixelValue;
+                                starPixelCount++;
+                                innerStarPixelValues.Add(pixelValue);
+                                s.maxPixelValue = Math.Max(s.maxPixelValue, pixelValue);
+                            }
+                            ushort value = pixelValue;
+                            PixelData pd = new PixelData { PosX = x, PosY = y, value = (ushort)value };
+                            s.AddPixelData(pd);
+                        }
+                        else { //We're in the larger surrounding holed rectangle, providing local background
+                            largeRectPixelSum += pixelValue;
+                            largeRectPixelSumSquares += pixelValue * pixelValue;
+                        }
+                    }
+                }
+
+                s.meanBrightness = starPixelSum / (double)starPixelCount;
+                double largeRectPixelCount = largeRect.Height * largeRect.Width - rect.Height * rect.Width;
+                double largeRectMean = largeRectPixelSum / largeRectPixelCount;
+                s.SurroundingMean = largeRectMean;
+                double largeRectStdev = Math.Sqrt((largeRectPixelSumSquares - largeRectPixelCount * largeRectMean * largeRectMean) / largeRectPixelCount);
+                int minimumNumberOfPixels = (int)Math.Ceiling(Math.Max(state._originalBitmapSource.PixelWidth, state._originalBitmapSource.PixelHeight) / 1000d);
+
+                if (s.meanBrightness >= largeRectMean + Math.Min(0.1 * largeRectMean, largeRectStdev) && innerStarPixelValues.Count(pv => pv > largeRectMean + 1.5 * largeRectStdev) > minimumNumberOfPixels) { //It's a local maximum, and has enough bright pixels, so likely to be a star. Let's add it to our star dictionary.
+                    sumRadius += s.radius;
+                    sumSquares += s.radius * s.radius;
+                    s.CalculateHfr();
+                    starlist.Add(s);
+                }
+                if (starlist.Count() > 5) {
+                    break;
+                }
+            }
+
+            // No stars could be found. Return.
+            if (starlist.Count() == 0) {
+                return new List<DetectedStar>();
+            }
+
+            // Ensure we provide the list of detected stars, even if NumberOfAF stars is used
+            detectedStars = starlist.Count;
+
             return starlist.Select(s => s.ToDetectedStar()).ToList();
         }
 

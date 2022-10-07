@@ -49,7 +49,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
     [Export(typeof(ISequenceItem))]
     [Export(typeof(ISequenceContainer))]
     [JsonObject(MemberSerialization.OptIn)]
-    public class SpeckleTargetContainer : SequenceContainer, IDeepSkyObjectContainer {
+    public class SpeckleTargetContainer : SequenceContainer, IDeepSkyObjectContainer, ICameraConsumer {
         private readonly IProfileService profileService;
         private ICameraMediator cameraMediator;
         private readonly IFramingAssistantVM framingAssistantVM;
@@ -73,7 +73,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             this.applicationMediator = applicationMediator;
             this.framingAssistantVM = framingAssistantVM;
             this.planetariumFactory = planetariumFactory;
-            CameraInfo = this.cameraMediator.GetInfo();
+            cameraMediator.RegisterConsumer(this);
             speckle = new Speckle();
             SubSampleRectangle = new ObservableRectangle(0, 0, 320, 240);
             Task.Run(() => NighttimeData = nighttimeCalculator.Calculate());
@@ -161,6 +161,14 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                 cameraInfo = value;
                 RaisePropertyChanged();
             }
+        }
+
+        public void UpdateDeviceInfo(CameraInfo deviceInfo) {
+            CameraInfo = deviceInfo;
+        }
+
+        public void Dispose() {
+            cameraMediator.RemoveConsumer(this);
         }
 
         private ObservableRectangle subSampleRectangle;
