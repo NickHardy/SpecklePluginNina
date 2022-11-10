@@ -112,14 +112,15 @@ namespace NINA.Plugin.Speckle.Model {
 
         public DateTime ImageTime { get; set; }
         public double ImageTimeAlt { get; set; }
-        public AltTime ImageTo(NighttimeData nighttimeData, double alt = 80d, double mDistance = 5d, double airmass = 0d) {
+        public AltTime ImageTo(NighttimeData nighttimeData, double alt = 80d, double mDistance = 5d, double airmass = 0d, double distanceToMoon = 20d) {
             DateTime twilightSet = nighttimeData.NauticalTwilightRiseAndSet.Set ?? DateTime.Now;
             DateTime twilightRise = nighttimeData.NauticalTwilightRiseAndSet.Rise ?? DateTime.Now.AddHours(24);
             DateTime minTime = new DateTime(Math.Max(twilightSet.Ticks, DateTime.Now.Ticks));
             return AltList.Where(x => x.datetime > minTime && x.datetime < twilightRise.AddMinutes(-15))
-                .Where(x => x.alt < alt)
-                .Where(x => x.airmass > airmass)
-                .Where(x => x.deg < MeridianAltTime().deg - mDistance || x.deg > MeridianAltTime().deg + mDistance)
+                .Where(x => x.alt <= alt)
+                .Where(x => x.airmass >= airmass)
+                .Where(x => x.distanceToMoon >= distanceToMoon)
+                .Where(x => x.deg <= MeridianAltTime().deg - mDistance || x.deg >= MeridianAltTime().deg + mDistance)
                 .OrderByDescending(x => x.alt).FirstOrDefault();
         }
 

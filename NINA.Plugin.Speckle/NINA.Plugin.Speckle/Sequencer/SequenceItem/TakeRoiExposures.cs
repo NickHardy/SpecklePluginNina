@@ -221,6 +221,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                 Stopwatch seqDuration = Stopwatch.StartNew();
                 while (ExposureCount <= TotalExposureCount) {
                     Stopwatch roiDuration = Stopwatch.StartNew();
+                    var exposureStart = DateTime.Now;
                     await cameraMediator.Capture(capture, token, progress);
                     Logger.Debug("Capture: " + roiDuration.ElapsedMilliseconds);
                     progress.Report(new ApplicationStatus() { Status = "Taking Roi image: " + ExposureCount });
@@ -250,7 +251,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                         imageData.MetaData.FilterWheel.Filter = filterWheelMediator.GetInfo().SelectedFilter.Name;
 
                     imageData.MetaData.Sequence.Title = title;
-                    imageData.MetaData.Image.ExposureStart = DateTime.Now;
+                    imageData.MetaData.Image.ExposureStart = exposureStart;
                     imageData.MetaData.Image.ExposureNumber = ExposureCount;
                     imageData.MetaData.Image.ExposureTime = ExposureTime;
 
@@ -258,6 +259,8 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
 
                     imageData.MetaData.GenericHeaders.Add(new DoubleMetaDataHeader("ROIX", capture.SubSambleRectangle.X, "X-position of the ROI"));
                     imageData.MetaData.GenericHeaders.Add(new DoubleMetaDataHeader("ROIY", capture.SubSambleRectangle.Y, "Y-position of the ROI"));
+                    imageData.MetaData.GenericHeaders.Add(new DoubleMetaDataHeader("XORGSUBF", capture.SubSambleRectangle.X, "X-position of the ROI"));
+                    imageData.MetaData.GenericHeaders.Add(new DoubleMetaDataHeader("YORGSUBF", capture.SubSambleRectangle.Y, "Y-position of the ROI"));
 
                     //_ = imageData.SaveToDisk(new FileSaveInfo(profileService), token);
                     Logger.Debug("Metadata: " + roiDuration.ElapsedMilliseconds);
