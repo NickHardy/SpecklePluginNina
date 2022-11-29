@@ -12,6 +12,8 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using NINA.Core.Model;
 using NINA.WPF.Base.Interfaces.ViewModel;
+using NINA.WPF.Base.Interfaces.Mediator;
+using NINA.Image.ImageData;
 
 namespace NINA.Plugin.Speckle {
     /// <summary>
@@ -24,21 +26,20 @@ namespace NINA.Plugin.Speckle {
     [Export(typeof(IPluginManifest))]
     public class Speckle : PluginBase {
 
-        ImagePattern roiXPattern = new ImagePattern("$$ROIX$$", "X-position of the ROI", "Speckle");
-        ImagePattern roiYPattern = new ImagePattern("$$ROIY$$", "Y-position of the ROI", "Speckle");
+        public ImagePattern notePattern = new ImagePattern("$$NOTE$$", "Possible note about target", "Speckle");
 
         [ImportingConstructor]
-        public Speckle(IOptionsVM options) {
+        public Speckle(IOptionsVM options, IImageSaveMediator imageSaveMediator) {
             if (Settings.Default.UpdateSettings) {
                 Settings.Default.Upgrade();
                 Settings.Default.UpdateSettings = false;
                 CoreUtil.SaveSettings(Settings.Default);
             }
-            roiXPattern.Value = "0";
-            roiYPattern.Value = "0";
 
-            options.AddImagePattern(roiXPattern);
-            options.AddImagePattern(roiYPattern);
+            notePattern.Value = "";
+            options.AddImagePattern(notePattern);
+
+            imageSaveMediator.BeforeFinalizeImageSaved += ImageSaveMediator_BeforeFinalizeImageSaved;
         }
 
         public Speckle() {
@@ -252,6 +253,14 @@ namespace NINA.Plugin.Speckle {
                 CoreUtil.SaveSettings(Properties.Settings.Default);
                 RaisePropertyChanged();
             }
+        }
+        private Task ImageSaveMediator_BeforeFinalizeImageSaved(object sender, BeforeFinalizeImageSavedEventArgs e) {
+            var headers = e.Image.RawImageData.MetaData.GenericHeaders;
+            var noteHeader = (StringMetaDataHeader) headers.Where(h => h.Key == "NOTE").FirstOrDefault();
+            e.AddImagePattern(new ImagePattern(notePattern.Key, notePattern.Description, notePattern.Category) {
+                Value = noteHeader?.Value ?? string.Empty
+            });
+            return Task.CompletedTask;
         }
 
         public static string GetVersion() {

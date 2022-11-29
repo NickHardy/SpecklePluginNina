@@ -35,6 +35,15 @@
             TextAlignment="Right"
             Unit="s" />
 
+        <TextBlock Margin="5,0,0,0" VerticalAlignment="Center" Text="x" />
+        <ninactrl:UnitTextBox
+            MinWidth="20"
+            Margin="5,0,0,0"
+            VerticalAlignment="Center"
+            VerticalContentAlignment="Center"
+            Text="{Binding ExposureTimeMultiplier}"
+            TextAlignment="Right" />
+
         <TextBlock
             Margin="7.5,0,7.5,0"
             HorizontalAlignment="Center"

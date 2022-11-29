@@ -57,11 +57,14 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
         private IImageHistoryVM imageHistoryVM;
         private IProfileService profileService;
         private ITelescopeMediator telescopeMediator;
+        private IOptionsVM options;
+        private Speckle speckle;
 
         [ImportingConstructor]
-        public TakeSingleExposure(IProfileService profileService, ICameraMediator cameraMediator, IImagingMediator imagingMediator, IImageSaveMediator imageSaveMediator, IImageHistoryVM imageHistoryVM, ITelescopeMediator telescopeMediator) {
+        public TakeSingleExposure(IProfileService profileService, ICameraMediator cameraMediator, IImagingMediator imagingMediator, IImageSaveMediator imageSaveMediator, IImageHistoryVM imageHistoryVM, ITelescopeMediator telescopeMediator, IOptionsVM options) {
             Gain = -1;
             Offset = -1;
+            ExposureTimeMultiplier = 1;
             ImageType = CaptureSequence.ImageTypes.LIGHT;
             this.cameraMediator = cameraMediator;
             this.imagingMediator = imagingMediator;
@@ -70,9 +73,11 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             this.profileService = profileService;
             this.telescopeMediator = telescopeMediator;
             CameraInfo = this.cameraMediator.GetInfo();
+            this.options = options;
+            speckle = new Speckle();
         }
 
-        private TakeSingleExposure(TakeSingleExposure cloneMe) : this(cloneMe.profileService, cloneMe.cameraMediator, cloneMe.imagingMediator, cloneMe.imageSaveMediator, cloneMe.imageHistoryVM, cloneMe.telescopeMediator) {
+        private TakeSingleExposure(TakeSingleExposure cloneMe) : this(cloneMe.profileService, cloneMe.cameraMediator, cloneMe.imagingMediator, cloneMe.imageSaveMediator, cloneMe.imageHistoryVM, cloneMe.telescopeMediator, cloneMe.options) {
             CopyMetaData(cloneMe);
         }
 
@@ -84,6 +89,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                 Gain = Gain,
                 Offset = Offset,
                 ImageType = ImageType,
+                ExposureTimeMultiplier = 1,
             };
 
             if (clone.Binning == null) {
@@ -110,6 +116,17 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             get => exposureTime;
             set {
                 exposureTime = value;
+                RaisePropertyChanged();
+            }
+        }
+
+        private double exposureTimeMultiplier;
+
+        [JsonProperty]
+        public double ExposureTimeMultiplier {
+            get => exposureTimeMultiplier;
+            set {
+                exposureTimeMultiplier = value;
                 RaisePropertyChanged();
             }
         }
@@ -184,7 +201,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             TelescopeInfo = this.telescopeMediator.GetInfo();
 
             var capture = new CaptureSequence() {
-                ExposureTime = ExposureTime,
+                ExposureTime = ExposureTime * ExposureTimeMultiplier,
                 Binning = Binning,
                 Gain = Gain,
                 Offset = Offset,
@@ -275,11 +292,11 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
         }
 
         public override TimeSpan GetEstimatedDuration() {
-            return TimeSpan.FromSeconds(this.ExposureTime);
+            return TimeSpan.FromSeconds(this.ExposureTime * ExposureTimeMultiplier);
         }
 
         public override string ToString() {
-            return $"Category: {Category}, Item: {nameof(TakeSingleExposure)}, ExposureTime {ExposureTime}, Gain {Gain}, Offset {Offset}, ImageType {ImageType}, Binning {Binning?.Name}";
+            return $"Category: {Category}, Item: {nameof(TakeSingleExposure)}, ExposureTime {ExposureTime * ExposureTimeMultiplier}, Gain {Gain}, Offset {Offset}, ImageType {ImageType}, Binning {Binning?.Name}";
         }
     }
 }

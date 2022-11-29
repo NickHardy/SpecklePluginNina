@@ -97,6 +97,8 @@ namespace NINA.Plugin.Speckle.Model {
         public string Template { get; set; }
         public double Airmass { get; set; }
         public int GetRef { get; set; }
+        public double MinAltitude { get; set; } = 0d;
+
     }
 
     public class GdsTargetClassMap : ClassMap<GdsTarget> {
@@ -174,6 +176,7 @@ namespace NINA.Plugin.Speckle.Model {
             Map(m => m.Rotation).Name("Rotation").Optional().Default(0);
             Map(m => m.Template).Name("Template").Optional().Default("");
             Map(m => m.Airmass).Name("Airmass").Optional().Default(0);
+            Map(m => m.MinAltitude).Name("MinAltitude").Optional().Default(0);
             Map(m => m.GetRef).Name("GetRef").Optional().Default(1);
         }
     }

@@ -70,6 +70,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
         public TakeRoiExposures(IProfileService profileService, ICameraMediator cameraMediator, IImagingMediator imagingMediator, IImageSaveMediator imageSaveMediator, IApplicationStatusMediator applicationStatusMediator, IImageControlVM imageControlVM, IFilterWheelMediator filterWheelMediator, ITelescopeMediator telescopeMediator) {
             Gain = -1;
             Offset = -1;
+            ExposureTimeMultiplier = 1;
             ImageType = CaptureSequence.ImageTypes.LIGHT;
             this.cameraMediator = cameraMediator;
             this.imagingMediator = imagingMediator;
@@ -96,6 +97,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                 Gain = Gain,
                 Offset = Offset,
                 ImageType = ImageType,
+                ExposureTimeMultiplier = ExposureTimeMultiplier,
             };
 
             if (clone.Binning == null) {
@@ -122,6 +124,17 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             get => exposureTime;
             set {
                 exposureTime = value;
+                RaisePropertyChanged();
+            }
+        }
+
+        private double exposureTimeMultiplier;
+
+        [JsonProperty]
+        public double ExposureTimeMultiplier {
+            get => exposureTimeMultiplier;
+            set {
+                exposureTimeMultiplier = value;
                 RaisePropertyChanged();
             }
         }
@@ -200,7 +213,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
         public override async Task Execute(IProgress<ApplicationStatus> progress, CancellationToken token) {
             ExposureCount = 1;
             var capture = new CaptureSequence() {
-                ExposureTime = ExposureTime,
+                ExposureTime = ExposureTime * ExposureTimeMultiplier,
                 Binning = Binning,
                 Gain = Gain,
                 Offset = Offset,
@@ -253,7 +266,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                     imageData.MetaData.Sequence.Title = title;
                     imageData.MetaData.Image.ExposureStart = exposureStart;
                     imageData.MetaData.Image.ExposureNumber = ExposureCount;
-                    imageData.MetaData.Image.ExposureTime = ExposureTime;
+                    imageData.MetaData.Image.ExposureTime = ExposureTime * ExposureTimeMultiplier;
 
                     ItemUtility.FromTelescopeInfo(imageData.MetaData, TelescopeInfo);
 
@@ -264,8 +277,16 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
 
                     //_ = imageData.SaveToDisk(new FileSaveInfo(profileService), token);
                     Logger.Debug("Metadata: " + roiDuration.ElapsedMilliseconds);
-                    _ = Task.Run(() => {
-                        var result = imageData.SaveToDisk(new FileSaveInfo(profileService), token);
+                    _ = Task.Run(async () => {
+                        //var result = imageData.SaveToDisk(new FileSaveInfo(profileService), token);
+                        List<ImagePattern> customPatterns = new List<ImagePattern>();
+                        customPatterns.Add(new ImagePattern(speckle.notePattern.Key, speckle.notePattern.Description, speckle.notePattern.Category) {
+                            Value = string.Empty
+                        });
+                        FileSaveInfo fileSaveInfo = new FileSaveInfo(profileService);
+                        string tempPath = await imageData.PrepareSave(fileSaveInfo);
+                        _ = imageData.FinalizeSave(tempPath, fileSaveInfo.FilePattern, customPatterns);
+
                         Logger.Debug("SaveToDisk: " + roiDuration.ElapsedMilliseconds);
                     });
                     Logger.Debug("Task save: " + roiDuration.ElapsedMilliseconds);
@@ -275,7 +296,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                 }
                 ExposureCount--;
                 double fps = ExposureCount / (((double)seqDuration.ElapsedMilliseconds) / 1000);
-                Logger.Info("Captured " + ExposureCount + " times " + ExposureTime + "s images in " + seqDuration.ElapsedMilliseconds + " ms. : " + Math.Round(fps, 2) + " fps");
+                Logger.Info("Captured " + ExposureCount + " times " + ExposureTime * ExposureTimeMultiplier + "s images in " + seqDuration.ElapsedMilliseconds + " ms. : " + Math.Round(fps, 2) + " fps");
             } catch (OperationCanceledException) {
                 cameraMediator.AbortExposure();
                 throw;
@@ -337,11 +358,11 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
         }
 
         public override TimeSpan GetEstimatedDuration() {
-            return TimeSpan.FromSeconds(this.ExposureTime * this.totalExposureCount);
+            return TimeSpan.FromSeconds(this.ExposureTime * ExposureTimeMultiplier * this.totalExposureCount);
         }
 
         public override string ToString() {
-            return $"Category: {Category}, Item: {nameof(TakeRoiExposures)}, ExposureTime {ExposureTime}, Gain {Gain}, Offset {Offset}, ImageType {ImageType}, Binning {Binning?.Name}";
+            return $"Category: {Category}, Item: {nameof(TakeRoiExposures)}, ExposureTime {ExposureTime * ExposureTimeMultiplier}, Gain {Gain}, Offset {Offset}, ImageType {ImageType}, Binning {Binning?.Name}";
         }
 
     }

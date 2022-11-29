@@ -7,8 +7,8 @@ using System.Runtime.InteropServices;
 
 // [MANDATORY] The assembly versioning
 //Should be incremented for each new release build of a plugin
-[assembly: AssemblyVersion("1.0.3.7")]
-[assembly: AssemblyFileVersion("1.0.3.7")]
+[assembly: AssemblyVersion("1.0.4.0")]
+[assembly: AssemblyFileVersion("1.0.4.0")]
 
 // [MANDATORY] The name of your plugin
 [assembly: AssemblyTitle("Speckle Interferometry")]
@@ -64,7 +64,7 @@ But make sure you can still platesolve your full image or you'll need pinpoint p
 It's best if you create a separate profile for Speckle targets. There are some things you don't need for Speckle imaging.
 There's no need to guide or dither. just get rapid small images for the star. Usually the image will be 256x256 or 512x512, depending on the telescope and camera.
 Also create a separate folder for speckle images and set the filepattern to something like this:
-$$DATEMINUS12$$\$$SEQUENCETITLE$$\$$TARGETNAME$$\$$FILTER$$\$$EXPOSURETIME$$\$$TARGETNAME$$_$$FRAMENR$$
+$$DATEMINUS12$$\$$SEQUENCETITLE$$\$$TARGETNAME$$\$$FILTER$$\$$EXPOSURETIME$$\$$FRAMENR$$_$$TARGETNAME$$_$$NOTE$$
 
 Videos explaning double star observing and speckle interferometry can be found here:  
 [https://boyce-astro.org/videos/astrometry/](https://boyce-astro.org/videos/astrometry/)

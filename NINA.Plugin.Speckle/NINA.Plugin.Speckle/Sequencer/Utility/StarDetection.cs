@@ -103,6 +103,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
             public double radius;
             public double HFR;
             public Accord.Point Position;
+            public double distanceCenter;
             public double meanBrightness;
             private List<PixelData> pixelData;
             public double Average { get; private set; } = 0;
@@ -376,7 +377,8 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
 
         private List<DetectedStar> IdentifyLargestStars(StarDetectionParams p, State state, Bitmap _bitmapToAnalyze, StarDetectionResult result, CancellationToken token, out int detectedStars) {
             detectedStars = 0;
-            Blob[] blobs = _blobCounter.GetObjectsInformation().OrderByDescending(x => x.Area).ToArray();
+            int maxArea = _blobCounter.GetObjectsInformation().Max(x => x.Area);
+            Blob[] blobs = _blobCounter.GetObjectsInformation().Where(x => x.Area >= maxArea * 0.7).ToArray();
             SimpleShapeChecker checker = new SimpleShapeChecker();
             List<Star> starlist = new List<Star>();
             double sumRadius = 0;
@@ -446,9 +448,10 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
                     sumRadius += s.radius;
                     sumSquares += s.radius * s.radius;
                     s.CalculateHfr();
+                    s.distanceCenter = DistanceCenter(state, s.Position.X, s.Position.Y);
                     starlist.Add(s);
                 }
-                if (starlist.Count() > 5) {
+                if (starlist.Count() >= 5) {
                     break;
                 }
             }
@@ -461,7 +464,13 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
             // Ensure we provide the list of detected stars, even if NumberOfAF stars is used
             detectedStars = starlist.Count;
 
-            return starlist.Select(s => s.ToDetectedStar()).ToList();
+            return starlist.OrderBy(x => x.distanceCenter).Select(s => s.ToDetectedStar()).ToList();
+        }
+
+        private double DistanceCenter(State state, double x, double y) {
+            var centerX = state.imageProperties.Width / 2;
+            var centerY = state.imageProperties.Height / 2;
+            return Math.Sqrt(Math.Pow(x - centerX, 2) + Math.Pow(y - centerY, 2)); //TODO return percentage?
         }
 
         private double CalculateEccentricity(double width, double height) {

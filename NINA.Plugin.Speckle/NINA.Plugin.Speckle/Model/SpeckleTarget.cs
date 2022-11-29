@@ -78,9 +78,15 @@ namespace NINA.Plugin.Speckle.Model {
         public double Airmass { get; set; } = 0d;
         [JsonProperty]
         public int GetRef { get; set; }
+        public bool RegisterTarget { get; set; } = true;
+        [JsonProperty]
+        public double MinAltitude { get; set; } = 0d;
 
         public List<AltTime> AltList { get; set; } = new List<AltTime>();
-        public bool RegisterTarget { get; set; } = true;
+        [JsonProperty]
+        public bool ImageTarget { get; set; } = true;
+        [JsonProperty]
+        public string Note { get; set; }
 
         public List<SimbadSaoStar> ReferenceStarList { get; set; }
         public SimbadSaoStar ReferenceStar { get; set; } = new SimbadSaoStar();
@@ -149,6 +155,7 @@ namespace NINA.Plugin.Speckle.Model {
             Map(m => m.Priority).Name("Priority").Optional().Default(0);
             Map(m => m.Rotation).Name("Rotation").Optional().Default(0);
             Map(m => m.Airmass).Name("Airmass").Optional().Default(0);
+            Map(m => m.MinAltitude).Name("MinAltitude").Optional().Default(0);
             Map(m => m.GetRef).Name("GetRef").Optional().Default(1);
             Map(m => m.ExposureTime).Name("ExposureTime").Optional().Default(0);
             Map(m => m.Exposures).Name("Exposures").Optional().Default(0);
@@ -159,6 +166,7 @@ namespace NINA.Plugin.Speckle.Model {
             Map(m => m.Completed_cycles).Name("Completed_cycles").Optional().Default(0);
             Map(m => m.Completed_ref_cycles).Name("Completed_ref_cycles").Optional().Default(0);
             Map(m => m.Completed_nights).Name("Completed_nights").Optional().Default(0);
+            Map(m => m.Note).Name("Note").Optional().Default("");
         }
     }
 }

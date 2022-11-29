@@ -64,6 +64,8 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
         private IWindowServiceFactory windowServiceFactory;
         private IImageHistoryVM imageHistoryVM;
         private IImageSaveMediator imageSaveMediator;
+        private IOptionsVM options;
+        private Speckle speckle;
         public PlateSolvingStatusVM PlateSolveStatusVM { get; } = new PlateSolvingStatusVM();
 
         [ImportingConstructor]
@@ -74,7 +76,8 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                             IPlateSolverFactory plateSolverFactory,
                             IWindowServiceFactory windowServiceFactory,
                             IImageHistoryVM imageHistoryVM,
-                            IImageSaveMediator imageSaveMediator) {
+                            IImageSaveMediator imageSaveMediator,
+                            IOptionsVM options) {
             this.profileService = profileService;
             this.telescopeMediator = telescopeMediator;
             this.imagingMediator = imagingMediator;
@@ -83,6 +86,8 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             this.windowServiceFactory = windowServiceFactory;
             this.imageHistoryVM = imageHistoryVM;
             this.imageSaveMediator = imageSaveMediator;
+            this.options = options;
+            speckle = new Speckle();
         }
 
         private CalculateRoiPosition(CalculateRoiPosition cloneMe) : this(cloneMe.profileService,
@@ -92,7 +97,8 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                                                           cloneMe.plateSolverFactory,
                                                           cloneMe.windowServiceFactory,
                                                           cloneMe.imageHistoryVM,
-                                                          cloneMe.imageSaveMediator) {
+                                                          cloneMe.imageSaveMediator,
+                                                          cloneMe.options) {
             CopyMetaData(cloneMe);
         }
 
@@ -197,6 +203,11 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             }
 
             if (!plateSolveResult.Success) {
+                if (speckleTarget != null) {
+                    speckleTarget.Note = "platesolve-failed";
+                    imageData.MetaData.GenericHeaders.Add(new StringMetaDataHeader("NOTE", speckleTarget.Note, "Note"));
+                }
+
                 // Platesolve failed so try to get the biggest star in the image
                 var starDetection = new Utility.StarDetection();
                 var starDetectionParams = new StarDetectionParams() {
@@ -213,13 +224,10 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
 
             var target = speckleContainer.Target;
             if (target != null) {
-                imageData.MetaData.Target.Name = !plateSolveResult.Success ? target.TargetName + "_failed" : target.TargetName;
+                imageData.MetaData.Target.Name = target.TargetName;
                 imageData.MetaData.Target.Coordinates = target.InputCoordinates.Coordinates;
                 imageData.MetaData.Target.Rotation = plateSolveResult.Orientation;
             }
-
-            imageData.MetaData.GenericHeaders.Add(new DoubleMetaDataHeader("ROIX", speckleContainer.X, "X-position of the ROI"));
-            imageData.MetaData.GenericHeaders.Add(new DoubleMetaDataHeader("ROIY", speckleContainer.Y, "Y-position of the ROI"));
 
             imageData.MetaData.Sequence.Title = speckleContainer.Title;
 
