@@ -355,20 +355,13 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
 
         private SpeckleTarget GetNextTarget() {
             Logger.Debug("Getting next target from list: " + SpeckleTargets.Count + " targets total.");
-            if (SpeckleTargets.Where(t => t.Completed_nights == 0).ToList().Count == 0) {
-                Logger.Debug("Total targets: " + SpeckleTargets.Count + ", Targets completed: " + SpeckleTargets.Where(t => t.Completed_nights == 1).ToList().Count);
-                return null;
-            }
             
             // First get the next target with an imageTime in the future
             DateTime maxImageTime = DateTime.Now.AddMinutes(-5);
             SpeckleTarget = SpeckleTargets.Where(t => t.ImageTarget)
-                .Where(t => t.Completed_nights == 0)
+                .Where(t => t.Nights > t.Completed_nights)
                 .Where(t => t.Cycles > t.Completed_cycles)
                 .Where(t => t.ImageTime > maxImageTime)
-                .Where(t => t.getCurrentAltTime(speckle.AltitudeMax, speckle.MDistance) != null
-                    && t.getCurrentAltTime(speckle.AltitudeMax, speckle.MDistance).alt > t.MinAltitude
-                    && t.getCurrentAltTime(speckle.AltitudeMax, speckle.MDistance).distanceToMoon > speckle.MoonDistance)
                 .OrderBy(t => t.Completed_cycles)
                 .ThenBy(t => t.ImageTime)
                 .FirstOrDefault();
@@ -379,7 +372,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                 if (SpeckleTarget.ImageTime > DateTime.Now.AddMinutes(6)) {
                     maxImageTime = SpeckleTarget.ImageTime;
                     var fillinTarget = SpeckleTargets.Where(t => t.ImageTarget)
-                        .Where(t => t.Completed_nights == 0)
+                        .Where(t => t.Nights > t.Completed_nights)
                         .Where(t => t.Cycles > t.Completed_cycles)
                         .Where(t => t.ImageTime < maxImageTime)
                         .Where(t => t.getCurrentAltTime(speckle.AltitudeMax, speckle.MDistance) != null
@@ -419,7 +412,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             } else {
                 Logger.Debug("No next target. Looking for previous target.");
                 var fillinTarget = SpeckleTargets.Where(t => t.ImageTarget)
-                    .Where(t => t.Completed_nights == 0)
+                    .Where(t => t.Nights > t.Completed_nights)
                     .Where(t => t.Cycles > t.Completed_cycles)
                     .Where(t => t.getCurrentAltTime(speckle.AltitudeMax, speckle.MDistance) != null 
                         && t.getCurrentAltTime(speckle.AltitudeMax, speckle.MDistance).alt > t.MinAltitude
@@ -567,7 +560,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
         private Task<bool> LoadTargets(string file) {
             LoadingTargets = true;
             return Task.Run(() => {
-                if (DateTime.Now.Hour < 12 && DateTime.Now.Hour > 8) {
+                if (DateTime.Now.Hour <= 12 && DateTime.Now.Hour >= 8) {
                     NighttimeData = nighttimeCalculator.Calculate(DateTime.Now.AddHours(5));
                 } else {
                     NighttimeData = nighttimeCalculator.Calculate();

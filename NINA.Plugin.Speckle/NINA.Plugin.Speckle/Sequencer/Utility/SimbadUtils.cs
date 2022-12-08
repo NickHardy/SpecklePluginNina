@@ -48,7 +48,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
                     dictionary.Add("maxrec", "100");
                     dictionary.Add("runid", "");
                     dictionary.Add("phase", "run");
-                    dictionary.Add("query", "SELECT TOP 10 main_id, ra, dec, DISTANCE(POINT('ICRS', " + coords.RADegrees + ", " + coords.Dec + "), POINT('ICRS', ra, dec)) as dist FROM basic WHERE (otype_txt = 'Cl*' OR otype_txt = 'C?*') AND CONTAINS(POINT('ICRS', ra, dec), CIRCLE('ICRS', " + coords.RADegrees + ", " + coords.Dec + ", " + maxDistance + ")) = 1 AND ra IS NOT NULL AND dec IS NOT NULL ORDER BY dist;");
+                    dictionary.Add("query", "SELECT TOP 10 main_id, ra, dec, DISTANCE(POINT('ICRS', " + coords.RADegrees + ", " + coords.Dec + "), POINT('ICRS', ra, dec)) as dist FROM basic WHERE (otype_txt = 'Cl*' OR otype_txt = 'C?*') AND CONTAINS(POINT('ICRS', ra, dec), CIRCLE('ICRS', " + coords.RADegrees + ", " + coords.Dec + ", " + maxDistance + ")) = 1 AND galdim_majaxis IS NOT NULL AND ra IS NOT NULL AND dec IS NOT NULL ORDER BY galdim_majaxis DESC;");
                     VoTable voTable = PostForm(url, dictionary);
                     if (voTable != null) {
                         foreach (List<object> obj in voTable.Data) {

@@ -87,6 +87,8 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
 
             SearchRadius = speckle.SearchRadius;
             SlewBackToTarget = true;
+            Zenith = false;
+            Platesolve = true;
         }
 
         private CenterOnStarCluster(CenterOnStarCluster cloneMe) : this(cloneMe.profileService,
@@ -105,7 +107,9 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             return new CenterOnStarCluster(this) {
                 Coordinates = Coordinates.Clone(),
                 SearchRadius = SearchRadius,
-                SlewBackToTarget = SlewBackToTarget
+                SlewBackToTarget = SlewBackToTarget,
+                Zenith = Zenith,
+                Platesolve = Platesolve,
             };
         }
 
@@ -134,6 +138,14 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
         [JsonProperty]
         public bool SlewBackToTarget { get => _SlewBackToTarget; set { _SlewBackToTarget = value; RaisePropertyChanged(); } }
 
+        private bool _Zenith;
+        [JsonProperty]
+        public bool Zenith { get => _Zenith; set { _Zenith = value; RaisePropertyChanged(); } }
+
+        private bool _Platesolve;
+        [JsonProperty]
+        public bool Platesolve { get => _Platesolve; set { _Platesolve = value; RaisePropertyChanged(); } }
+
         private IList<string> issues = new List<string>();
 
         public IList<string> Issues {
@@ -146,11 +158,10 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
 
         protected virtual async Task<PlateSolveResult> DoCenter(IProgress<ApplicationStatus> progress, CancellationToken token) {
             Logger.Debug("Searching for nearby StarCluster.");
-            Utility.SimbadUtils simUtils = new Utility.SimbadUtils();
-            StarClusterList = await simUtils.FindSimbadStarClusters(progress, token, Coordinates.Coordinates, SearchRadius);
+            await FindStarClusters(progress, token);
             StarCluster = StarClusterList.FirstOrDefault();
             if (StarCluster == null)
-                throw new SequenceEntityFailedException("Couldn't find nearby star cluster.");
+                throw new SequenceEntityFailedException("Couldn't find star cluster.");
 
             var speckleTarget = Utility.ItemUtility.RetrieveSpeckleTarget(Parent);
             if (speckleTarget != null) {
@@ -201,32 +212,51 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             return await solver.Center(seq, parameter, PlateSolveStatusVM.Progress, progress, token);
         }
 
+        private async Task FindStarClusters(IProgress<ApplicationStatus> progress, CancellationToken token) {
+            Utility.SimbadUtils simUtils = new Utility.SimbadUtils();
+            var coords = Coordinates.Coordinates;
+            if (Zenith) {
+                var zenithCoords = new InputTopocentricCoordinates(Angle.ByDegree(profileService.ActiveProfile.AstrometrySettings.Latitude), Angle.ByDegree(profileService.ActiveProfile.AstrometrySettings.Longitude));
+                zenithCoords.AltDegrees = 90;
+                coords = zenithCoords.Coordinates.Transform(Epoch.J2000);
+            }
+            StarClusterList = await simUtils.FindSimbadStarClusters(progress, token, coords, SearchRadius);
+        }
+
         public override async Task Execute(IProgress<ApplicationStatus> progress, CancellationToken token) {
-            var service = windowServiceFactory.Create();
-            service.Show(PlateSolveStatusVM, PlateSolveStatusVM.Title, System.Windows.ResizeMode.CanResize, System.Windows.WindowStyle.ToolWindow);
-            try {
-                var stoppedGuiding = await guiderMediator.StopGuiding(token);
-                PlateSolveResult result = new PlateSolveResult();
-                result.Success = false;
+            if (Platesolve) {
+                var service = windowServiceFactory.Create();
+                service.Show(PlateSolveStatusVM, PlateSolveStatusVM.Title, System.Windows.ResizeMode.CanResize, System.Windows.WindowStyle.ToolWindow);
                 try {
-                    result = await DoCenter(progress, token);
-                }
-                finally {
-                    if (SlewBackToTarget) {
-                        // Hopefully centered on Star cluster. Now return to the target.
-                        Logger.Debug("Slewing back to target.");
-                        await telescopeMediator.SlewToCoordinatesAsync(Coordinates.Coordinates, token);
+                    var stoppedGuiding = await guiderMediator.StopGuiding(token);
+                    PlateSolveResult result = new PlateSolveResult();
+                    result.Success = false;
+                    try {
+                        result = await DoCenter(progress, token);
+                    }
+                    finally {
+                        if (SlewBackToTarget) {
+                            // Hopefully centered on Star cluster. Now return to the target.
+                            Logger.Debug("Slewing back to target.");
+                            await telescopeMediator.SlewToCoordinatesAsync(Coordinates.Coordinates, token);
+                        }
+                    }
+                    if (stoppedGuiding) {
+                        await guiderMediator.StartGuiding(false, progress, token);
+                    }
+                    if (result.Success == false) {
+                        throw new SequenceEntityFailedException(Loc.Instance["LblPlatesolveFailed"]);
                     }
                 }
-                if (stoppedGuiding) {
-                    await guiderMediator.StartGuiding(false, progress, token);
+                finally {
+                    service.DelayedClose(TimeSpan.FromSeconds(1));
                 }
-                if (result.Success == false) {
-                    throw new SequenceEntityFailedException(Loc.Instance["LblPlatesolveFailed"]);
-                }
-            }
-            finally {
-                service.DelayedClose(TimeSpan.FromSeconds(1));
+            } else {
+                await FindStarClusters(progress, token);
+                StarCluster = StarClusterList.FirstOrDefault();
+
+                Logger.Debug("Slewing to StarCluster.");
+                await telescopeMediator.SlewToCoordinatesAsync(StarCluster.Coordinates(), token);
             }
         }
 
