@@ -270,6 +270,10 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             speckleTargetContainer.Title = SpeckleTarget.User;
             speckleTargetContainer.Name = SpeckleTarget.User + "_" + SpeckleTarget.Target + "_c" + (SpeckleTarget.Completed_cycles + 1);
             speckleTargetContainer.Items.ToList().ForEach(x => {
+                if (x is CalculateExposure calculateExposure)
+                {
+                    calculateExposure.ExposureTime = SpeckleTarget.ExposureTime;
+                }
                 if (x is TakeRoiExposures takeRoiExposures) {
                     takeRoiExposures.ExposureTime = SpeckleTarget.ExposureTime;
                     takeRoiExposures.TotalExposureCount = SpeckleTarget.Exposures;
@@ -317,6 +321,10 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                 speckleTargetContainerRef.Title = SpeckleTarget.User;
                 speckleTargetContainerRef.Name = SpeckleTarget.User + "_" + SpeckleTarget.Target + "_" + (SpeckleTarget.Completed_cycles + 1) + "_ref_" + SpeckleTarget.ReferenceStar.main_id;
                 speckleTargetContainerRef.Items.ToList().ForEach(x => {
+                    if (x is CalculateExposure calculateExposure)
+                    {
+                        calculateExposure.ExposureTime = SpeckleTarget.ExposureTime;
+                    }
                     if (x is TakeRoiExposures takeRoiExposures) {
                         takeRoiExposures.ExposureTime = SpeckleTarget.ExposureTime;
                         takeRoiExposures.TotalExposureCount = Math.Min(speckle.ReferenceExposures, SpeckleTarget.Exposures);
@@ -622,6 +630,10 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                             speckleTarget.Exposures = record.Exposures > 0 ? record.Exposures : Exposures;
                             speckleTarget.ExposureTime = record.ExposureTime > 0 ? record.ExposureTime : ExposureTime;
                             speckleTarget.Magnitude = record.Gmag0;
+                            if (!(record.Gmag1.ToString() == "" || record.Gmag1 == 0)) { speckleTarget.Magnitude2 = record.Gmag1; }
+                            else if (!(record.Smag.ToString() == "" || record.Smag == 0)) { speckleTarget.Magnitude2 = record.Smag; }
+                            else { speckleTarget.Magnitude2 = 42; }
+                            
                             speckleTarget.Separation = record.GaiaSep;
                             speckleTarget.Completed_nights = record.Completed_nights;
                             speckleTarget.Filter = record.Filter;
@@ -636,7 +648,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                         SpeckleTargets = new AsyncObservableCollection<SpeckleTarget>(
                             SpeckleTargets.Where(i => i.ImageTime != null).GroupBy(i => i.ImageTime)
                             .SelectMany(g => g.OrderByDescending(n => n.Priority).ThenByDescending(i => i.ImageTimeAlt).ToList())
-                            .OrderBy(i => i.ImageTime).ThenBy(i => i.ImageTimeAlt));
+                            .OrderBy(i => i.ImageTime).ThenBy(i => i.ImageTimeAlt)); 
                     }
                 }
                 LoadingTargets = false;

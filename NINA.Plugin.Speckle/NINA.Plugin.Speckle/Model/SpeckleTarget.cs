@@ -61,6 +61,8 @@ namespace NINA.Plugin.Speckle.Model {
         [JsonProperty]
         public double Magnitude { get; set; }
         [JsonProperty]
+        public double Magnitude2 { get; set; }
+        [JsonProperty]
         public double Separation { get; set; }
         [JsonProperty]
         public int Completed_nights { get; set; }
@@ -160,6 +162,7 @@ namespace NINA.Plugin.Speckle.Model {
             Map(m => m.ExposureTime).Name("ExposureTime").Optional().Default(0);
             Map(m => m.Exposures).Name("Exposures").Optional().Default(0);
             Map(m => m.Magnitude).Name("Magnitude").Optional().Default(0);
+            Map(m => m.Magnitude2).Name("Secondary Magnitude").Optional().Default(0);
             Map(m => m.Separation).Name("Separation").Optional().Default(0);
             Map(m => m.Template).Name("Template").Optional().Default("");
             Map(m => m.Filter).Name("Filter").Optional().Default("");

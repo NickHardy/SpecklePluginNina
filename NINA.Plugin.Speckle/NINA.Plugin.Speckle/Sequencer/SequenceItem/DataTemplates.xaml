@@ -518,4 +518,24 @@
         </view:SequenceBlockView>
     </DataTemplate>
 
+    <DataTemplate x:Key="NINA.Plugin.Speckle.Sequencer.SequenceItem.CalculateExposure_Mini">
+        <mini:MiniSequenceItem>
+            <mini:MiniSequenceItem.SequenceItemContent>
+                <StackPanel Orientation="Horizontal">
+
+                </StackPanel>
+            </mini:MiniSequenceItem.SequenceItemContent>
+        </mini:MiniSequenceItem>
+    </DataTemplate>
+
+    <DataTemplate DataType="{x:Type local:CalculateExposure}">
+        <view:SequenceBlockView>
+            <view:SequenceBlockView.SequenceItemContent>
+                <StackPanel Orientation="Horizontal">
+
+                </StackPanel>
+            </view:SequenceBlockView.SequenceItemContent>
+        </view:SequenceBlockView>
+    </DataTemplate>
+
 </ResourceDictionary>
