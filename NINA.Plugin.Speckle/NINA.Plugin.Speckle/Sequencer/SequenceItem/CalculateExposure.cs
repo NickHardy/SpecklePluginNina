@@ -55,7 +55,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
     [ExportMetadata("Category", "Speckle Interferometry")]
     [Export(typeof(ISequenceItem))]
     [JsonObject(MemberSerialization.OptIn)]
-    public class CalculateExposure : NINA.Sequencer.SequenceItem.SequenceItem, IExposureItem, IValidatable
+    public class CalculateExposure : NINA.Sequencer.SequenceItem.SequenceItem, IValidatable
     {
         // General:
         private double exposureTime;
@@ -258,7 +258,6 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
          */
         public override async Task Execute(IProgress<ApplicationStatus> progress, CancellationToken token)
         {
-
             Telescope pw1000 = new Telescope("PW1000", 1000, 470, 6000);
             Camera qhy600mPro = new Camera("QHY600M-Pro", 3.59, 1, 0.0005, new double[] { 0.51, 0.51, 0.78, 0.87, 0.89, 0.84, 0.74, 0.61, 0.54, 0.1, 0.1, 0.1, 0.1, 0.1 });
             Filter R = new Filter("Sloan R (Baader)", new double[] { 0, 0, 0, 0, 0.5, 1, 1, 1, 0, 0, 0, 0, 0, 0 });
@@ -269,30 +268,22 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
 
             try
             {
-                
-                ExposureTime = calculate(pw1000, qhy600mPro, R, twox); //Utility.ItemUtility.RetrieveSpeckleTarget(Parent)
-                if (ExposureTime == 43) { Notification.ShowError("Exposure time exceeded 5 seconds. Falling back to user's time in list."); }
-                else if (ExposureTime == 42) { Notification.ShowWarning("Calculation failed to get secondary magnitude. Falling back to user's time in list."); }
-                else if (ExposureTime == 44) { Notification.ShowWarning("Calculation requested for "+ Utility.ItemUtility.RetrieveSpeckleTarget(Parent).Target+", but primary mag is not in range of ASD simulations. Falling back to user's time in list."); }
-                else 
-                { 
-                    ItemUtility.RetrieveSpeckleContainer(Parent).Items.ToList().ForEach(x => {
-                        if (x is TakeRoiExposures takeRoiExposures)
-                        {
-                            Logger.Debug("Setting exposure time of " + ExposureTime+"..");
-                            takeRoiExposures.ExposureTime = ExposureTime;
-                            Logger.Debug("takeRoiExposures.ExposureTime is now" + takeRoiExposures.ExposureTime);
+             ExposureTime = calculate(pw1000, qhy600mPro, R, twox); //Utility.ItemUtility.RetrieveSpeckleTarget(Parent)
+                ItemUtility.RetrieveSpeckleContainer(Parent).Items.ToList().ForEach(x => {
+                    if (x is TakeRoiExposures takeRoiExposures)
+                    {
+                        Logger.Debug("Setting exposure time of " + ExposureTime+"..");
+                        takeRoiExposures.ExposureTime = ExposureTime;
+                        Logger.Debug("takeRoiExposures.ExposureTime is now "+takeRoiExposures.ExposureTime);
 
-                        }
-                        if (x is TakeLiveExposures takeLiveExposures)
-                        {
-                            Logger.Debug("Setting exposure time of " + ExposureTime + "..");
-                            takeLiveExposures.ExposureTime = ExposureTime;
-                            Logger.Debug("takeLiveExposures.ExposureTime is now" + takeLiveExposures.ExposureTime);
-                        }
-                    });
-                }
-
+                    }
+                    if (x is TakeLiveExposures takeLiveExposures)
+                    {
+                        Logger.Debug("Setting exposure time of " + ExposureTime + "..");
+                        takeLiveExposures.ExposureTime = ExposureTime;
+                        Logger.Debug("takeLiveExposures.ExposureTime is now "+takeLiveExposures.ExposureTime);
+                    }
+                });
             }
             catch (OperationCanceledException)
             {
@@ -314,7 +305,6 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
         {
             Validate();
         }
-
         // --- Start of retrieve methods:
         public double retrieveASDSNR(double Fluxratio, double MagnitudePrimary)
         {
@@ -361,15 +351,13 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
             Notification.ShowError("Couldn't find a fluxratio of "+FluxRatio+" for the asdSNR. Please verify the target list.");
             return 0;
         }
-
         public Filter retrieveCurrentFilter()
         {
             /*if (filterWheelMediator.GetInfo().Connected)
                 imageData.MetaData.FilterWheel.Filter = filterWheelMediator.GetInfo().SelectedFilter.Name;*/
-            return null;
+            return null; 
 
         }
-
         /*
         This retrieves the InputTarget object from an IDeepSkyObjectContainer ancestor of the given parent container.
         If no ancestor container is an IDeepSkyObjectContainer, it returns null.
@@ -399,9 +387,9 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
         public double calculateAtmosphere(Telescope telescope, Camera camera, Filter filter)
         {
             AirMass = 1;
-            Logger.Debug("Elevation:" + Elevation);
-            Logger.Debug("Airmass:" + AirMass);
-            Logger.Debug("Palomar:" + ArrayPalomarExtinction[0]);
+            Logger.Debug("Elevation: " + Elevation);
+            Logger.Debug("Airmass: " + AirMass);
+            Logger.Debug("Palomar: " + ArrayPalomarExtinction[0]);
             Logger.Debug("arrayatmosphericTransmission[i]:");
 
             for (int i = 0; i < ArrayPalomarExtinction.Length; i++) // Fill arrayAtmosphericTransmission
@@ -442,12 +430,12 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
         public double calculate(Telescope telescope, Camera camera, Filter filter, Barlow barlow)
         {
             var speckleTarget = Utility.ItemUtility.RetrieveSpeckleTarget(Parent); // NOT this:  var target = RetrieveTarget(Parent);
-            MagnitudeTruePrimary = Math.Min(Utility.ItemUtility.RetrieveSpeckleTarget(Parent).Magnitude, Utility.ItemUtility.RetrieveSpeckleTarget(Parent).Magnitude2);
-            if(MagnitudeTruePrimary < 7 || MagnitudeTruePrimary > 15) { return 44; } // 44: Simulations not supported for these magnitudes
+            MagnitudeTruePrimary = Math.Min(speckleTarget.Magnitude, speckleTarget.Magnitude2);
+            if (MagnitudeTruePrimary < 7 || MagnitudeTruePrimary > 15) { throw new SequenceEntityFailedException("Calculation requested for " + Utility.ItemUtility.RetrieveSpeckleTarget(Parent).Target + ", but primary mag is not in range of ASD simulations. Falling back to user's time in list."); } 
             Logger.Debug("True Primary is "+MagnitudeTruePrimary);
-            if(speckleTarget.Magnitude2 == 42) { return 42; } // 42: No secondary mag exists
-            else { MagnitudeTrueSecondary = Math.Max(Utility.ItemUtility.RetrieveSpeckleTarget(Parent).Magnitude, Utility.ItemUtility.RetrieveSpeckleTarget(Parent).Magnitude2); }
             
+            MagnitudeTrueSecondary = Math.Max(speckleTarget.Magnitude, speckleTarget.Magnitude2);
+
             Logger.Debug("True Secondary is " + MagnitudeTrueSecondary);
             FluxRatio = Math.Pow(100, (MagnitudeTruePrimary - MagnitudeTrueSecondary) / 5);
             CombinedMagnitude = 2.5 * Math.Log10(1 / (Math.Pow(10, ((MagnitudeTrueSecondary - MagnitudeTruePrimary) / 2.5)) + 1)) + MagnitudeTrueSecondary;
@@ -463,12 +451,12 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
             double exposureTime = 0.0;
 
             double SNR = 0;
-            if (!(intendedSNR == 0)) 
+            if (intendedSNR != 0) 
             { 
                 SNR = IntendedSNR; // in case user wants to override SNR with an intended SNR
                 Logger.Debug("User override using intended SNR of " + IntendedSNR + ".");
             } 
-            else if (intendedSNR == 0) 
+            else
             { 
                 SNR = retrieveASDSNR(FluxRatio, MagnitudeTruePrimary);
                 Logger.Debug("retrieveASDSNR returned "+ retrieveASDSNR(FluxRatio, MagnitudeTruePrimary)+" for "+speckleTarget.Target+".");
@@ -484,7 +472,6 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
             Logger.Debug("azerosum is currently "+azerosum);
             Logger.Debug("darkcurrent is currently " + camera.DarkCurrent);
 
-
             do
             {
                 tempsignal = 1 * azerosum * Math.Pow(10,(-0.4 * CombinedMagnitude)) * exposureTime;
@@ -497,7 +484,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
 
                 if (tempSNR > SNR)
                 {
-                    Logger.Debug("FINISHED: tempSNR " +tempSNR+ "is greater than " +SNR+ ", returning exp. time: "+ exposureTime+" with primmag. of" +MagnitudeTruePrimary+" and secmag. of "+MagnitudeTrueSecondary+".");
+                    Logger.Debug("FINISHED: tempSNR " +tempSNR+ " is greater than " +SNR+ ", returning exp. time: "+ exposureTime+" with primmag. of " +MagnitudeTruePrimary+" and secmag. of "+MagnitudeTrueSecondary+".");
                     return exposureTime;
                 }
 
@@ -508,7 +495,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
                     "skyglownoise: " + skyglownoise + ", darkcurrent: " + darkcurrent + ", photonshot: " + photonshotnoise + ", total: " + totalnoise+".");
 
             } while (exposureTime < 5.0);
-            return 43; // 43: Exposure time getting unreasonable
+            throw new SequenceEntityFailedException("Calculation failed for " +speckleTarget.Target+" as exposure time exceeded the maximum (5s).");
         }
         // --- End of calculation methods
 
