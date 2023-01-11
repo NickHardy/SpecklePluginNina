@@ -291,7 +291,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
             }
             catch (Exception ex)
             {
-                Notification.ShowError("Exposure Calculation error:" + Environment.NewLine + ex.Message);
+                Notification.ShowError("Exposure Calculation error: " + Environment.NewLine + ex.Message);
                 Logger.Error(ex);
                 throw;
             }
