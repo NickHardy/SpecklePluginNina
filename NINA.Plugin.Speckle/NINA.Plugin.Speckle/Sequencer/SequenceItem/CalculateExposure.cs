@@ -247,12 +247,6 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
                 RaisePropertyChanged();
             }
         }
-
-         /* TODO:
-         * Imagescale, sum the 0-mag A0 Star in 50nm BWs
-         * Check skybackground
-         * camera pixelsize
-         */
         public override async Task Execute(IProgress<ApplicationStatus> progress, CancellationToken token)
         {
             Telescope pw1000 = new Telescope("PW1000", 1000, 470, 6000);
@@ -263,11 +257,11 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
             if (Utility.ItemUtility.RetrieveSpeckleTarget(Parent).NoCalculation == "1") { throw new SequenceEntityFailedException(); }
 
             // Calculate Atmospheric values:
-            calculateAtmosphere(pw1000, qhy600mPro, retrieveCurrentFilter());
+            CalculateAtmosphere(pw1000, qhy600mPro, RetrieveCurrentFilter());
 
             try
             {
-             ExposureTime = calculate(pw1000, qhy600mPro, retrieveCurrentFilter(), twox);
+             ExposureTime = Calculate(pw1000, qhy600mPro, RetrieveCurrentFilter(), twox);
                 ItemUtility.RetrieveSpeckleContainer(Parent).Items.ToList().ForEach(x => {
                     if (x is TakeRoiExposures takeRoiExposures)
                     {
@@ -305,7 +299,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
             Validate();
         }
         // --- Start of retrieve methods:
-        public double retrieveASDSNR(double Fluxratio, double MagnitudePrimary)
+        public double RetrieveASDSNR(double Fluxratio, double MagnitudePrimary)
         {
             double[,] prim7 = { { 0.05, 90 }, { 0.1, 80 }, { 0.25, 60 }, { 0.5, 45 }, { 0.75, 35 }, { 1, 25 } };
             double[,] prim8 = { { 0.05, 100 }, { 0.1, 90 }, { 0.25, 70 }, { 0.5, 50 }, { 0.75, 30 }, { 1, 20 } };
@@ -350,7 +344,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
             Notification.ShowError("Couldn't find a fluxratio of "+FluxRatio+" for the asdSNR. Please verify the target list.");
             return 0;
         }
-        public Filter retrieveCurrentFilter()
+        public Filter RetrieveCurrentFilter()
         {
             Filter U = new Filter("Sloan U", new double[] { 0.85, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 });
             Filter G = new Filter("Sloan G", new double[] { 0.9, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0 });
@@ -407,9 +401,16 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
             else{ return null; }
         }
 
+        public double RetrieveSkyBackground()
+        {
+            // This should be replaced by a table in the GUI later on where each lunar phase (Full, Waxing/Waning Gibbous), Quarter, Waxing/Waning Crescent, New)
+            // corresponds to a user measured (and entered) sky background. This method can then get the current lunar phase and pick the respective skybackground.
+            return 21;
+        }
+
         // --- End of retrieve methods
         // --- Start of calculation methods:
-        public double calculateAtmosphere(Telescope telescope, Camera camera, Filter filter)
+        public double CalculateAtmosphere(Telescope telescope, Camera camera, Filter filter)
         {
             Logger.Debug("Elevation: " + Elevation);
             Logger.Debug("Airmass: " + AirMass);
@@ -450,7 +451,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
 
         }
         // Main iterative calculation method:
-        public double calculate(Telescope telescope, Camera camera, Filter filter, Barlow barlow)
+        public double Calculate(Telescope telescope, Camera camera, Filter filter, Barlow barlow)
         {
             var speckleTarget = Utility.ItemUtility.RetrieveSpeckleTarget(Parent);
 
@@ -470,7 +471,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
             double totalnoise = 0;  
             double tempsignal = 0;
             double tempSNR = 0;
-            skybackground = 21; //temp
+            skybackground = RetrieveSkyBackground();
             double exposureTime = 0.0;
             double SNR = 0;
 
@@ -481,8 +482,8 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
             } 
             else
             { 
-                SNR = retrieveASDSNR(FluxRatio, MagnitudeTruePrimary);
-                Logger.Debug("retrieveASDSNR returned "+ retrieveASDSNR(FluxRatio, MagnitudeTruePrimary)+" for "+speckleTarget.Target+".");
+                SNR = RetrieveASDSNR(FluxRatio, MagnitudeTruePrimary);
+                Logger.Debug("retrieveASDSNR returned "+ RetrieveASDSNR(FluxRatio, MagnitudeTruePrimary)+" for "+speckleTarget.Target+".");
             }
             if(barlow.BarlowFactor == 1) { Logger.Debug("Using pixelsize of " + camera.PixelSize + " microns and FL of " + telescope.Focallength + "mm."); }
             else { Logger.Debug("Using pixelsize of " + camera.PixelSize + " microns and FL of " + telescope.Focallength*barlow.BarlowFactor + "mm due to the "+barlow.BarlowFactor+"x barlow."); }
