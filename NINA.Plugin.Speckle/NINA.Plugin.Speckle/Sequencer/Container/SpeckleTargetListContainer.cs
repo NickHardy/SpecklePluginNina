@@ -633,7 +633,8 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                             if (!(record.Gmag1.ToString() == "" || record.Gmag1 == 0)) { speckleTarget.Magnitude2 = record.Gmag1; }
                             else if (!(record.Smag.ToString() == "" || record.Smag == 0)) { speckleTarget.Magnitude2 = record.Smag; }
                             else { throw new SequenceEntityFailedException("Failed to get secondary magnitude for "+speckleTarget.Target); }
-                            
+
+                            speckleTarget.NoCalculation = record.NoCalculation;
                             speckleTarget.Separation = record.GaiaSep;
                             speckleTarget.Completed_nights = record.Completed_nights;
                             speckleTarget.Filter = record.Filter;

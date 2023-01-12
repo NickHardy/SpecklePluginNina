@@ -39,6 +39,7 @@ namespace NINA.Plugin.Speckle.Model {
         public double Gmag1 { get; set; }
         public double Pmag { get; set; } // ! Identical to Gmag1; Found in some target lists
         public double Smag { get; set; } // ! Identical to Gmag1; Found in some target lists
+        public String NoCalculation { get; set; }
         public double BPmag0 { get; set; }
         public double BPmag1 { get; set; }
         public double RPmag0 { get; set; }
@@ -121,6 +122,7 @@ namespace NINA.Plugin.Speckle.Model {
             Map(m => m.Gmag1).Name("Gmag1").Optional().Default(0);
             Map(m => m.Pmag).Name("Smag").Optional().Default(0); // ! Identical to Gmag0; Found in some target lists
             Map(m => m.Smag).Name("Smag").Optional().Default(0); // ! Identical to Gmag1; Found in some target lists
+            Map(m => m.NoCalculation).Name("NoCalculation").Optional().Default(0);
             Map(m => m.BPmag0).Name("BPmag0").Optional().Default(0);
             Map(m => m.BPmag1).Name("BPmag1").Optional().Default(0);
             Map(m => m.RPmag0).Name("RPmag0").Optional().Default(0);

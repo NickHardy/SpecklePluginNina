@@ -262,8 +262,11 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
             Camera qhy600mPro = new Camera("QHY600M-Pro", 3.59, 1, 0.0005, new double[] { 0.51, 0.51, 0.78, 0.87, 0.89, 0.84, 0.74, 0.61, 0.54, 0.1, 0.1, 0.1, 0.1, 0.1 });
             Filter R = new Filter("Sloan R (Baader)", new double[] { 0, 0, 0, 0, 0.5, 1, 1, 1, 0, 0, 0, 0, 0, 0 });
             Barlow twox = new Barlow("2x", 2);
-            // Calculate Atmospheric values:
+            
+            // Check if the calculation should be used for the target before calculating anything
+            if (Utility.ItemUtility.RetrieveSpeckleTarget(Parent).NoCalculation == "1") { throw new SequenceEntityFailedException(); }
 
+            // Calculate Atmospheric values:
             calculateAtmosphere(pw1000, qhy600mPro, R);
 
             try
@@ -386,7 +389,6 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
         // --- Start of calculation methods:
         public double calculateAtmosphere(Telescope telescope, Camera camera, Filter filter)
         {
-            AirMass = 1;
             Logger.Debug("Elevation: " + Elevation);
             Logger.Debug("Airmass: " + AirMass);
             Logger.Debug("Palomar: " + ArrayPalomarExtinction[0]);
@@ -424,12 +426,12 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
             Logger.Debug("azerosum is "+azerosum);
             return azerosum;
 
-
         }
         // Main iterative calculation method:
         public double calculate(Telescope telescope, Camera camera, Filter filter, Barlow barlow)
         {
-            var speckleTarget = Utility.ItemUtility.RetrieveSpeckleTarget(Parent); // NOT this:  var target = RetrieveTarget(Parent);
+            var speckleTarget = Utility.ItemUtility.RetrieveSpeckleTarget(Parent);
+
             MagnitudeTruePrimary = Math.Min(speckleTarget.Magnitude, speckleTarget.Magnitude2);
             if (MagnitudeTruePrimary < 7 || MagnitudeTruePrimary > 15) { throw new SequenceEntityFailedException("Calculation requested for " + Utility.ItemUtility.RetrieveSpeckleTarget(Parent).Target + ", but primary mag is not in range of ASD simulations. Falling back to user's time in list."); } 
             Logger.Debug("True Primary is "+MagnitudeTruePrimary);
@@ -447,10 +449,9 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
             double tempsignal = 0;
             double tempSNR = 0;
             skybackground = 21; //temp
-
             double exposureTime = 0.0;
-
             double SNR = 0;
+
             if (intendedSNR != 0) 
             { 
                 SNR = IntendedSNR; // in case user wants to override SNR with an intended SNR
@@ -508,13 +509,8 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
             {
                 i.Add("This instruction only works within a SpeckleTargetContainer.");
             }
-
-          
-
-            
             return i.Count == 0;
         }
-
         public override string ToString()
         {
             return $"Category: {Category}, Item: {nameof(CalculateExposure)}, ExposureTime {ExposureTime}, Gain {Gain}, Offset {Offset}, ImageType {ImageType}, Binning {Binning?.Name}";
@@ -533,20 +529,14 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
         private double readNoise;
         private double darkCurrent;
         private double[] arrayQE;
-
-
         [JsonProperty]
         public string CameraName { get => cameraName; set { cameraName = value; } }
-
         [JsonProperty]
         public double PixelSize { get => pixelSize; set { pixelSize = value; } }
-
         [JsonProperty]
         public double ReadNoise { get => readNoise; set { readNoise = value; } }
-
         [JsonProperty]
         public double DarkCurrent { get => darkCurrent; set { darkCurrent = value; } }
-
         [JsonProperty]
         public double[] ArrayQE { get => arrayQE; set { arrayQE = value; } }
 
@@ -570,10 +560,8 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
     {
         private string filterName;
         private double[] arrayTransmission;
-
         [JsonProperty]
         public string FilterName { get => filterName; set { filterName = value; } }
-
         [JsonProperty]
         public double[] ArrayTransmission { get => arrayTransmission; set { arrayTransmission = value; } }
 
@@ -596,16 +584,12 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
         private double apertureD;
         private double obstructionD;
         private double focallength;
-
         [JsonProperty]
         public string TelescopeName { get => telescopeName; set { telescopeName = value; } }
-
         [JsonProperty]
         public double ApertureD { get => apertureD; set { apertureD = value; } }
-
         [JsonProperty]
         public double ObstructionD { get => obstructionD; set { obstructionD = value; } }
-
         [JsonProperty]
         public double Focallength { get => focallength; set { focallength = value; } }
 
@@ -628,11 +612,8 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
     {
         private string barlowname; // barlow Name
         private double barlowfactor; // barlow factor
-
-
         [JsonProperty]
         public string BarlowName { get => barlowname; set { barlowname = value; } }
-
         [JsonProperty]
         public double BarlowFactor { get => barlowfactor; set { barlowfactor = value; } }
 

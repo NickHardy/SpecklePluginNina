@@ -63,6 +63,8 @@ namespace NINA.Plugin.Speckle.Model {
         [JsonProperty]
         public double Magnitude2 { get; set; }
         [JsonProperty]
+        public String NoCalculation { get; set; }
+        [JsonProperty]
         public double Separation { get; set; }
         [JsonProperty]
         public int Completed_nights { get; set; }
