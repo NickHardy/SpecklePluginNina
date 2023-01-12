@@ -85,14 +85,16 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
         private double[] arrayAtmosphericTransmission = new double[14];
         private double[] arrayZeroMagA0Starin50nmBW = new double[14];
 
-        private IProfileService profileService;
         private IApplicationStatusMediator applicationStatusMediator;
+        private IProfileService profileService;
+        private IFilterWheelMediator filterWheelMediator;
         private Speckle speckle;
         [ImportingConstructor]
-        public CalculateExposure(IProfileService profileService, IApplicationStatusMediator applicationStatusMediator)
+        public CalculateExposure(IProfileService profileService, IApplicationStatusMediator applicationStatusMediator, IFilterWheelMediator filterWheelMediator)
         {
             this.applicationStatusMediator = applicationStatusMediator;
             this.profileService = profileService;
+            this.filterWheelMediator = filterWheelMediator;
             speckle = new Speckle();
             
             if(this.profileService.ActiveProfile.AstrometrySettings.Elevation == 0) // If someone's at sealevel it breaks the calculation
@@ -105,12 +107,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
             //public Camera(string cameraName, double readNoise, double darkCurrent, int[] arrayQE)
             Camera qhy600mPro = new Camera("QHY600M-Pro", 3.59, 1, 0.0005, new double[] { 0.51, 0.51, 0.78, 0.87, 0.89, 0.84, 0.74, 0.61, 0.54, 0.1, 0.1, 0.1, 0.1, 0.1 });
             Camera qhy268mPro = new Camera("QHY268M-Pro", 3.59, 1, 0.0005, new double[] { 0.51, 0.51, 0.78, 0.87, 0.89, 0.84, 0.74, 0.61, 0.54, 0.1, 0.1, 0.1, 0.1, 0.1 });
-            Filter U = new Filter("Sloan U (Baader)", new double[] { 0.85, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 });
-            Filter G = new Filter("Sloan G (Baader)", new double[] { 0.9, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0 });
-            Filter R = new Filter("Sloan R (Baader)", new double[] { 0, 0, 0, 0, 0.5, 1, 1, 1, 0, 0, 0, 0, 0, 0 });
-            Filter Z = new Filter("Sloan Z (Baader)", new double[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.9, 1, 1.1, 0, 0 });
-            Filter I = new Filter("Sloan I (Baader)", new double[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1 });
-            Filter None = new Filter("No filter", new double[] { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 });
+            
 
             Telescope pw1000 = new Telescope("PW1000", 1000, 470, 6000);
             Telescope cdk700 = new Telescope("CDK700", 700, 329, 4540);
@@ -124,7 +121,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
             arrayPalomarExtinction = this.ArrayPalomarExtinction = new double[] { 0.67, 0.36, 0.24, 0.18, 0.15, 0.13, 0.1, 0.07, 0.06, 0.05, 0.04, 0.04, 0.04, 0.03 };
             ZeroMagA0FluxSDensity = this.ZeroMagA0FluxSDensity = new double[] { 3.5, 7.5, 6.5, 4.9, 3.55, 2.8, 2.1, 1.7, 1.45, 1.1, 1, 0.9, 0.75, 0.65 };
         }
-        private CalculateExposure(CalculateExposure cloneMe) : this(cloneMe.profileService, cloneMe.applicationStatusMediator)
+        private CalculateExposure(CalculateExposure cloneMe) : this(cloneMe.profileService, cloneMe.applicationStatusMediator, cloneMe.filterWheelMediator)
         {
             CopyMetaData(cloneMe);
         }
@@ -260,29 +257,28 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
         {
             Telescope pw1000 = new Telescope("PW1000", 1000, 470, 6000);
             Camera qhy600mPro = new Camera("QHY600M-Pro", 3.59, 1, 0.0005, new double[] { 0.51, 0.51, 0.78, 0.87, 0.89, 0.84, 0.74, 0.61, 0.54, 0.1, 0.1, 0.1, 0.1, 0.1 });
-            Filter R = new Filter("Sloan R (Baader)", new double[] { 0, 0, 0, 0, 0.5, 1, 1, 1, 0, 0, 0, 0, 0, 0 });
             Barlow twox = new Barlow("2x", 2);
             
             // Check if the calculation should be used for the target before calculating anything
             if (Utility.ItemUtility.RetrieveSpeckleTarget(Parent).NoCalculation == "1") { throw new SequenceEntityFailedException(); }
 
             // Calculate Atmospheric values:
-            calculateAtmosphere(pw1000, qhy600mPro, R);
+            calculateAtmosphere(pw1000, qhy600mPro, retrieveCurrentFilter());
 
             try
             {
-             ExposureTime = calculate(pw1000, qhy600mPro, R, twox); //Utility.ItemUtility.RetrieveSpeckleTarget(Parent)
+             ExposureTime = calculate(pw1000, qhy600mPro, retrieveCurrentFilter(), twox);
                 ItemUtility.RetrieveSpeckleContainer(Parent).Items.ToList().ForEach(x => {
                     if (x is TakeRoiExposures takeRoiExposures)
                     {
-                        Logger.Debug("Setting exposure time of " + ExposureTime+"..");
+                        Logger.Debug("Setting exposure time of "+ExposureTime+"..");
                         takeRoiExposures.ExposureTime = ExposureTime;
                         Logger.Debug("takeRoiExposures.ExposureTime is now "+takeRoiExposures.ExposureTime);
 
                     }
                     if (x is TakeLiveExposures takeLiveExposures)
                     {
-                        Logger.Debug("Setting exposure time of " + ExposureTime + "..");
+                        Logger.Debug("Setting exposure time of "+ExposureTime + "..");
                         takeLiveExposures.ExposureTime = ExposureTime;
                         Logger.Debug("takeLiveExposures.ExposureTime is now "+takeLiveExposures.ExposureTime);
                     }
@@ -294,7 +290,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
             }
             catch (Exception ex)
             {
-                Notification.ShowError("Exposure Calculation error: " + Environment.NewLine + ex.Message);
+                Notification.ShowError("Exposure Calculation error: "+Environment.NewLine + ex.Message);
                 Logger.Error(ex);
                 throw;
             }
@@ -356,10 +352,39 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
         }
         public Filter retrieveCurrentFilter()
         {
-            /*if (filterWheelMediator.GetInfo().Connected)
-                imageData.MetaData.FilterWheel.Filter = filterWheelMediator.GetInfo().SelectedFilter.Name;*/
-            return null; 
-
+            Filter U = new Filter("Sloan U", new double[] { 0.85, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 });
+            Filter G = new Filter("Sloan G", new double[] { 0.9, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0 });
+            Filter R = new Filter("Sloan R", new double[] { 0, 0, 0, 0, 0.5, 1, 1, 1, 0, 0, 0, 0, 0, 0 });
+            Filter Z = new Filter("Sloan Z", new double[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.9, 1, 1.1, 0, 0 });
+            Filter I = new Filter("Sloan I", new double[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1 });
+            Filter None = new Filter("No filter", new double[] { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 });
+            Filter activeFilter;
+            string activeFilterName = "";
+            if (filterWheelMediator.GetInfo().Connected) { activeFilterName = filterWheelMediator.GetInfo().SelectedFilter.Name; }
+            switch (activeFilterName)
+            {
+                case "Sloan U":
+                    activeFilter = U;
+                    break;
+                case "Sloan G":
+                    activeFilter = G;
+                    break;
+                case "Sloan R":
+                    activeFilter = R;
+                    break;
+                case "Sloan Z":
+                    activeFilter = Z;
+                    break;
+                case "Sloan I":
+                    activeFilter = I;
+                    break;
+                default:
+                    activeFilter = None;
+                    Logger.Debug("Warning: No filter stored in the calculation matches the currently active filter's name in NINA. Assuming no filter is being used.");
+                    break;
+            }
+            Logger.Debug("Active filter for the calculation is now '"+activeFilter+"'.");
+            return activeFilter;
         }
         /*
         This retrieves the InputTarget object from an IDeepSkyObjectContainer ancestor of the given parent container.
@@ -379,10 +404,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
                     return RetrieveTarget(parent.Parent);
                 }
             }
-            else
-            {
-                return null;
-            }
+            else{ return null; }
         }
 
         // --- End of retrieve methods
