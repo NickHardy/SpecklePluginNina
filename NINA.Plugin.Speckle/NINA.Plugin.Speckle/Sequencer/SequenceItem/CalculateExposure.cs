@@ -60,11 +60,11 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
         // General:
         private double exposureTime;
         public double targetADU;
-        private int gain; // Camera Gain
-        private int offset;
+        private double gain; // Camera Gain
+        private double offset;
         private BinningMode binning; // !! future todo
         private string imageType;
-        private int exposureCount;
+        private double exposureCount; // !! future todo
         private double fluxRatio; // flux ratio between magnitudeTruePrimary and magnitudeTrueSecondary
         private double magnitudePrimary; // magnitude of primary taken from target list
         private double magnitudeSecondary;
@@ -76,8 +76,8 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
         private double asdSNR;
         private double combinedMagnitude;
         private double azerosum;
-        private int[] arrayWavelength;
-        private int intendedSNR;
+        private double[] arrayWavelength;
+        private double intendedSNR;
         // Atmosphere:
         private double[] zeroMagA0FluxSDensity = new double[14];
         private double[] arrayZeroMagA0Fluxin50nmBW = new double[14];
@@ -99,7 +99,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
             
             if(this.profileService.ActiveProfile.AstrometrySettings.Elevation == 0) // If someone's at sealevel it breaks the calculation
             {
-                elevation = 1;
+                elevation = 1.0;
             }
             else elevation = this.profileService.ActiveProfile.AstrometrySettings.Elevation;
 
@@ -116,10 +116,6 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
             Telescope cdk14 = new Telescope("CDK14", 356, 172.66, 2563);
             Telescope edgehd14 = new Telescope("EdgeHD-14", 356, 114, 3910);
             Telescope gsoRc10 = new Telescope("GSO-RC10", 254, 119.38, 2039);
-            // Constant Atmospheric values:
-            arrayWavelength = this.ArrayWavelength = new int[] { 350, 400, 450, 500, 550, 600, 650, 700, 750, 800, 850, 900, 950, 1000 }; // Add Wavelengths
-            arrayPalomarExtinction = this.ArrayPalomarExtinction = new double[] { 0.67, 0.36, 0.24, 0.18, 0.15, 0.13, 0.1, 0.07, 0.06, 0.05, 0.04, 0.04, 0.04, 0.03 };
-            ZeroMagA0FluxSDensity = this.ZeroMagA0FluxSDensity = new double[] { 3.5, 7.5, 6.5, 4.9, 3.55, 2.8, 2.1, 1.7, 1.45, 1.1, 1, 0.9, 0.75, 0.65 };
         }
         private CalculateExposure(CalculateExposure cloneMe) : this(cloneMe.profileService, cloneMe.applicationStatusMediator, cloneMe.filterWheelMediator)
         {
@@ -155,10 +151,10 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
         public double TargetADU { get => targetADU; set { targetADU = value; RaisePropertyChanged(); } }
 
         [JsonProperty]
-        public int Gain { get => gain; set { gain = value; RaisePropertyChanged(); } }
+        public double Gain { get => gain; set { gain = value; RaisePropertyChanged(); } }
 
         [JsonProperty]
-        public int Offset { get => offset; set { offset = value; RaisePropertyChanged(); } }
+        public double Offset { get => offset; set { offset = value; RaisePropertyChanged(); } }
 
         [JsonProperty]
         public BinningMode Binning { get => binning; set { binning = value; RaisePropertyChanged(); } }
@@ -167,7 +163,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
         public string ImageType { get => imageType; set { imageType = value; RaisePropertyChanged(); } }
 
         [JsonProperty]
-        public int ExposureCount { get => exposureCount; set { exposureCount = value; RaisePropertyChanged(); } }
+        public double ExposureCount { get => exposureCount; set { exposureCount = value; RaisePropertyChanged(); } }
 
         [JsonProperty]
         public double FluxRatio { get => fluxRatio; set { fluxRatio = value; RaisePropertyChanged(); } }
@@ -194,10 +190,10 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
         public double CombinedMagnitude { get => combinedMagnitude; set { combinedMagnitude = value; RaisePropertyChanged(); } }
 
         //[JsonProperty]
-        public int[] ArrayWavelength { get => arrayWavelength; set { arrayWavelength = value; RaisePropertyChanged(); } }
+        public double[] ArrayWavelength { get => arrayWavelength; set { arrayWavelength = value; RaisePropertyChanged(); } }
 
         [JsonProperty]
-        public int IntendedSNR { get => intendedSNR; set { intendedSNR = value; RaisePropertyChanged(); } }
+        public double IntendedSNR { get => intendedSNR; set { intendedSNR = value; RaisePropertyChanged(); } }
 
         // For the Atmosphere:
         //[JsonProperty]
@@ -249,8 +245,8 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
         }
         public override async Task Execute(IProgress<ApplicationStatus> progress, CancellationToken token)
         {
-            Telescope pw1000 = new Telescope("PW1000", 1000, 470, 6000);
-            Camera qhy600mPro = new Camera("QHY600M-Pro", 3.59, 1, 0.0005, new double[] { 0.51, 0.51, 0.78, 0.87, 0.89, 0.84, 0.74, 0.61, 0.54, 0.1, 0.1, 0.1, 0.1, 0.1 });
+            Telescope pw1000 = new Telescope("PW1000", 1000.0, 470.0, 6000.0);
+            Camera qhy600mPro = new Camera("QHY600M-Pro", 3.59, 1.0, 0.0005, new double[] { 0.51, 0.51, 0.78, 0.87, 0.89, 0.84, 0.74, 0.61, 0.54, 0.1, 0.1, 0.1, 0.1, 0.1 });
             Barlow twox = new Barlow("2x", 2);
             
             // Check if the calculation should be used for the target before calculating anything
@@ -405,40 +401,46 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
         {
             // This should be replaced by a table in the GUI later on where each lunar phase (Full, Waxing/Waning Gibbous), Quarter, Waxing/Waning Crescent, New)
             // corresponds to a user measured (and entered) sky background. This method can then get the current lunar phase and pick the respective skybackground.
-            return 21;
+            return 21.0;
         }
 
         // --- End of retrieve methods
         // --- Start of calculation methods:
         public double CalculateAtmosphere(Telescope telescope, Camera camera, Filter filter)
         {
+            // Constant Atmospheric values:
+            arrayWavelength = this.ArrayWavelength = new double[] { 350.0, 400.0, 450.0, 500.0, 550.0, 600.0, 650.0, 700.0, 750.0, 800.0, 850.0, 900.0, 950.0, 1000.0 }; // Add Wavelengths
+            arrayPalomarExtinction = this.ArrayPalomarExtinction = new double[] { 0.67, 0.36, 0.24, 0.18, 0.15, 0.13, 0.1, 0.07, 0.06, 0.05, 0.04, 0.04, 0.04, 0.03 };
+            ZeroMagA0FluxSDensity = this.ZeroMagA0FluxSDensity = new double[] { 3.5, 7.5, 6.5, 4.9, 3.55, 2.8, 2.1, 1.7, 1.45, 1.1, 1.0, 0.9, 0.75, 0.65 };
+            AirMass = 1;
             Logger.Debug("Elevation: " + Elevation);
             Logger.Debug("Airmass: " + AirMass);
             Logger.Debug("Palomar: " + ArrayPalomarExtinction[0]);
-            Logger.Debug("arrayatmosphericTransmission[i]:");
+            //Logger.Debug("arrayatmosphericTransmission[i]:");
+            //Logger.Debug(filter.FilterName+", "+filter.ArrayTransmission[0]);
 
             for (int i = 0; i < ArrayPalomarExtinction.Length; i++) // Fill arrayAtmosphericTransmission
             {
 
-                arrayAtmosphericTransmission[i] = Math.Pow(10, (-0.4 * AirMass * ArrayPalomarExtinction[i] * Math.Exp(-Elevation / 2500) / Math.Exp(-2000 / 2500)));
-                Logger.Debug("" + arrayAtmosphericTransmission[i]);
+                ArrayAtmosphericTransmission[i] = Math.Pow(10, (-0.4 * AirMass * ArrayPalomarExtinction[i] * Math.Exp(-Elevation / 2500.0) / Math.Exp(-2000.0 / 2500.0)));
+                //Logger.Debug("" + ArrayAtmosphericTransmission[i]);
             }
 
-            Logger.Debug("------------");
-            Logger.Debug("ArrayZeroMagA0Fluxin50nmBW[i]:");
+            //Logger.Debug("------------");
+            //Logger.Debug("ArrayZeroMagA0Fluxin50nmBW[i]:");
             for (int i = 0; i < arrayPalomarExtinction.Length; i++) // Fill ArrayZeroMagA0Fluxin50nmBW
             {
-                ArrayZeroMagA0Fluxin50nmBW[i] = 500 * (ArrayPalomarExtinction[i] * 0.000000001) / (2 * Math.Pow(10, -18) / (ArrayWavelength[i] * 0.000000001));
-                Logger.Debug("" + ArrayZeroMagA0Fluxin50nmBW[i]);
+                ArrayZeroMagA0Fluxin50nmBW[i] = 500.0 * (ZeroMagA0FluxSDensity[i] * 0.000000001) / (2.0 * Math.Pow(10.0, -18.0) / (ArrayWavelength[i] * 0.000000001));
+                //Logger.Debug("" + ArrayZeroMagA0Fluxin50nmBW[i]);
 
             }
 
-            Logger.Debug("------------");
-            Logger.Debug("ArrayZeroMagA0STARin50nmBW[i]:");
+            //Logger.Debug("------------");
+            //Logger.Debug("ArrayZeroMagA0STARin50nmBW[i]:");
             for (int i = 0; i < ArrayZeroMagA0Starin50nmBW.Length; i++) // Fill ArrayZeroMagA0Starin50nmBW
             {
-                ArrayZeroMagA0Starin50nmBW[i] = ArrayZeroMagA0Fluxin50nmBW[i] * arrayAtmosphericTransmission[i] * filter.ArrayTransmission[i] * camera.ArrayQE[i] * ((Math.Pow(telescope.Focallength/10,2) - Math.Pow(telescope.ObstructionD/10,2)) * 0.785);
-                Logger.Debug("" + ArrayZeroMagA0Fluxin50nmBW[i]);
+                ArrayZeroMagA0Starin50nmBW[i] = (ArrayZeroMagA0Fluxin50nmBW[i] * ArrayAtmosphericTransmission[i] * 0.6 * filter.ArrayTransmission[i] * camera.ArrayQE[i] * ((Math.Pow(telescope.Focallength / 10.0, 2.0) - Math.Pow(telescope.ObstructionD / 10.0, 2.0)) * 0.785)) / 45.92362983;
+                //Logger.Debug("" + ArrayZeroMagA0Starin50nmBW[i]);
 
             }
             // ^ sum of this:
@@ -446,7 +448,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
             {
                 azerosum += value;
             }
-            Logger.Debug("azerosum is "+azerosum);
+            //Logger.Debug("azerosum is "+azerosum);
             return azerosum;
 
         }
@@ -462,8 +464,8 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
             MagnitudeTrueSecondary = Math.Max(speckleTarget.Magnitude, speckleTarget.Magnitude2);
 
             Logger.Debug("True Secondary is " + MagnitudeTrueSecondary);
-            FluxRatio = Math.Pow(100, (MagnitudeTruePrimary - MagnitudeTrueSecondary) / 5);
-            CombinedMagnitude = 2.5 * Math.Log10(1 / (Math.Pow(10, ((MagnitudeTrueSecondary - MagnitudeTruePrimary) / 2.5)) + 1)) + MagnitudeTrueSecondary;
+            FluxRatio = Math.Pow(100, (MagnitudeTruePrimary - MagnitudeTrueSecondary) / 5.0);
+            CombinedMagnitude = 2.5 * Math.Log10(1.0 / (Math.Pow(10.0, ((MagnitudeTrueSecondary - MagnitudeTruePrimary) / 2.5)) + 1.0)) + MagnitudeTrueSecondary;
 
             double photonshotnoise = 0; 
             double darkcurrent = 0;  
@@ -472,9 +474,9 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
             double tempsignal = 0;
             double tempSNR = 0;
             skybackground = RetrieveSkyBackground();
-            double exposureTime = 0.0;
+            double exposureTime = 0.002;
             double SNR = 0;
-
+            double minExposure = 0.02; // Minimum exposure time of 20ms; can be changed by user later
             if (intendedSNR != 0) 
             { 
                 SNR = IntendedSNR; // in case user wants to override SNR with an intended SNR
@@ -489,7 +491,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
             else { Logger.Debug("Using pixelsize of " + camera.PixelSize + " microns and FL of " + telescope.Focallength*barlow.BarlowFactor + "mm due to the "+barlow.BarlowFactor+"x barlow."); }
             
             double imagescale = ((206.265 * camera.PixelSize) / (telescope.Focallength));
-            double RNinPE = camera.ReadNoise * Math.Sqrt(Math.Pow(30,2) * 0.785); // const 30, for pw1000
+            double RNinPE = camera.ReadNoise * Math.Sqrt(Math.Pow(30.0,2.0) * 0.785); // const 30, for pw1000
 
             Logger.Debug("Iteration starting with: SNR: " + SNR + ", RNinPE: " + RNinPE + ", " +
                     "imagescale: " + imagescale + ", magtp: " + magnitudeTruePrimary + ", magts: " + magnitudeTrueSecondary + ", fluxr: " + FluxRatio+".");
@@ -498,18 +500,19 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
 
             do
             {
-                tempsignal = 1 * azerosum * Math.Pow(10,(-0.4 * CombinedMagnitude)) * exposureTime;
-                skyglownoise = Math.Sqrt(Math.Pow((imagescale * 35),2) * 0.785 * azerosum * Math.Pow(10,(-0.4 * skybackground)) * exposureTime);
-                darkcurrent = Math.Sqrt(camera.DarkCurrent * exposureTime * Math.Pow(35,2) * 0.785); // const 35
-                photonshotnoise = Math.Sqrt(tempsignal) * Math.Pow(10,(skybackground / 20));
-                totalnoise = Math.Sqrt(Math.Pow(photonshotnoise,2) + Math.Pow(camera.ReadNoise,2) + Math.Pow(skybackground,2) + Math.Pow(camera.DarkCurrent,2));
+                tempsignal = 1.0 * azerosum * Math.Pow(10.0, (-0.4 * CombinedMagnitude)) * exposureTime;
+                skyglownoise = Math.Sqrt(Math.Pow((imagescale * 35.0), 2.0) * 0.785 * azerosum * Math.Pow(10,(-0.4 * skybackground)) * exposureTime);
+                darkcurrent = Math.Sqrt(camera.DarkCurrent * exposureTime * Math.Pow(35.0,2.0) * 0.785); // const 35
+                photonshotnoise = Math.Sqrt(tempsignal);//* Math.Pow(10.0, (skybackground / 20.0)); Shot Noise Penalty not considered
+                totalnoise = Math.Sqrt(Math.Pow(photonshotnoise, 2.0) + Math.Pow(camera.ReadNoise, 2.0) + Math.Pow(skybackground,2) + Math.Pow(camera.DarkCurrent,2.0));
 
                 tempSNR = Math.Round(tempsignal / totalnoise);
 
                 if (tempSNR > SNR)
                 {
                     Logger.Debug("FINISHED: tempSNR " +tempSNR+ " is greater than " +SNR+ ", returning exp. time: "+ exposureTime+" with primmag. of " +MagnitudeTruePrimary+" and secmag. of "+MagnitudeTrueSecondary+".");
-                    return exposureTime;
+                    if (exposureTime + 0.00 < minExposure) { return minExposure; }
+                    else { return exposureTime + 0.002; }
                 }
 
                 exposureTime += 0.002;
