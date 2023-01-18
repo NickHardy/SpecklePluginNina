@@ -63,7 +63,6 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
         private IApplicationStatusMediator applicationStatusMediator;
         private IImageControlVM imageControlVM;
         private Speckle speckle;
-        private Task<IRenderedImage> _imageProcessingTask;
 
         [ImportingConstructor]
         public CalculateRoiExposureTime(IProfileService profileService, ICameraMediator cameraMediator, IImagingMediator imagingMediator, IImageSaveMediator imageSaveMediator, IApplicationStatusMediator applicationStatusMediator, IImageControlVM imageControlVM) {
