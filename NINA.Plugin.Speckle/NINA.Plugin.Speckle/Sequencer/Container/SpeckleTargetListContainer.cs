@@ -278,10 +278,6 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                     takeLiveExposures.ExposureTime = SpeckleTarget.ExposureTime;
                     takeLiveExposures.TotalExposureCount = SpeckleTarget.Exposures;
                 }
-                if (x is CalculateRoiExposureTime calculateRoiExposureTime) {
-                    calculateRoiExposureTime.ExposureTime = SpeckleTarget.ExposureTime;
-                    calculateRoiExposureTime.ExposureTimeMax = SpeckleTarget.ExposureTime;
-                }
                 if (x is WaitForTime waitForTime) {
                     waitForTime.Hours = SpeckleTarget.ImageTime.Hour;
                     waitForTime.Minutes = SpeckleTarget.ImageTime.Minute;
@@ -328,10 +324,6 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                     if (x is TakeLiveExposures takeLiveExposures) {
                         takeLiveExposures.ExposureTime = SpeckleTarget.ExposureTime;
                         takeLiveExposures.TotalExposureCount = Math.Min(speckle.ReferenceExposures, SpeckleTarget.Exposures);
-                    }
-                    if (x is CalculateRoiExposureTime calculateRoiExposureTime) {
-                        calculateRoiExposureTime.ExposureTime = SpeckleTarget.ExposureTime;
-                        calculateRoiExposureTime.ExposureTimeMax = SpeckleTarget.ExposureTime;
                     }
                     if (x is WaitForTime waitForTime) {
                         waitForTime.Hours = SpeckleTarget.ImageTime.Hour;
@@ -625,21 +617,13 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                             speckleTarget.Template = record.Template != "" ? record.Template : Template != "" ? Template : speckle.DefaultTemplate;
                             speckleTarget.Exposures = record.Exposures > 0 ? record.Exposures : Exposures;
                             speckleTarget.ExposureTime = record.ExposureTime > 0 ? record.ExposureTime : ExposureTime;
-                            SpeckleTarget.PMag = record.Gmag0;
-                            if (!(record.Gmag1.ToString() == "" || record.Gmag1 == 0)) 
-                            { 
-                                SpeckleTarget.SMag = record.Gmag1; 
-                            }
-                            else if (!(record.Smag.ToString() == "" || record.Smag == 0))
-                            {
-                                SpeckleTarget.SMag = record.Smag;
-                            }
-                            else 
-                            { 
-                                Logger.Debug("Failed to get secondary magnitude for "+speckleTarget.Target); 
-                            }
-                            //speckleTarget.SMag = record.Gmag1 != 0 ? record.Gmag1 : record.Smag != 0 ? record.Smag : Logger.Debug("Failed to get secondary magnitude for " + speckleTarget.Target);
                             speckleTarget.NoCalculation = record.NoCalculation;
+                            speckleTarget.PMag = record.Gmag0;
+                            speckleTarget.SMag = record.Gmag1 != 0 ? record.Gmag1 : record.Smag;
+                            if (speckleTarget.SMag == 0) {
+                                Logger.Debug("Failed to get secondary magnitude for " + speckleTarget.Target);
+                                speckleTarget.NoCalculation = 1;
+                            }
                             speckleTarget.Separation = record.GaiaSep;
                             speckleTarget.Completed_nights = record.Completed_nights;
                             speckleTarget.Filter = record.Filter;

@@ -63,7 +63,7 @@ namespace NINA.Plugin.Speckle.Model {
         [JsonProperty]
         public double SMag { get; set; }
         [JsonProperty]
-        public String NoCalculation { get; set; }
+        public int NoCalculation { get; set; }
         [JsonProperty]
         public double Separation { get; set; }
         [JsonProperty]
@@ -164,8 +164,8 @@ namespace NINA.Plugin.Speckle.Model {
             Map(m => m.ExposureTime).Name("ExposureTime").Optional().Default(0);
             Map(m => m.Exposures).Name("Exposures").Optional().Default(0);
             Map(m => m.PMag).Name("PMag").Optional().Default(0);
-            Map(m => m.PMag).Name("SMag").Optional().Default(0);
-            Map(m => m.NoCalculation).Name("NoCalculation").Optional().Default(0);
+            Map(m => m.SMag).Name("SMag").Optional().Default(0);
+            Map(m => m.NoCalculation).Name("NoCalculation").Optional().Default("0");
             Map(m => m.Separation).Name("Separation").Optional().Default(0);
             Map(m => m.Template).Name("Template").Optional().Default("");
             Map(m => m.Filter).Name("Filter").Optional().Default("");

@@ -616,7 +616,8 @@
                             <DataGridTextColumn Width="40" Binding="{Binding Filter}" Header="Filter" />
                             <DataGridTextColumn Width="80" Binding="{Binding Ra}" Header="Ra" />
                             <DataGridTextColumn Width="80" Binding="{Binding Dec}" Header="Dec" />
-                            <DataGridTextColumn Width="50" Binding="{Binding Magnitude}" Header="Mag" />
+                            <DataGridTextColumn Width="50" Binding="{Binding PMag}" Header="PMag" />
+                            <DataGridTextColumn Width="50" Binding="{Binding SMag}" Header="SMag" />
                             <DataGridTextColumn Width="50" Binding="{Binding Separation}" Header="Sep" />
                             <DataGridTextColumn Width="100" Binding="{Binding ImageTime, StringFormat='{}{0:HH:mm:ss}'}" Header="Best image time" IsReadOnly="True" />
                             <DataGridTemplateColumn

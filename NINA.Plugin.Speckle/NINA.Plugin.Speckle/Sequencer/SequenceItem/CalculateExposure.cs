@@ -149,7 +149,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
         public override async Task Execute(IProgress<ApplicationStatus> progress, CancellationToken token)
         {
             
-            if (Utility.ItemUtility.RetrieveSpeckleTarget(Parent).NoCalculation == "1")
+            if (Utility.ItemUtility.RetrieveSpeckleTarget(Parent).NoCalculation != 0)
                 return; // Check if the calculation should be used for the target before calculating anything
 
             // Once a GUI is added, these would point towards what the user has selected. For now they are bound to this.
@@ -157,32 +157,31 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
             Camera camera = Camera.qhy600mPro;
             Barlow barlow = Barlow.twox;
 
-            AirMass = RetrieveAirmass();
-            Elevation = RetrieveElevation();
-            skybackground = RetrieveSkyBackground();
-            ExposureTimePrecision = 0.002;
-            //Binning = 1; (todo)
-            CalculateAtmosphere(telescope, camera, RetrieveCurrentFilter()); // Calculate Atmospheric values:
+            try {
+                AirMass = RetrieveAirmass();
+                Elevation = RetrieveElevation();
+                skybackground = RetrieveSkyBackground();
+                ExposureTimePrecision = 0.002;
+                //Binning = 1; (todo)
+                CalculateAtmosphere(telescope, camera, RetrieveCurrentFilter()); // Calculate Atmospheric values:
 
-            try
-            {
-             ExposureTime = Calculate(telescope, camera, RetrieveCurrentFilter(), barlow);
-             progress.Report(new ApplicationStatus() {Status = "Calculated exposure time: "+ExposureTime});
-                ItemUtility.RetrieveSpeckleContainer(Parent).Items.ToList().ForEach(x => {
-                    if (x is TakeRoiExposures takeRoiExposures)
-                    {
-                        Logger.Debug("Setting exposure time of "+ExposureTime+"..");
-                        takeRoiExposures.ExposureTime = ExposureTime;
-                        Logger.Debug("takeRoiExposures.ExposureTime is now "+takeRoiExposures.ExposureTime);
+                ExposureTime = Calculate(telescope, camera, RetrieveCurrentFilter(), barlow);
+                progress.Report(new ApplicationStatus() {Status = "Calculated exposure time: "+ExposureTime});
+                    ItemUtility.RetrieveSpeckleContainer(Parent).Items.ToList().ForEach(x => {
+                        if (x is TakeRoiExposures takeRoiExposures)
+                        {
+                            Logger.Debug("Setting exposure time of "+ExposureTime+"..");
+                            takeRoiExposures.ExposureTime = ExposureTime;
+                            Logger.Debug("takeRoiExposures.ExposureTime is now "+takeRoiExposures.ExposureTime);
 
-                    }
-                    else if (x is TakeLiveExposures takeLiveExposures)
-                    {
-                        Logger.Debug("Setting exposure time of "+ExposureTime + "..");
-                        takeLiveExposures.ExposureTime = ExposureTime;
-                        Logger.Debug("takeLiveExposures.ExposureTime is now "+takeLiveExposures.ExposureTime);
-                    }
-                });
+                        }
+                        else if (x is TakeLiveExposures takeLiveExposures)
+                        {
+                            Logger.Debug("Setting exposure time of "+ExposureTime + "..");
+                            takeLiveExposures.ExposureTime = ExposureTime;
+                            Logger.Debug("takeLiveExposures.ExposureTime is now "+takeLiveExposures.ExposureTime);
+                        }
+                    });
             }
             catch (OperationCanceledException)
             {
@@ -302,7 +301,8 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
             var speckleTarget = Utility.ItemUtility.RetrieveSpeckleTarget(Parent);
             var lat = profileService.ActiveProfile.AstrometrySettings.Latitude;
             var longt = profileService.ActiveProfile.AstrometrySettings.Longitude;
-            return speckleTarget.Coordinates().Transform(Angle.ByDegree(lat), Angle.ByDegree(longt), DateTime.Now).Altitude.Degree;
+            var altitude = speckleTarget.Coordinates().Transform(Angle.ByDegree(lat), Angle.ByDegree(longt), DateTime.Now).Altitude.Degree;
+            return AstroUtil.Airmass(altitude);
         }
 
         public double RetrieveElevation()
