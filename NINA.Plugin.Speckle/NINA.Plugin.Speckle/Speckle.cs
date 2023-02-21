@@ -14,6 +14,9 @@ using NINA.Core.Model;
 using NINA.WPF.Base.Interfaces.ViewModel;
 using NINA.WPF.Base.Interfaces.Mediator;
 using NINA.Image.ImageData;
+using NINA.Plugin.Speckle.Model;
+using Newtonsoft.Json;
+using NINA.Profile.Interfaces;
 
 namespace NINA.Plugin.Speckle {
     /// <summary>
@@ -26,20 +29,38 @@ namespace NINA.Plugin.Speckle {
     [Export(typeof(IPluginManifest))]
     public class Speckle : PluginBase {
 
+        private readonly IProfileService _profileService;
         public ImagePattern notePattern = new ImagePattern("$$NOTE$$", "Possible note about target", "Speckle");
 
         [ImportingConstructor]
-        public Speckle(IOptionsVM options, IImageSaveMediator imageSaveMediator) {
+        public Speckle(IProfileService profileService, IOptionsVM options, IImageSaveMediator imageSaveMediator) {
             if (Settings.Default.UpdateSettings) {
                 Settings.Default.Upgrade();
                 Settings.Default.UpdateSettings = false;
                 CoreUtil.SaveSettings(Settings.Default);
             }
-
+            _profileService = profileService;
             notePattern.Value = "";
             options.AddImagePattern(notePattern);
 
             imageSaveMediator.BeforeFinalizeImageSaved += ImageSaveMediator_BeforeFinalizeImageSaved;
+            if (Settings.Default.Telescope == "") {
+                Telescope = new Telescope("PW1000", 1000, 470, 6000);
+            } else {
+                Telescope = JsonConvert.DeserializeObject<Telescope>(Settings.Default.Telescope);
+            }
+            if (Settings.Default.Barlow == "") {
+                Barlow = new Barlow("2x Barlow", 2);
+            } else {
+                Barlow = JsonConvert.DeserializeObject<Barlow>(Settings.Default.Barlow);
+            }
+            if (FilterTransmission == "") {
+                FilterTransmissionList = new AsyncObservableCollection<Filter>();
+                var filters = _profileService.ActiveProfile.FilterWheelSettings.FilterWheelFilters;
+                foreach (var filter in filters) {
+                    FilterTransmissionList.Add(new Filter(filter.Name, new double[] { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }));
+                }
+            }
         }
 
         public Speckle() {
@@ -47,6 +68,18 @@ namespace NINA.Plugin.Speckle {
                 Settings.Default.Upgrade();
                 Settings.Default.UpdateSettings = false;
                 CoreUtil.SaveSettings(Settings.Default);
+            }
+            if (Settings.Default.Telescope == "") {
+                Telescope = new Telescope("PW1000", 1000, 470, 6000);
+            }
+            else {
+                Telescope = JsonConvert.DeserializeObject<Telescope>(Settings.Default.Telescope);
+            }
+            if (Settings.Default.Barlow == "") {
+                Barlow = new Barlow("2x Barlow", 2);
+            }
+            else {
+                Barlow = JsonConvert.DeserializeObject<Barlow>(Settings.Default.Barlow);
             }
         }
 
@@ -254,6 +287,48 @@ namespace NINA.Plugin.Speckle {
                 RaisePropertyChanged();
             }
         }
+
+        private Telescope _telescope;
+        public Telescope Telescope {
+            get => _telescope;
+            set {
+                _telescope = value;
+                RaisePropertyChanged(); 
+            }
+        }
+
+        private Barlow _barlow;
+        public Barlow Barlow {
+            get => _barlow;
+            set {
+                _barlow = value;
+                RaisePropertyChanged(); 
+            }
+        }
+
+        public string FilterTransmission {
+            get => Settings.Default.FilterTransmission;
+            set {
+                Settings.Default.FilterTransmission = value;
+                CoreUtil.SaveSettings(Properties.Settings.Default);
+                RaisePropertyChanged();
+            }
+        }
+
+        private AsyncObservableCollection<Filter> _filterTransmissionList;
+        public AsyncObservableCollection<Filter> FilterTransmissionList {
+            get {
+                if (_filterTransmissionList == null)
+                    _filterTransmissionList = JsonConvert.DeserializeObject<AsyncObservableCollection<Filter>>(FilterTransmission);
+                return _filterTransmissionList;
+            }
+            set {
+                _filterTransmissionList = value;
+                RaisePropertyChanged();
+                FilterTransmission = JsonConvert.SerializeObject(_filterTransmissionList);
+            }
+        }
+
         private Task ImageSaveMediator_BeforeFinalizeImageSaved(object sender, BeforeFinalizeImageSavedEventArgs e) {
             var headers = e.Image.RawImageData.MetaData.GenericHeaders;
             var noteHeader = (StringMetaDataHeader) headers.Where(h => h.Key == "NOTE").FirstOrDefault();

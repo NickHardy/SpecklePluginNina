@@ -46,6 +46,8 @@ using Accord.Statistics.Models.Regression.Linear;
 using NINA.Image.ImageAnalysis;
 // using Internal; no idea why this throws an error
 using NINA.Plugin.Speckle.Sequencer.Container;
+using NINA.Plugin.Speckle.Model;
+
 namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
 {
     [ExportMetadata("Name", "Speckle Exposure Time Calculation")]
@@ -101,7 +103,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
             this.filterWheelMediator = filterWheelMediator;
             speckle = new Speckle();
            
-            elevation = this.profileService.ActiveProfile.AstrometrySettings.Elevation == 0 ? 1.0 : this.profileService.ActiveProfile.AstrometrySettings.Elevation; // If someone's at sealevel it breaks the calculation. Negative and positive is okay.
+            elevation = this.profileService.ActiveProfile.AstrometrySettings.Elevation == 0d ? 1.0 : this.profileService.ActiveProfile.AstrometrySettings.Elevation; // If someone's at sealevel it breaks the calculation. Negative and positive is okay.
         }
         private CalculateExposure(CalculateExposure cloneMe) : this(cloneMe.profileService, cloneMe.applicationStatusMediator, cloneMe.filterWheelMediator)
         {
@@ -153,9 +155,9 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
                 return; // Check if the calculation should be used for the target before calculating anything
 
             // Once a GUI is added, these would point towards what the user has selected. For now they are bound to this.
-            Telescope telescope = Telescope.pw1000;
+            Telescope telescope = speckle.Telescope;
             Camera camera = Camera.qhy600mPro;
-            Barlow barlow = Barlow.twox;
+            Barlow barlow = speckle.Barlow;
 
             try {
                 AirMass = RetrieveAirmass();
@@ -215,8 +217,12 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
             double[,] prim13 = { { 0.05, 135 }, { 0.1, 90 }, { 0.25, 75 }, { 0.5, 50 }, { 0.75, 40 }, { 1, 20 } };
             double[,] prim14 = { { 0.05, 130 }, { 0.1, 110 }, { 0.25, 70 }, { 0.5, 50 }, { 0.75, 40 }, { 1, 30 } };
             double[,] prim15 = { { 0.05, 120 }, { 0.1, 120 }, { 0.25, 90 }, { 0.5, 60 }, { 0.75, 50 }, { 1, 40 } };
-            double roundedRatio = Math.Round(FluxRatio * 4) / 4;
+            List<double> fluxratios = new List<double>() { 0, 0.05, 0.1, 0.25, 0.5, 0.75, 1 };
+            double roundedRatio = fluxratios.OrderBy(item => Math.Abs(FluxRatio - item)).First();
+            //double roundedRatio = Math.Round(FluxRatio * 4) / 4;
             Logger.Debug("The fluxratio is "+FluxRatio+", rounded to "+roundedRatio+".");
+            if (roundedRatio == 0)
+                throw new SequenceEntityFailedException("Fluxratio is not in range of ASD simulations. Falling back to user's time in list.");
 
             Dictionary<int, double[,]> primArrays = new Dictionary<int, double[,]>
             {
@@ -252,20 +258,32 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
             if (filterWheelMediator.GetInfo().Connected) { activeFilterName = filterWheelMediator.GetInfo().SelectedFilter.Name; }
             switch (activeFilterName)
             {
-                case "Sloan U":
-                    activeFilter = Filter.U;
+                case "L":
+                    activeFilter = Filter.L;
                     break;
-                case "Sloan G":
-                    activeFilter = Filter.G;
-                    break;
-                case "Sloan R":
+                case "R":
                     activeFilter = Filter.R;
                     break;
+                case "G":
+                    activeFilter = Filter.G;
+                    break;
+                case "B":
+                    activeFilter = Filter.B;
+                    break;
+                case "Sloan U":
+                    activeFilter = Filter.SU;
+                    break;
+                case "Sloan G":
+                    activeFilter = Filter.SG;
+                    break;
+                case "Sloan R":
+                    activeFilter = Filter.SR;
+                    break;
                 case "Sloan Z":
-                    activeFilter = Filter.Z;
+                    activeFilter = Filter.SZ;
                     break;
                 case "Sloan I":
-                    activeFilter = Filter.I;
+                    activeFilter = Filter.SI;
                     break;
                 default:
                     activeFilter = Filter.None;
@@ -354,7 +372,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
             double exposureTime = 0.002;
             double SNR = 0;
             double minExposure = 0.02; // Minimum exposure time of 20ms; can be changed by user later (todo)
-            double imagescale = ((206.265 * camera.PixelSize) / (telescope.Focallength));
+            double imagescale = ((206.265 * camera.PixelSize) / (telescope.Focallength * barlow.BarlowFactor));
             double RNinPE = camera.ReadNoise * Math.Sqrt(Math.Pow(30.0, 2.0) * 0.785);
 
             TruePMag = Math.Min(speckleTarget.PMag, speckleTarget.SMag);
@@ -420,115 +438,4 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
         }
     }
 
-
-    // Equipment classes (Camera, Telescope, Barlow, Filter). Can be removed with the addition of a selection GUI (todo)
-    public class Camera
-    {
-        private string cameraName;
-        private double pixelSize;
-        private double readNoise;
-        private double darkCurrent;
-        private double[] arrayQE;
-        public string CameraName { get => cameraName; set { cameraName = value; } }
-        public double PixelSize { get => pixelSize; set { pixelSize = value; } }
-        public double ReadNoise { get => readNoise; set { readNoise = value; } }
-        public double DarkCurrent { get => darkCurrent; set { darkCurrent = value; } }
-        public double[] ArrayQE { get => arrayQE; set { arrayQE = value; } }
-
-        // Some defaults
-        public static Camera qhy600mPro = new Camera("QHY600M-Pro", 3.59, 1, 0.0005, new double[] { 0.51, 0.51, 0.78, 0.87, 0.89, 0.84, 0.74, 0.61, 0.54, 0.1, 0.1, 0.1, 0.1, 0.1 });
-        public static Camera qhy268mPro = new Camera("QHY268M-Pro", 3.59, 1, 0.0005, new double[] { 0.51, 0.51, 0.78, 0.87, 0.89, 0.84, 0.74, 0.61, 0.54, 0.1, 0.1, 0.1, 0.1, 0.1 });
-
-        // Constructor for Camera
-        [ImportingConstructor]
-        public Camera(string cameraName, double pixelSize, double readNoise, double darkCurrent, double[] arrayQE)
-        {
-            this.cameraName = cameraName;
-            this.pixelSize = pixelSize;
-            this.readNoise = readNoise;
-            this.darkCurrent = darkCurrent;
-            this.arrayQE = arrayQE;
-        }
-    }
-    public class Filter
-    {
-        private string filterName;
-        private double[] arrayTransmission;
-        public string FilterName { get => filterName; set { filterName = value; } }
-        public double[] ArrayTransmission { get => arrayTransmission; set { arrayTransmission = value; } }
-
-        // Some defaults
-        public static Filter U = new Filter("Sloan U", new double[] { 0.85, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 });
-        public static Filter G = new Filter("Sloan G", new double[] { 0.9, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0 });
-        public static Filter R = new Filter("Sloan R", new double[] { 0, 0, 0, 0, 0.5, 1, 1, 1, 0, 0, 0, 0, 0, 0 });
-        public static Filter Z = new Filter("Sloan Z", new double[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.9, 1, 1.1, 0, 0 });
-        public static Filter I = new Filter("Sloan I", new double[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1 });
-        public static Filter None = new Filter("No filter", new double[] { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 });
-
-        // Constructor for Filter
-        [ImportingConstructor]
-        public Filter(string filterName, double[] transmissionArray)
-        {
-            this.filterName = filterName;
-            this.arrayTransmission = transmissionArray;
-        }
-    }
-    public class Telescope
-    {
-        private string telescopeName;
-        private double apertureD;
-        private double obstructionD;
-        private double focallength;
-        [JsonProperty]
-        public string TelescopeName { get => telescopeName; set { telescopeName = value; } }
-        [JsonProperty]
-        public double ApertureD { get => apertureD; set { apertureD = value; } }
-        [JsonProperty]
-        public double ObstructionD { get => obstructionD; set { obstructionD = value; } }
-        [JsonProperty]
-        public double Focallength { get => focallength; set { focallength = value; } }
-
-        // Some defaults
-        public static Telescope pw1000 = new Telescope("PW1000", 1000, 470, 6000);
-        public static Telescope cdk700 = new Telescope("CDK700", 700, 329, 4540);
-        public static Telescope cdk24 = new Telescope("CDK24", 610, 286.7, 3974);
-        public static Telescope cdk17 = new Telescope("CDK17", 432, 209.952, 2939);
-        public static Telescope cdk14 = new Telescope("CDK14", 356, 172.66, 2563);
-        public static Telescope edgehd14 = new Telescope("EdgeHD-14", 356, 114, 3910);
-        public static Telescope gsoRc10 = new Telescope("GSO-RC10", 254, 119.38, 2039);
-
-        // Constructor for Telescope
-        [ImportingConstructor]
-        public Telescope(string telescopeName, double apertureD, double obstructionD, double focalLength)
-        {
-            this.telescopeName = telescopeName;
-            this.apertureD = apertureD;
-            this.obstructionD = obstructionD;
-            this.focallength = focalLength;
-        }
-    }
-    public class Barlow
-    {
-        private string barlowname; // barlow Name
-        private double barlowfactor; // barlow factor
-        [JsonProperty]
-        public string BarlowName { get => barlowname; set { barlowname = value; } }
-        [JsonProperty]
-        public double BarlowFactor { get => barlowfactor; set { barlowfactor = value; } }
-
-        // Some defaults
-        public static Barlow oneonehalfx = new Barlow("1.5x Barlow", 1.5);
-        public static Barlow twox = new Barlow("2x Barlow", 2);
-        public static Barlow twoonehalfx = new Barlow("2.5x Barlow", 2.5);
-        public static Barlow threex = new Barlow("3x Barlow", 3);
-        public static Barlow threeonehalfx = new Barlow("3.5x Barlow", 3.5);
-
-        // Constructor for Telescope
-        [ImportingConstructor]
-        public Barlow(string barlowName, double BarlowFactor)
-        {
-            this.barlowname = barlowName;
-            this.barlowfactor = BarlowFactor;
-        }
-    }
 }

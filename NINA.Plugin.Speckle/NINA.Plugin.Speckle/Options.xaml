@@ -7,31 +7,58 @@
     <!--  In order for this datatemplate to be picked correctly, the key has to follow the naming convention of <IPlugin.Name>_Options -->
     <!--  Furthermore the Resource Dictionary has to be exported via code behind export attributes  -->
     <DataTemplate x:Key="Speckle Interferometry_Options">
-        <Grid>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
 
-            <Grid Grid.Column="0">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions>
-                    <RowDefinition MinHeight="25" />
-                    <RowDefinition MinHeight="25" />
-                    <RowDefinition MinHeight="25" />
-                    <RowDefinition MinHeight="25" />
-                    <RowDefinition MinHeight="25" />
-                    <RowDefinition MinHeight="25" />
-                    <RowDefinition MinHeight="25" />
-                    <RowDefinition MinHeight="25" />
-                </Grid.RowDefinitions>
-                <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Text="Minimum image distance from the meridian" />
-                <ninactrl:UnitTextBox
+        <TabControl
+                Style="{StaticResource SecondLevelTabControl}"
+                TabStripPlacement="Left">
+            <TabItem>
+                <TabItem.Header>
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition />
+                            <RowDefinition Height="10" />
+                        </Grid.RowDefinitions>
+                        <Grid>
+                            <Grid Width="40" Height="40">
+                                <Path
+                                    Margin="5"
+                                    Data="{StaticResource StarSVG}"
+                                    Stretch="Uniform"
+                                    Style="{StaticResource TabItemPath}" />
+                            </Grid>
+                        </Grid>
+                        <TextBlock
+                                Grid.Row="1"
+                                Style="{StaticResource SideBarTextBlock}"
+                                Text="Speckle" />
+                    </Grid>
+                </TabItem.Header>
+                <TabItem.Content>
+                    <Grid DataContext="{Binding}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <Grid Grid.Column="0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition MinHeight="25" />
+                                <RowDefinition MinHeight="25" />
+                                <RowDefinition MinHeight="25" />
+                                <RowDefinition MinHeight="25" />
+                                <RowDefinition MinHeight="25" />
+                                <RowDefinition MinHeight="25" />
+                                <RowDefinition MinHeight="25" />
+                                <RowDefinition MinHeight="25" />
+                            </Grid.RowDefinitions>
+                            <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Text="Minimum image distance from the meridian" />
+                            <ninactrl:UnitTextBox
                 Grid.Row="0"
                 Grid.Column="1"
                 MinWidth="100"
@@ -41,8 +68,8 @@
                 Text="{Binding MDistance}"
                 Unit="°" />
 
-                <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Text="Minimum image distance from the moon" />
-                <ninactrl:UnitTextBox
+                            <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Text="Minimum image distance from the moon" />
+                            <ninactrl:UnitTextBox
                 Grid.Row="1"
                 Grid.Column="1"
                 MinWidth="100"
@@ -52,8 +79,8 @@
                 Text="{Binding MoonDistance}"
                 Unit="°" />
 
-                <TextBlock Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Text="Default Searchradius" />
-                <ninactrl:UnitTextBox
+                            <TextBlock Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Text="Default Searchradius" />
+                            <ninactrl:UnitTextBox
                 Grid.Row="2"
                 Grid.Column="1"
                 MinWidth="100"
@@ -63,8 +90,8 @@
                 Text="{Binding SearchRadius}"
                 Unit="°" />
 
-                <TextBlock Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" Text="Altitude between:" />
-                <ninactrl:UnitTextBox
+                            <TextBlock Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" Text="Altitude between:" />
+                            <ninactrl:UnitTextBox
                 Grid.Row="3"
                 Grid.Column="1"
                 MinWidth="100"
@@ -73,7 +100,7 @@
                 VerticalAlignment="Center"
                 Text="{Binding AltitudeMin}"
                 Unit="°" />
-                <ninactrl:UnitTextBox
+                            <ninactrl:UnitTextBox
                 Grid.Row="3"
                 Grid.Column="2"
                 MinWidth="100"
@@ -83,8 +110,8 @@
                 Text="{Binding AltitudeMax}"
                 Unit="°" />
 
-                <TextBlock Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" Text="Magnitude between:" />
-                <TextBox
+                            <TextBlock Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" Text="Magnitude between:" />
+                            <TextBox
                 Grid.Row="4"
                 Grid.Column="1"
                 MinWidth="100"
@@ -92,7 +119,7 @@
                 HorizontalAlignment="Left"
                 VerticalAlignment="Center"
                 Text="{Binding MinMag}" />
-                <TextBox
+                            <TextBox
                 Grid.Row="4"
                 Grid.Column="2"
                 MinWidth="100"
@@ -101,8 +128,8 @@
                 VerticalAlignment="Center"
                 Text="{Binding MaxMag}" />
 
-                <TextBlock Grid.Row="5" Grid.Column="0" VerticalAlignment="Center" Text="Separation between:" />
-                <ninactrl:UnitTextBox
+                            <TextBlock Grid.Row="5" Grid.Column="0" VerticalAlignment="Center" Text="Separation between:" />
+                            <ninactrl:UnitTextBox
                 Grid.Row="5"
                 Grid.Column="1"
                 MinWidth="100"
@@ -111,7 +138,7 @@
                 VerticalAlignment="Center"
                 Text="{Binding MinSep}"
                 Unit="&quot;" />
-                <ninactrl:UnitTextBox
+                            <ninactrl:UnitTextBox
                 Grid.Row="5"
                 Grid.Column="2"
                 MinWidth="100"
@@ -121,8 +148,8 @@
                 Text="{Binding MaxSep}"
                 Unit="&quot;" />
 
-                <TextBlock Grid.Row="6" Grid.Column="0" VerticalAlignment="Center" Text="Max magnitude for reference star" />
-                <TextBox
+                            <TextBlock Grid.Row="6" Grid.Column="0" VerticalAlignment="Center" Text="Max magnitude for reference star" />
+                            <TextBox
                 Grid.Row="6" Grid.Column="1" Grid.ColumnSpan="2"
                 MinWidth="100"
                 Margin="5,0,0,0"
@@ -130,26 +157,26 @@
                 VerticalAlignment="Center"
                 Text="{Binding MaxReferenceMag}" />
 
-            </Grid>
-            <Grid Grid.Column="1" Margin="10,0">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions>
-                    <RowDefinition MinHeight="25" />
-                    <RowDefinition MinHeight="25" />
-                    <RowDefinition MinHeight="25" />
-                    <RowDefinition MinHeight="25" />
-                    <RowDefinition MinHeight="25" />
-                    <RowDefinition MinHeight="25" />
-                    <RowDefinition MinHeight="25" />
-                    <RowDefinition MinHeight="25" />
-                </Grid.RowDefinitions>
+                        </Grid>
+                        <Grid Grid.Column="1" Margin="10,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition MinHeight="25" />
+                                <RowDefinition MinHeight="25" />
+                                <RowDefinition MinHeight="25" />
+                                <RowDefinition MinHeight="25" />
+                                <RowDefinition MinHeight="25" />
+                                <RowDefinition MinHeight="25" />
+                                <RowDefinition MinHeight="25" />
+                                <RowDefinition MinHeight="25" />
+                            </Grid.RowDefinitions>
 
-                <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Text="Default number of cycles" />
-                <TextBox
+                            <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Text="Default number of cycles" />
+                            <TextBox
                 Grid.Row="0"
                 Grid.Column="1"
                 MinWidth="100"
@@ -158,8 +185,8 @@
                 VerticalAlignment="Center"
                 Text="{Binding Cycles}" />
 
-                <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Text="Default number of images" />
-                <TextBox
+                            <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Text="Default number of images" />
+                            <TextBox
                 Grid.Row="1"
                 Grid.Column="1"
                 MinWidth="100"
@@ -168,8 +195,8 @@
                 VerticalAlignment="Center"
                 Text="{Binding Exposures}" />
 
-                <TextBlock Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Text="Default Exposure time" />
-                <ninactrl:UnitTextBox
+                            <TextBlock Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Text="Default Exposure time" />
+                            <ninactrl:UnitTextBox
                 Grid.Row="2"
                 Grid.Column="1"
                 MinWidth="100"
@@ -179,8 +206,8 @@
                 Text="{Binding ExposureTime}"
                 Unit="s" />
 
-                <TextBlock Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" Text="Default Template" />
-                <TextBox
+                            <TextBlock Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" Text="Default Template" />
+                            <TextBox
                 Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2"
                 MinWidth="100"
                 Margin="5,0,0,0"
@@ -188,8 +215,8 @@
                 VerticalAlignment="Center"
                 Text="{Binding DefaultTemplate}" />
 
-                <TextBlock Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" Text="Default User" />
-                <TextBox
+                            <TextBlock Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" Text="Default User" />
+                            <TextBox
                 Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="2"
                 MinWidth="100"
                 Margin="5,0,0,0"
@@ -197,8 +224,8 @@
                 VerticalAlignment="Center"
                 Text="{Binding User}" />
 
-                <TextBlock Grid.Row="5" Grid.Column="0" VerticalAlignment="Center" Text="Show every Nth Image" />
-                <TextBox
+                            <TextBlock Grid.Row="5" Grid.Column="0" VerticalAlignment="Center" Text="Show every Nth Image" />
+                            <TextBox
                 Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="2"
                 MinWidth="100"
                 Margin="5,0,0,0"
@@ -206,8 +233,8 @@
                 VerticalAlignment="Center"
                 Text="{Binding ShowEveryNthImage}" />
 
-                <TextBlock Grid.Row="6" Grid.Column="0" VerticalAlignment="Center" Text="Number of images for reference star" />
-                <TextBox
+                            <TextBlock Grid.Row="6" Grid.Column="0" VerticalAlignment="Center" Text="Number of images for reference star" />
+                            <TextBox
                 Grid.Row="6"
                 Grid.Column="1"
                 MinWidth="100"
@@ -216,26 +243,26 @@
                 VerticalAlignment="Center"
                 Text="{Binding ReferenceExposures}" />
 
-            </Grid>
-            <Grid Grid.Column="2" Margin="10,0">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions>
-                    <RowDefinition MinHeight="25" />
-                    <RowDefinition MinHeight="25" />
-                    <RowDefinition MinHeight="25" />
-                    <RowDefinition MinHeight="25" />
-                    <RowDefinition MinHeight="25" />
-                    <RowDefinition MinHeight="25" />
-                    <RowDefinition MinHeight="25" />
-                    <RowDefinition MinHeight="25" />
-                </Grid.RowDefinitions>
+                        </Grid>
+                        <Grid Grid.Column="2" Margin="10,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition MinHeight="25" />
+                                <RowDefinition MinHeight="25" />
+                                <RowDefinition MinHeight="25" />
+                                <RowDefinition MinHeight="25" />
+                                <RowDefinition MinHeight="25" />
+                                <RowDefinition MinHeight="25" />
+                                <RowDefinition MinHeight="25" />
+                                <RowDefinition MinHeight="25" />
+                            </Grid.RowDefinitions>
 
-                <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Text="Get galaxy fillins" />
-                <CheckBox
+                            <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Text="Get galaxy fillins" />
+                            <CheckBox
                 Grid.Row="0"
                 Grid.Column="1"
                 MinWidth="80"
@@ -244,8 +271,8 @@
                 VerticalAlignment="Center"
                 IsChecked="{Binding GetGalaxyFillins}" />
 
-                <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Text="Max magnitude for galaxies" />
-                <TextBox
+                            <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Text="Max magnitude for galaxies" />
+                            <TextBox
                 Grid.Row="1"
                 Grid.Column="1"
                 MinWidth="100"
@@ -254,8 +281,8 @@
                 VerticalAlignment="Center"
                 Text="{Binding MaxGalaxyMag}" />
 
-                <TextBlock Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Text="Template for galaxies" />
-                <TextBox
+                            <TextBlock Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Text="Template for galaxies" />
+                            <TextBox
                 Grid.Row="2"
                 Grid.Column="1"
                 MinWidth="100"
@@ -264,7 +291,120 @@
                 VerticalAlignment="Center"
                 Text="{Binding GalaxyTemplate}" />
 
-            </Grid>
-        </Grid>
+                        </Grid>
+                    </Grid>
+                </TabItem.Content>
+            </TabItem>
+            <TabItem>
+                <TabItem.Header>
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition />
+                            <RowDefinition Height="10" />
+                        </Grid.RowDefinitions>
+                        <Grid>
+                            <Grid Width="40" Height="40">
+                                <Path
+                                    Margin="5"
+                                    Data="{StaticResource CalculatorSVG}"
+                                    Stretch="Uniform"
+                                    Style="{StaticResource TabItemPath}" />
+                            </Grid>
+                        </Grid>
+                        <TextBlock
+                                Grid.Row="1"
+                                Style="{StaticResource SideBarTextBlock}"
+                                Text="Calculation" />
+                    </Grid>
+                </TabItem.Header>
+                <TabItem.Content>
+                    <Grid DataContext="{Binding}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition MinHeight="25" />
+                            <RowDefinition MinHeight="25" />
+                        </Grid.RowDefinitions>
+                        <TextBlock Grid.Row="0" Grid.Column="0" MinWidth="70" VerticalAlignment="Center" HorizontalAlignment="Center" Text="Telescope" />
+                        <StackPanel
+                            Grid.Row="0"
+                            Grid.Column="1"
+                            Orientation="Vertical">
+                            <TextBlock Margin="5,0" Text="Name"/>
+                            <TextBox Margin="5,0,0,0" MinWidth="100" VerticalAlignment="Center" HorizontalAlignment="Left" Text="{Binding Telescope.TelescopeName}" />
+                        </StackPanel>
+                        <StackPanel
+                            Grid.Row="0"
+                            Grid.Column="2"
+                            Orientation="Vertical">
+                            <TextBlock Margin="5,0" Text="Aperture"/>
+                            <ninactrl:UnitTextBox
+                            MinWidth="100"
+                            Margin="5,0,0,0"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Center"
+                            Text="{Binding Telescope.ApertureD}"
+                            Unit="mm" />
+                        </StackPanel>
+                        <StackPanel
+                            Grid.Row="0"
+                            Grid.Column="3"
+                            Orientation="Vertical">
+                            <TextBlock Margin="5,0" Text="Obstruction"/>
+                            <ninactrl:UnitTextBox
+                            MinWidth="100"
+                            Margin="5,0,0,0"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Center"
+                            Text="{Binding Telescope.ObstructionD}"
+                            Unit="mm" />
+                        </StackPanel>
+                        <StackPanel
+                            Grid.Row="0"
+                            Grid.Column="4"
+                            Orientation="Vertical">
+                            <TextBlock Margin="5,0" Text="Focallength"/>
+                            <ninactrl:UnitTextBox
+                            MinWidth="100"
+                            Margin="5,0,0,0"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Center"
+                            Text="{Binding Telescope.Focallength}"
+                            Unit="mm" />
+                        </StackPanel>
+
+                        <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Left" Text="Barlow" />
+                        <StackPanel
+                            Grid.Row="1"
+                            Grid.Column="1"
+                            Orientation="Vertical">
+                            <TextBlock Margin="5,0" Text="Name"/>
+                            <TextBox Margin="5,0,0,0" MinWidth="100" VerticalAlignment="Center" HorizontalAlignment="Left" Text="{Binding Barlow.BarlowName}" />
+                        </StackPanel>
+                        <StackPanel
+                            Grid.Row="1"
+                            Grid.Column="2"
+                            Orientation="Vertical">
+                            <TextBlock Margin="5,0" Text="Factor"/>
+                            <ninactrl:UnitTextBox
+                                MinWidth="100"
+                                Margin="5,0,0,0"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Center"
+                                Text="{Binding Barlow.BarlowFactor}"
+                                Unit="X" />
+                        </StackPanel>
+
+                    </Grid>
+                </TabItem.Content>
+            </TabItem>
+        </TabControl>
+
+
     </DataTemplate>
 </ResourceDictionary>

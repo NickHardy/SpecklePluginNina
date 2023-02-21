@@ -46,6 +46,7 @@ using NINA.Image.FileFormat;
 using NINA.WPF.Base.Interfaces.ViewModel;
 using NINA.WPF.Base.Interfaces.Mediator;
 using NINA.Image.ImageData;
+using NINA.Plugin.Speckle.Model;
 
 namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
 
@@ -202,24 +203,9 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                 }
             }
 
-            if (!plateSolveResult.Success) {
-                if (speckleTarget != null) {
-                    speckleTarget.Note = "platesolve-failed";
-                    imageData.MetaData.GenericHeaders.Add(new StringMetaDataHeader("NOTE", speckleTarget.Note, "Note"));
-                }
-
-                // Platesolve failed so try to get the biggest star in the image
-                var starDetection = new Utility.StarDetection();
-                var starDetectionParams = new StarDetectionParams() {
-                    Sensitivity = StarSensitivityEnum.Normal,
-                    NoiseReduction = NoiseReductionEnum.None
-                };
-                var biggestStar = await starDetection.GetBiggestStar(image, image.Image.Format, starDetectionParams, progress, token);
-
-                // Place the Roi around the star but within the image.
-                speckleContainer.X = Math.Min(Math.Max(Math.Round(biggestStar.Position.X - (speckleContainer.Width / 2), 0), 0), image.Image.PixelWidth - (speckleContainer.Width / 2));
-                speckleContainer.Y = Math.Min(Math.Max(Math.Round(biggestStar.Position.Y - (speckleContainer.Height / 2), 0), 0), image.Image.PixelHeight - (speckleContainer.Height / 2));
-                Logger.Debug("Setting roi position to biggest star position " + speckleContainer.X + "x" + speckleContainer.Y);
+            if (!plateSolveResult.Success && speckleTarget != null) {
+                speckleTarget.Note = "platesolve-failed";
+                imageData.MetaData.GenericHeaders.Add(new StringMetaDataHeader("NOTE", speckleTarget.Note, "Note"));
             }
 
             var target = speckleContainer.Target;
@@ -233,6 +219,34 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
 
             await imageSaveMediator.Enqueue(imageData, prepareTask, progress, token);
             imageHistoryVM.Add(imageData.MetaData.Image.Id, await imageData.Statistics, CaptureSequence.ImageTypes.LIGHT);
+
+            if (!plateSolveResult.Success) {
+                // Platesolve failed so try to get the biggest star in the image
+                // First take another image, so the star isn't blown out
+                if (speckleTarget != null) {
+                    seq.ExposureTime = speckleTarget.PMag != 0 && speckleTarget.PMag < 9 ? 5 : 10;
+                } else {
+                    seq.ExposureTime = 10;
+                }
+                var exposureData2 = await imagingMediator.CaptureImage(seq, token, progress);
+                var imageData2 = await exposureData2.ToImageData(progress, token);
+
+                var prepareTask2 = imagingMediator.PrepareImage(imageData2, new PrepareImageParameters(true, false), token);
+                var image2 = prepareTask2.Result;
+
+                var starDetection = new Utility.StarDetection();
+                var starDetectionParams = new StarDetectionParams() {
+                    Sensitivity = StarSensitivityEnum.Normal,
+                    NoiseReduction = NoiseReductionEnum.None
+                };
+                var biggestStar = await starDetection.GetBiggestStar(image2, image2.Image.Format, starDetectionParams, progress, token);
+
+                // Place the Roi around the star but within the image.
+                speckleContainer.X = Math.Min(Math.Max(Math.Round(biggestStar.Position.X - (speckleContainer.Width / 2), 0), 0), image2.Image.PixelWidth - (speckleContainer.Width / 2));
+                speckleContainer.Y = Math.Min(Math.Max(Math.Round(biggestStar.Position.Y - (speckleContainer.Height / 2), 0), 0), image2.Image.PixelHeight - (speckleContainer.Height / 2));
+                Logger.Debug("Setting roi position to biggest star position " + speckleContainer.X + "x" + speckleContainer.Y);
+            }
+
 
             // Switch filter back to the saved position
             if (filter != null) {

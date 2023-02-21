@@ -37,8 +37,8 @@ namespace NINA.Plugin.Speckle.Model {
         public int num3Band { get; set; }
         public double Gmag0 { get; set; }
         public double Gmag1 { get; set; }
-        public double Pmag { get; set; } // ! Identical to Gmag0; Found in some target lists
-        public double Smag { get; set; } // ! Identical to Gmag1; Found in some target lists
+        public double PMag { get; set; } // ! Identical to Gmag0; Found in some target lists
+        public double SMag { get; set; } // ! Identical to Gmag1; Found in some target lists
         public int NoCalculation { get; set; }
         public double BPmag0 { get; set; }
         public double BPmag1 { get; set; }
@@ -120,8 +120,8 @@ namespace NINA.Plugin.Speckle.Model {
             Map(m => m.num3Band).Name("3Band").Optional().Default(0);
             Map(m => m.Gmag0).Name("Gmag0").Optional().Default(0);
             Map(m => m.Gmag1).Name("Gmag1").Optional().Default(0);
-            Map(m => m.Pmag).Name("Smag").Optional().Default(0); // ! Identical to Gmag0; Found in some target lists
-            Map(m => m.Smag).Name("Smag").Optional().Default(0); // ! Identical to Gmag1; Found in some target lists
+            Map(m => m.PMag).Name("PMag").Optional().Default(0); // ! Identical to Gmag0; Found in some target lists
+            Map(m => m.SMag).Name("SMag").Optional().Default(0); // ! Identical to Gmag1; Found in some target lists
             Map(m => m.NoCalculation).Name("NoCalculation").Optional().Default(0);
             Map(m => m.BPmag0).Name("BPmag0").Optional().Default(0);
             Map(m => m.BPmag1).Name("BPmag1").Optional().Default(0);
