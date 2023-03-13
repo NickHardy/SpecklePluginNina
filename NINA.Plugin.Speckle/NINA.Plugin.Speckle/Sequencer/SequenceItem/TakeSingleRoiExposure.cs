@@ -45,13 +45,13 @@ using NINA.Image.ImageData;
 
 namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
 
-    [ExportMetadata("Name", "Take Single Exposure")]
+    [ExportMetadata("Name", "Take Single Roi Exposure")]
     [ExportMetadata("Description", "Lbl_SequenceItem_Imaging_TakeExposure_Description")]
     [ExportMetadata("Icon", "CameraSVG")]
     [ExportMetadata("Category", "Speckle Interferometry")]
     [Export(typeof(ISequenceItem))]
     [JsonObject(MemberSerialization.OptIn)]
-    public class TakeSingleExposure : NINA.Sequencer.SequenceItem.SequenceItem, IExposureItem, IValidatable {
+    public class TakeSingleRoiExposure : NINA.Sequencer.SequenceItem.SequenceItem, IExposureItem, IValidatable {
         private ICameraMediator cameraMediator;
         private IImagingMediator imagingMediator;
         private IImageSaveMediator imageSaveMediator;
@@ -62,7 +62,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
         private Speckle speckle;
 
         [ImportingConstructor]
-        public TakeSingleExposure(IProfileService profileService, ICameraMediator cameraMediator, IImagingMediator imagingMediator, IImageSaveMediator imageSaveMediator, IImageHistoryVM imageHistoryVM, ITelescopeMediator telescopeMediator, IOptionsVM options) {
+        public TakeSingleRoiExposure(IProfileService profileService, ICameraMediator cameraMediator, IImagingMediator imagingMediator, IImageSaveMediator imageSaveMediator, IImageHistoryVM imageHistoryVM, ITelescopeMediator telescopeMediator, IOptionsVM options) {
             Gain = -1;
             Offset = -1;
             ExposureTimeMultiplier = 1;
@@ -78,12 +78,12 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             speckle = new Speckle();
         }
 
-        private TakeSingleExposure(TakeSingleExposure cloneMe) : this(cloneMe.profileService, cloneMe.cameraMediator, cloneMe.imagingMediator, cloneMe.imageSaveMediator, cloneMe.imageHistoryVM, cloneMe.telescopeMediator, cloneMe.options) {
+        private TakeSingleRoiExposure(TakeSingleRoiExposure cloneMe) : this(cloneMe.profileService, cloneMe.cameraMediator, cloneMe.imagingMediator, cloneMe.imageSaveMediator, cloneMe.imageHistoryVM, cloneMe.telescopeMediator, cloneMe.options) {
             CopyMetaData(cloneMe);
         }
 
         public override object Clone() {
-            var clone = new TakeSingleExposure(this) {
+            var clone = new TakeSingleRoiExposure(this) {
                 ExposureTime = ExposureTime,
                 ExposureCount = 0,
                 Binning = Binning,
@@ -209,6 +209,8 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                 ImageType = ImageType,
                 ProgressExposureCount = ExposureCount,
                 TotalExposureCount = ExposureCount + 1,
+                EnableSubSample = true,
+                SubSambleRectangle = ItemUtility.RetrieveSpeckleTargetRoi(Parent)
             };
 
             var imageParams = new PrepareImageParameters(null, false);
@@ -234,7 +236,8 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                 imageData.MetaData.Target.Rotation = target.Rotation;
             }
             imageData.MetaData.Sequence.Title = ItemUtility.RetrieveSpeckleTitle(Parent);
-            ItemUtility.FromTelescopeInfo(imageData.MetaData, TelescopeInfo);
+            imageData.MetaData.GenericHeaders.Add(new DoubleMetaDataHeader("XORGSUBF", capture.SubSambleRectangle.X, "X-position of the ROI"));
+            imageData.MetaData.GenericHeaders.Add(new DoubleMetaDataHeader("YORGSUBF", capture.SubSambleRectangle.Y, "Y-position of the ROI"));
 
             await imageSaveMediator.Enqueue(imageData, prepareTask, progress, token);
 
@@ -301,7 +304,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
         }
 
         public override string ToString() {
-            return $"Category: {Category}, Item: {nameof(TakeSingleExposure)}, ExposureTime {ExposureTime * ExposureTimeMultiplier}, Gain {Gain}, Offset {Offset}, ImageType {ImageType}, Binning {Binning?.Name}";
+            return $"Category: {Category}, Item: {nameof(TakeSingleRoiExposure)}, ExposureTime {ExposureTime * ExposureTimeMultiplier}, Gain {Gain}, Offset {Offset}, ImageType {ImageType}, Binning {Binning?.Name}";
         }
     }
 }

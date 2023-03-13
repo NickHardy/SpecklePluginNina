@@ -246,6 +246,22 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                     var imageData = await exposureData.ToImageData(progress, token);
                     Logger.Debug("ImageData: " + roiDuration.ElapsedMilliseconds);
 
+                    imageData.MetaData.Sequence.Title = title;
+                    imageData.MetaData.Image.ExposureStart = exposureStart;
+                    imageData.MetaData.Image.ExposureNumber = ExposureCount;
+                    imageData.MetaData.Image.ExposureTime = ExposureTime * ExposureTimeMultiplier;
+
+                    imageData.MetaData.GenericHeaders.Add(new DoubleMetaDataHeader("MJD-END", AstroUtil.GetJulianDate(DateTime.Now), "Julian exposure end date"));
+                    imageData.MetaData.GenericHeaders.Add(new DoubleMetaDataHeader("MJD-BEG", AstroUtil.GetJulianDate(imageData.MetaData.Image.ExposureStart), "Julian exposure start date"));
+                    imageData.MetaData.GenericHeaders.Add(new DoubleMetaDataHeader("MJD-OBS", AstroUtil.GetJulianDate(imageData.MetaData.Image.ExposureStart.AddSeconds(ExposureTime * ExposureTimeMultiplier / 2)), "Julian exposure mid date"));
+
+                    ItemUtility.FromTelescopeInfo(imageData.MetaData, TelescopeInfo);
+
+                    imageData.MetaData.GenericHeaders.Add(new DoubleMetaDataHeader("ROIX", capture.SubSambleRectangle.X, "X-position of the ROI"));
+                    imageData.MetaData.GenericHeaders.Add(new DoubleMetaDataHeader("ROIY", capture.SubSambleRectangle.Y, "Y-position of the ROI"));
+                    imageData.MetaData.GenericHeaders.Add(new DoubleMetaDataHeader("XORGSUBF", capture.SubSambleRectangle.X, "X-position of the ROI"));
+                    imageData.MetaData.GenericHeaders.Add(new DoubleMetaDataHeader("YORGSUBF", capture.SubSambleRectangle.Y, "Y-position of the ROI"));
+
                     if (target != null) {
                         imageData.MetaData.Target.Name = target.DeepSkyObject.NameAsAscii;
                         imageData.MetaData.Target.Coordinates = target.InputCoordinates.Coordinates;
@@ -262,18 +278,6 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
 
                     if (filterWheelMediator.GetInfo().Connected)
                         imageData.MetaData.FilterWheel.Filter = filterWheelMediator.GetInfo().SelectedFilter.Name;
-
-                    imageData.MetaData.Sequence.Title = title;
-                    imageData.MetaData.Image.ExposureStart = exposureStart;
-                    imageData.MetaData.Image.ExposureNumber = ExposureCount;
-                    imageData.MetaData.Image.ExposureTime = ExposureTime * ExposureTimeMultiplier;
-
-                    ItemUtility.FromTelescopeInfo(imageData.MetaData, TelescopeInfo);
-
-                    imageData.MetaData.GenericHeaders.Add(new DoubleMetaDataHeader("ROIX", capture.SubSambleRectangle.X, "X-position of the ROI"));
-                    imageData.MetaData.GenericHeaders.Add(new DoubleMetaDataHeader("ROIY", capture.SubSambleRectangle.Y, "Y-position of the ROI"));
-                    imageData.MetaData.GenericHeaders.Add(new DoubleMetaDataHeader("XORGSUBF", capture.SubSambleRectangle.X, "X-position of the ROI"));
-                    imageData.MetaData.GenericHeaders.Add(new DoubleMetaDataHeader("YORGSUBF", capture.SubSambleRectangle.Y, "Y-position of the ROI"));
 
                     //_ = imageData.SaveToDisk(new FileSaveInfo(profileService), token);
                     Logger.Debug("Metadata: " + roiDuration.ElapsedMilliseconds);

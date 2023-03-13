@@ -606,7 +606,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                                 if (record.GaiaSep > 0 && (record.GaiaSep < speckle.MinSep || record.GaiaSep > speckle.MaxSep)) {
                                     Logger.Debug("Seperation not within limits. Skipping target " + speckleTarget.Target + " for user " + speckleTarget.User);
                                     speckleTarget.ImageTarget = false; // Can't image this target
-                                    speckleTarget.Note = "Target not within seperation limits.";
+                                    speckleTarget.Note = "Target not within separation limits.";
                                 }
                                 speckleTarget.Cycles = record.Cycles > 0 ? record.Cycles : Cycles;
                                 speckleTarget.Nights = record.Nights > 0 ? record.Nights : speckle.Nights;

@@ -240,6 +240,15 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                     if (ExposureCount == 1) { seqDuration = Stopwatch.StartNew(); }
                     var imageData = await exposureData.ToImageData(progress, localCTS.Token);
 
+                    imageData.MetaData.Sequence.Title = title;
+                    imageData.MetaData.Image.ExposureStart = DateTime.Now - TimeSpan.FromSeconds(ExposureTime * ExposureTimeMultiplier);
+                    imageData.MetaData.Image.ExposureNumber = ExposureCount;
+                    imageData.MetaData.Image.ExposureTime = ExposureTime * ExposureTimeMultiplier;
+
+                    imageData.MetaData.GenericHeaders.Add(new DoubleMetaDataHeader("MJD-END", AstroUtil.GetJulianDate(DateTime.Now), "Julian exposure end date"));
+                    imageData.MetaData.GenericHeaders.Add(new DoubleMetaDataHeader("MJD-BEG", AstroUtil.GetJulianDate(imageData.MetaData.Image.ExposureStart), "Julian exposure start date"));
+                    imageData.MetaData.GenericHeaders.Add(new DoubleMetaDataHeader("MJD-OBS", AstroUtil.GetJulianDate(imageData.MetaData.Image.ExposureStart.AddSeconds(ExposureTime * ExposureTimeMultiplier / 2)), "Julian exposure mid date"));
+
                     if (target != null) {
                         imageData.MetaData.Target.Name = target.DeepSkyObject.NameAsAscii;
                         imageData.MetaData.Target.Coordinates = target.InputCoordinates.Coordinates;
@@ -248,11 +257,6 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
 
                     if (filterWheelMediator.GetInfo().Connected)
                         imageData.MetaData.FilterWheel.Filter = filterWheelMediator.GetInfo().SelectedFilter.Name;
-
-                    imageData.MetaData.Sequence.Title = title;
-                    imageData.MetaData.Image.ExposureStart = DateTime.Now - TimeSpan.FromSeconds(ExposureTime * ExposureTimeMultiplier);
-                    imageData.MetaData.Image.ExposureNumber = ExposureCount;
-                    imageData.MetaData.Image.ExposureTime = ExposureTime * ExposureTimeMultiplier;
 
                     ItemUtility.FromTelescopeInfo(imageData.MetaData, TelescopeInfo);
 
