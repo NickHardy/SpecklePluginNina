@@ -224,9 +224,9 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
 
             var imageData = await exposureData.ToImageData(progress, token);
 
-            imageData.MetaData.GenericHeaders.Add(new DoubleMetaDataHeader("MJD-END", AstroUtil.GetJulianDate(DateTime.Now), "Julian exposure end date"));
-            imageData.MetaData.GenericHeaders.Add(new DoubleMetaDataHeader("MJD-BEG", AstroUtil.GetJulianDate(imageData.MetaData.Image.ExposureStart), "Julian exposure start date"));
-            imageData.MetaData.GenericHeaders.Add(new DoubleMetaDataHeader("MJD-OBS", AstroUtil.GetJulianDate(imageData.MetaData.Image.ExposureStart.AddSeconds(ExposureTime * ExposureTimeMultiplier / 2)), "Julian exposure mid date"));
+            imageData.MetaData.GenericHeaders.Add(new DoubleMetaDataHeader("JD-END", AstroUtil.GetJulianDate(DateTime.Now), "Julian exposure end date"));
+            imageData.MetaData.GenericHeaders.Add(new DoubleMetaDataHeader("JD-BEG", AstroUtil.GetJulianDate(imageData.MetaData.Image.ExposureStart), "Julian exposure start date"));
+            imageData.MetaData.GenericHeaders.Add(new DoubleMetaDataHeader("JD-OBS", AstroUtil.GetJulianDate(imageData.MetaData.Image.ExposureStart.AddSeconds(ExposureTime * ExposureTimeMultiplier / 2)), "Julian exposure mid date"));
 
             var prepareTask = imagingMediator.PrepareImage(imageData, imageParams, token);
 

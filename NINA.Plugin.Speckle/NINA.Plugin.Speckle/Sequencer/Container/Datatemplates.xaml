@@ -581,7 +581,7 @@
                         Height="150"
                         AutoGenerateColumns="False"
                         IsReadOnly="False" 
-                        ItemsSource="{Binding SpeckleTargets}"
+                        ItemsSource="{Binding SpeckleTargetsView}"
                         SelectedItem="{Binding SpeckleTarget}"
                         SelectionMode="Single"
                         SelectionChanged="DataGrid_SelectionChanged"

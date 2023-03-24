@@ -187,6 +187,10 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             }
         }
 
+        public AsyncObservableCollection<SpeckleTarget> SpeckleTargetsView {
+            get => new AsyncObservableCollection<SpeckleTarget>(SpeckleTargets.Where(x => x.ImageTarget).ToList());
+        }
+
         public int SpeckleTargetCount {
             get => SpeckleTargets.Where(x => x.ImageTarget).Count();
         }
@@ -641,6 +645,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                                 speckleTarget.GetRef = record.GetRef;
                                 SpeckleTargets.Add(speckleTarget);
                                 RaisePropertyChanged("SpeckleTargetCount");
+                                RaisePropertyChanged("SpeckleTargetsView");
                             }
                             Logger.Debug("Loaded " + SpeckleTargets.Count + " speckletargets");
 
