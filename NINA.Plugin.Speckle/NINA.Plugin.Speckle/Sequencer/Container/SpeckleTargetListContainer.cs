@@ -269,7 +269,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                 InputCoordinates = new InputCoordinates() {
                     Coordinates = SpeckleTarget.Coordinates()
                 },
-                Rotation = SpeckleTarget.Rotation
+                PositionAngle = SpeckleTarget.Rotation
             };
             speckleTargetContainer.Title = SpeckleTarget.User;
             speckleTargetContainer.Name = SpeckleTarget.User + "_" + SpeckleTarget.Target + "_c" + (SpeckleTarget.Completed_cycles + 1);
@@ -312,7 +312,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                     InputCoordinates = new InputCoordinates() {
                         Coordinates = SpeckleTarget.ReferenceStar.Coordinates()
                     },
-                    Rotation = SpeckleTarget.Rotation
+                    PositionAngle = SpeckleTarget.Rotation
                 };
                 speckleTargetContainerRef.Title = SpeckleTarget.User;
                 speckleTargetContainerRef.Name = SpeckleTarget.User + "_" + SpeckleTarget.Target + "_" + (SpeckleTarget.Completed_cycles + 1) + "_ref_" + SpeckleTarget.ReferenceStar.main_id;
@@ -614,10 +614,11 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                                 }
                                 speckleTarget.Cycles = record.Cycles > 0 ? record.Cycles : Cycles;
                                 speckleTarget.Nights = record.Nights > 0 ? record.Nights : speckle.Nights;
-                                speckleTarget.Airmass = record.Airmass;
+                                speckleTarget.AirmassMin = record.AirmassMin;
+                                speckleTarget.AirmassMax = record.AirmassMax;
                                 speckleTarget.MinAltitude = record.MinAltitude == 0d ? speckle.AltitudeMin : record.MinAltitude;
                                 speckleTarget.AltList = GetAltList(speckleTarget.Coordinates());
-                                var imageTo = speckleTarget.ImageTo(NighttimeData, speckle.AltitudeMax, speckle.MDistance, speckleTarget.Airmass, speckle.MoonDistance);
+                                var imageTo = speckleTarget.ImageTo(NighttimeData, speckle.AltitudeMax, speckle.MDistance, speckleTarget.AirmassMin, speckleTarget.AirmassMax, speckle.MoonDistance);
                                 if (imageTo != null && imageTo.alt > speckleTarget.MinAltitude && imageTo.datetime >= NighttimeData.NauticalTwilightRiseAndSet.Set && imageTo.datetime <= NighttimeData.NauticalTwilightRiseAndSet.Rise) {
                                     speckleTarget.ImageTime = RoundUp(imageTo.datetime, TimeSpan.FromMinutes(5));
                                     speckleTarget.ImageTimeAlt = imageTo.alt;

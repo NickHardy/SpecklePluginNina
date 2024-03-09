@@ -16,7 +16,7 @@
     xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
     xmlns:local="clr-namespace:NINA.Plugin.Speckle.Sequencer.Container"
     xmlns:mini="clr-namespace:NINA.View.Sequencer.MiniSequencer;assembly=NINA.Sequencer"
-    xmlns:ninactrl="clr-namespace:NINACustomControlLibrary;assembly=NINACustomControlLibrary"
+    xmlns:ninactrl="clr-namespace:NINA.CustomControlLibrary;assembly=NINA.CustomControlLibrary"
     xmlns:ns="clr-namespace:NINA.Core.Locale;assembly=NINA.Core"
     xmlns:rules="clr-namespace:NINA.Core.Utility.ValidationRules;assembly=NINA.Core"
     xmlns:util="clr-namespace:NINA.Core.Utility;assembly=NINA.Core"
@@ -189,7 +189,7 @@
                                     <TextBlock
                                         VerticalAlignment="Center"
                                         Foreground="{StaticResource ButtonForegroundBrush}"
-                                        Text="{Binding Target.Rotation}" />
+                                        Text="{Binding Target.PositionAngle}" />
                                     <TextBlock
                                         VerticalAlignment="Center"
                                         Foreground="{StaticResource ButtonForegroundBrush}"

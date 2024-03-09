@@ -233,7 +233,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             if (target != null) {
                 imageData.MetaData.Target.Name = target.DeepSkyObject.NameAsAscii;
                 imageData.MetaData.Target.Coordinates = target.InputCoordinates.Coordinates;
-                imageData.MetaData.Target.Rotation = target.Rotation;
+                imageData.MetaData.Target.PositionAngle = target.PositionAngle;
             }
             imageData.MetaData.Sequence.Title = ItemUtility.RetrieveSpeckleTitle(Parent);
             imageData.MetaData.GenericHeaders.Add(new DoubleMetaDataHeader("XORGSUBF", capture.SubSambleRectangle.X, "X-position of the ROI"));

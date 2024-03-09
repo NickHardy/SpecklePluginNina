@@ -79,7 +79,9 @@ namespace NINA.Plugin.Speckle.Model {
         [JsonProperty]
         public double Rotation { get; set; } = 0d;
         [JsonProperty]
-        public double Airmass { get; set; } = 0d;
+        public double AirmassMin { get; set; } = 0d;
+        [JsonProperty]
+        public double AirmassMax { get; set; } = 4d;
         [JsonProperty]
         public int GetRef { get; set; }
         public bool RegisterTarget { get; set; } = true;
@@ -122,19 +124,20 @@ namespace NINA.Plugin.Speckle.Model {
 
         public DateTime ImageTime { get; set; }
         public double ImageTimeAlt { get; set; }
-        public AltTime ImageTo(NighttimeData nighttimeData, double alt = 80d, double mDistance = 5d, double airmass = 0d, double distanceToMoon = 20d) {
+        public AltTime ImageTo(NighttimeData nighttimeData, double alt = 90d, double mDistance = 5d, double airmassMin = 0d, double airmassMax = 4d, double distanceToMoon = 20d) {
             DateTime twilightSet = nighttimeData.NauticalTwilightRiseAndSet.Set ?? DateTime.Now;
             DateTime twilightRise = nighttimeData.NauticalTwilightRiseAndSet.Rise ?? DateTime.Now.AddHours(24);
             DateTime minTime = new DateTime(Math.Max(twilightSet.Ticks, DateTime.Now.Ticks));
             return AltList.Where(x => x.datetime > minTime && x.datetime < twilightRise.AddMinutes(-15))
                 .Where(x => x.alt <= alt)
-                .Where(x => x.airmass >= airmass)
+                .Where(x => x.airmass >= airmassMin)
+                .Where(x => x.airmass <= airmassMax)
                 .Where(x => x.distanceToMoon >= distanceToMoon)
                 .Where(x => x.deg <= MeridianAltTime().deg - mDistance || x.deg >= MeridianAltTime().deg + mDistance)
                 .OrderByDescending(x => x.alt).FirstOrDefault();
         }
 
-        public AltTime getCurrentAltTime(double alt = 80d, double mDistance = 5d) {
+        public AltTime getCurrentAltTime(double alt = 90d, double mDistance = 5d) {
             DateTime begin = DateTime.Now;
             DateTime end = DateTime.Now.AddMinutes(8);
             return AltList
@@ -158,7 +161,8 @@ namespace NINA.Plugin.Speckle.Model {
             Map(m => m.Cycles).Name("Cycles").Optional().Default(1);
             Map(m => m.Priority).Name("Priority").Optional().Default(0);
             Map(m => m.Rotation).Name("Rotation").Optional().Default(0);
-            Map(m => m.Airmass).Name("Airmass").Optional().Default(0);
+            Map(m => m.AirmassMin).Name(["Airmass", "AirmassMin"]).Optional().Default(0);
+            Map(m => m.AirmassMax).Name("AirmassMax").Optional().Default(4);
             Map(m => m.MinAltitude).Name("MinAltitude").Optional().Default(0);
             Map(m => m.GetRef).Name("GetRef").Optional().Default(1);
             Map(m => m.ExposureTime).Name("ExposureTime").Optional().Default(0);

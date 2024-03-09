@@ -112,7 +112,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                         this.Name = dropTarget.TargetName;
                         this.Target.TargetName = dropTarget.TargetName;
                         this.Target.InputCoordinates = dropTarget.InputCoordinates.Clone();
-                        this.Target.Rotation = dropTarget.Rotation;
+                        this.Target.PositionAngle = dropTarget.PositionAngle;
                     }
                 }
             }
@@ -229,7 +229,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
 
             clone.Target.TargetName = this.Target.TargetName;
             clone.Target.InputCoordinates.Coordinates = this.Target.InputCoordinates.Coordinates.Transform(Epoch.J2000);
-            clone.Target.Rotation = this.Target.Rotation;
+            clone.Target.PositionAngle = this.Target.PositionAngle;
 
             clone.SubSampleRectangle.X = SubSampleRectangle.X;
             clone.SubSampleRectangle.Y = SubSampleRectangle.Y;
@@ -259,7 +259,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
         private async Task<bool> CoordsToFraming() {
             if (Target.DeepSkyObject?.Coordinates != null) {
                 var dso = new DeepSkyObject(Target.DeepSkyObject.Name, Target.DeepSkyObject.Coordinates, profileService.ActiveProfile.ApplicationSettings.SkyAtlasImageRepository, profileService.ActiveProfile.AstrometrySettings.Horizon);
-                dso.Rotation = Target.Rotation;
+                dso.RotationPositionAngle = Target.PositionAngle;
                 applicationMediator.ChangeTab(ApplicationTab.FRAMINGASSISTANT);
                 return await framingAssistantVM.SetCoordinates(dso);
             }
@@ -278,13 +278,13 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                     Target.TargetName = resp.Name;
                     this.Name = resp.Name;
 
-                    Target.Rotation = 0;
+                    Target.PositionAngle = 0;
 
                     if (s.CanGetRotationAngle) {
-                        double rotationAngle = await s.GetRotationAngle();
+                        double PositionAngleAngle = await s.GetRotationAngle();
 
-                        if (!double.IsNaN(rotationAngle)) {
-                            Target.Rotation = rotationAngle;
+                        if (!double.IsNaN(PositionAngleAngle)) {
+                            Target.PositionAngle = PositionAngleAngle;
                         }
                     }
 
