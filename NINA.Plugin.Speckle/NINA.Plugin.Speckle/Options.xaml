@@ -215,27 +215,36 @@
                 VerticalAlignment="Center"
                 Text="{Binding DefaultTemplate}" />
 
-                            <TextBlock Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" Text="Default User" />
+                            <TextBlock Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" Text="Default Reference Template" />
                             <TextBox
                 Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="2"
                 MinWidth="100"
                 Margin="5,0,0,0"
                 HorizontalAlignment="Left"
                 VerticalAlignment="Center"
-                Text="{Binding User}" />
+                Text="{Binding DefaultTemplateRef}" />
 
-                            <TextBlock Grid.Row="5" Grid.Column="0" VerticalAlignment="Center" Text="Show every Nth Image" />
+                            <TextBlock Grid.Row="5" Grid.Column="0" VerticalAlignment="Center" Text="Default User" />
                             <TextBox
                 Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="2"
                 MinWidth="100"
                 Margin="5,0,0,0"
                 HorizontalAlignment="Left"
                 VerticalAlignment="Center"
+                Text="{Binding User}" />
+
+                            <TextBlock Grid.Row="6" Grid.Column="0" VerticalAlignment="Center" Text="Show every Nth Image" />
+                            <TextBox
+                Grid.Row="6" Grid.Column="1" Grid.ColumnSpan="2"
+                MinWidth="100"
+                Margin="5,0,0,0"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
                 Text="{Binding ShowEveryNthImage}" />
 
-                            <TextBlock Grid.Row="6" Grid.Column="0" VerticalAlignment="Center" Text="Number of images for reference star" />
+                            <TextBlock Grid.Row="7" Grid.Column="0" VerticalAlignment="Center" Text="Number of images for reference star" />
                             <TextBox
-                Grid.Row="6"
+                Grid.Row="7"
                 Grid.Column="1"
                 MinWidth="100"
                 Margin="5,0,0,0"
@@ -261,35 +270,37 @@
                                 <RowDefinition MinHeight="25" />
                             </Grid.RowDefinitions>
 
-                            <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Text="Get galaxy fillins" />
+                            <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Text="Lock Dome" />
                             <CheckBox
-                Grid.Row="0"
-                Grid.Column="1"
-                MinWidth="80"
-                Margin="5,0,0,0"
-                HorizontalAlignment="Left"
-                VerticalAlignment="Center"
-                IsChecked="{Binding GetGalaxyFillins}" />
+                                Grid.Row="0"
+                                Grid.Column="1"
+                                MinWidth="80"
+                                Margin="5,0,0,0"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Center"
+                                IsChecked="{Binding DomePositionLock}" />
 
-                            <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Text="Max magnitude for galaxies" />
-                            <TextBox
-                Grid.Row="1"
-                Grid.Column="1"
-                MinWidth="100"
-                Margin="5,0,0,0"
-                HorizontalAlignment="Left"
-                VerticalAlignment="Center"
-                Text="{Binding MaxGalaxyMag}" />
+                            <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Text="Dome Position" />
+                            <ninactrl:UnitTextBox
+                                Grid.Row="1"
+                                Grid.Column="1"
+                                MinWidth="100"
+                                Margin="5,0,0,0"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Center"
+                                Text="{Binding DomePosition}"
+                                Unit="°" />
 
-                            <TextBlock Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Text="Template for galaxies" />
-                            <TextBox
-                Grid.Row="2"
-                Grid.Column="1"
-                MinWidth="100"
-                Margin="5,0,0,0"
-                HorizontalAlignment="Left"
-                VerticalAlignment="Center"
-                Text="{Binding GalaxyTemplate}" />
+                            <TextBlock Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Text="Dome slit width" />
+                            <ninactrl:UnitTextBox
+                                Grid.Row="2"
+                                Grid.Column="1"
+                                MinWidth="100"
+                                Margin="5,0,0,0"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Center"
+                                Text="{Binding DomeSlitWidth}"
+                                Unit="°" />
 
                         </Grid>
                     </Grid>

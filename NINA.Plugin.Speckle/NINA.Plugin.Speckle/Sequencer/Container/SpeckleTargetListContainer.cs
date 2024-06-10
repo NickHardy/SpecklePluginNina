@@ -75,6 +75,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
         private ICameraMediator cameraMediator;
         private readonly IFramingAssistantVM framingAssistantVM;
         private readonly IApplicationMediator applicationMediator;
+        private ITelescopeMediator telescopeMediator;
         private INighttimeCalculator nighttimeCalculator;
         private Speckle speckle;
         private CancellationTokenSource executeCTS;
@@ -87,7 +88,8 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                 IApplicationStatusMediator applicationStatusMediator,
                 ICameraMediator cameraMediator,
                 IFramingAssistantVM framingAssistantVM,
-                IApplicationMediator applicationMediator) : base(new SequentialListStrategy()) {
+                IApplicationMediator applicationMediator,
+                ITelescopeMediator telescopeMediator) : base(new SequentialListStrategy()) {
             this.profileService = profileService;
             this.sequenceMediator = sequenceMediator;
             this.nighttimeCalculator = nighttimeCalculator;
@@ -95,6 +97,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             this.cameraMediator = cameraMediator;
             this.applicationMediator = applicationMediator;
             this.framingAssistantVM = framingAssistantVM;
+            this.telescopeMediator = telescopeMediator;
 
             //Task.Run(() => NighttimeData = nighttimeCalculator.Calculate(DateTime.Now.AddHours(4)));
             speckle = new Speckle();
@@ -138,6 +141,11 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
 
         [JsonProperty]
         public string Template { get => _Template; set { _Template = value; RaisePropertyChanged(); } }
+
+        private string _TemplateRef;
+
+        [JsonProperty]
+        public string TemplateRef { get => _TemplateRef; set { _TemplateRef = value; RaisePropertyChanged(); } }
 
         private int _Cycles;
 
@@ -258,7 +266,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             var templates = sequenceMediator.GetDeepSkyObjectContainerTemplates();
 
             // Set target
-            var template = templates.FirstOrDefault(x => x.Name == (SpeckleTarget.Template != "" ? SpeckleTarget.Template : speckle.DefaultTemplate));
+            var template = templates.FirstOrDefault(x => x.Name == (string.IsNullOrWhiteSpace(SpeckleTarget.Template) ? speckle.DefaultTemplate : SpeckleTarget.Template));
             if (template == null) {
                 Notification.ShowError("No template found. Check the selected template: " + SpeckleTarget.Template);
                 return false;
@@ -272,6 +280,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                 PositionAngle = SpeckleTarget.Rotation
             };
             speckleTargetContainer.Title = SpeckleTarget.User;
+            speckleTargetContainer.IsRef = false;
             speckleTargetContainer.Name = SpeckleTarget.User + "_" + SpeckleTarget.Target + "_c" + (SpeckleTarget.Completed_cycles + 1);
             speckleTargetContainer.Items.ToList().ForEach(x => {
                 if (x is TakeRoiExposures takeRoiExposures) {
@@ -302,11 +311,15 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             }));
 
             // Set Reference
+            var templateRef = templates.FirstOrDefault(x => x.Name == (string.IsNullOrWhiteSpace(SpeckleTarget.TemplateRef) ? speckle.DefaultRefTemplate : SpeckleTarget.TemplateRef));
+            if (templateRef == null) {
+                templateRef = template;
+            }
             using (executeCTS = new CancellationTokenSource()) {
                 RetrieveReferenceStars(new Progress<ApplicationStatus>(p => AppStatus = p), executeCTS.Token);
             }
             if (SpeckleTarget.ReferenceStar != null && SpeckleTarget.ReferenceStar.main_id != "") {
-                SpeckleTargetContainer speckleTargetContainerRef = (SpeckleTargetContainer)template.Clone();
+                SpeckleTargetContainer speckleTargetContainerRef = (SpeckleTargetContainer)templateRef.Clone();
                 speckleTargetContainerRef.Target = new InputTarget(Angle.ByDegree(profileService.ActiveProfile.AstrometrySettings.Latitude), Angle.ByDegree(profileService.ActiveProfile.AstrometrySettings.Longitude), profileService.ActiveProfile.AstrometrySettings.Horizon) {
                     TargetName = SpeckleTarget.Target + "_c" + (SpeckleTarget.Completed_cycles + 1) + "_ref_" + SpeckleTarget.ReferenceStar.main_id,
                     InputCoordinates = new InputCoordinates() {
@@ -315,6 +328,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                     PositionAngle = SpeckleTarget.Rotation
                 };
                 speckleTargetContainerRef.Title = SpeckleTarget.User;
+                speckleTargetContainerRef.IsRef = true;
                 speckleTargetContainerRef.Name = SpeckleTarget.User + "_" + SpeckleTarget.Target + "_" + (SpeckleTarget.Completed_cycles + 1) + "_ref_" + SpeckleTarget.ReferenceStar.main_id;
                 speckleTargetContainerRef.Items.ToList().ForEach(x => {
                     if (x is CalculateExposure calculateExposure)
@@ -354,6 +368,49 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
         }
 
         private SpeckleTarget GetNextTarget() {
+            Logger.Debug("Getting next target from list: " + SpeckleTargets.Count + " targets total.");
+
+            var targetAzimuth = speckle.DomePosition;
+            var quarterAgo = DateTime.Now.AddMinutes(-15);
+            var slitAz1 = speckle.DomePosition - (speckle.DomeSlitWidth / 2);
+            var slitAz2 = speckle.DomePosition + (speckle.DomeSlitWidth / 2);
+
+            // First get the next target with an imageTime in the future
+            var targets = SpeckleTargets.Where(t => t.ImageTarget)
+                .Where(t => t.Nights > t.Completed_nights)
+                .Where(t => t.Cycles > t.Completed_cycles)
+                .Where(t => t.ImagedAt == null || t.ImagedAt < quarterAgo)
+                .Where(t => t.DomeSlitAltTimeList.Count > 0) // Check target is within limits
+                .OrderByDescending(t => t.Completed_cycles); // Favor targets that have been observed before
+
+            if (targets.Count() > 0) {
+                Logger.Debug(JsonConvert.SerializeObject(targets, Formatting.Indented));
+                SpeckleTarget = targets.First();
+                var altTime = SpeckleTarget.getCurrentDomeAltTime();
+                SpeckleTarget.ImageTime = altTime?.datetime ?? DateTime.Now;
+            } else {
+                DateTime maxImageTime = DateTime.Now.AddMinutes(-5);
+                SpeckleTarget = SpeckleTargets.Where(t => t.ImageTarget)
+                    .Where(t => t.Nights > t.Completed_nights)
+                    .Where(t => t.Cycles > t.Completed_cycles)
+                    .Where(t => t.ImageTime > maxImageTime)
+                    .OrderBy(t => t.Completed_cycles)
+                    .ThenBy(t => t.ImageTime)
+                    .FirstOrDefault();
+            }
+            //SpeckleTarget.AltList.Where(x => x.datetime > maxImageTime).Count() // && x.datetime < DateTime.Now.AddHours(8)).Count()
+            //    .Where(x => x.alt > speckle.AltitudeMin && x.alt < speckle.AltitudeMax)
+            //    //.Where(x => x.airmass > this.AirmassMin && x.airmass < this.AirmassMax)
+            //    .OrderByDescending(x => x.alt).FirstOrDefault()
+
+            // Check imagetime is within 5 minutes, then set it to now
+            if (SpeckleTarget.ImageTime > DateTime.Now && SpeckleTarget.ImageTime < DateTime.Now.AddMinutes(5)) {
+                SpeckleTarget.ImageTime = DateTime.Now;
+            }
+            return SpeckleTarget;
+        }
+
+        private SpeckleTarget GetNextTargetOld() {
             Logger.Debug("Getting next target from list: " + SpeckleTargets.Count + " targets total.");
             
             // First get the next target with an imageTime in the future
@@ -437,6 +494,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             SpeckleTarget = SpeckleTargets.Where(x => x.TargetId == CurrentSpeckleTarget.TargetId).FirstOrDefault();
             if (SpeckleTarget != null) {
                 if (!SpeckleTarget.RegisterTarget) return;
+                SpeckleTarget.ImagedAt = DateTime.Now;
                 SpeckleTarget.Completed_cycles += 1;
                 if (SpeckleTarget.Completed_cycles == SpeckleTarget.Cycles) {
                     SpeckleTarget.Completed_nights += 1;
@@ -501,7 +559,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
 
         private void RetrieveReferenceStars(IProgress<ApplicationStatus> externalProgress, CancellationToken token) {
             if (SpeckleTarget.GetRef > 0 && (SpeckleTarget.ReferenceStarList == null || !SpeckleTarget.ReferenceStarList.Any())) {
-                double magnitude = SpeckleTarget.PMag > 1 ? Math.Min(SpeckleTarget.PMag - 1, 8d) : 8d;
+                double magnitude = SpeckleTarget.PMag > 1 ? Math.Min(SpeckleTarget.PMag - 1, Math.Min(SpeckleTarget.SMag - 1, 8d)) : 8d;
                 SpeckleTarget.ReferenceStarList = SimUtils.FindSimbadSaoStars(externalProgress, token, SpeckleTarget.Coordinates(), speckle.SearchRadius, magnitude, speckle.MaxReferenceMag).Result;
                 SpeckleTarget.ReferenceStar = SpeckleTarget.ReferenceStarList.FirstOrDefault();
                 if (SpeckleTarget.ReferenceStar == null) {
@@ -535,7 +593,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                 }
                 // Run the whole thing and get the top value
                 if (altitude > horizonAltitude)
-                    altList.Add(new AltTime(altitude, degAngle, start, AstroUtil.Airmass(altitude), CalculateSeparation(start, coords)));
+                    altList.Add(new AltTime(altitude, azimuth, degAngle, start, AstroUtil.Airmass(altitude), CalculateSeparation(start, coords)));
                 start = start.AddHours(0.05);
             }
             return altList;
@@ -570,6 +628,9 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                     NighttimeData = nighttimeCalculator.Calculate();
                 }
                 try {
+                    var targetAzimuth = speckle.DomePosition;
+                    var slitAz1 = speckle.DomePosition - (speckle.DomeSlitWidth / 2);
+                    var slitAz2 = speckle.DomePosition + (speckle.DomeSlitWidth / 2);
                     var config = new CsvConfiguration(CultureInfo.InvariantCulture);
                     config.MissingFieldFound = null;
                     using (var reader = new StreamReader(file))
@@ -607,7 +668,8 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                                     speckleTarget.ImageTarget = false; // Can't image this target
                                     speckleTarget.Note = "Target not within magnitude limits.";
                                 }
-                                if (record.GaiaSep > 0 && (record.GaiaSep < speckle.MinSep || record.GaiaSep > speckle.MaxSep)) {
+                                speckleTarget.Separation = record.Separation != 0 ? record.Separation : record.GaiaSep;
+                                if (speckleTarget.Separation > 0 && (speckleTarget.Separation < speckle.MinSep || speckleTarget.Separation > speckle.MaxSep)) {
                                     Logger.Debug("Seperation not within limits. Skipping target " + speckleTarget.Target + " for user " + speckleTarget.User);
                                     speckleTarget.ImageTarget = false; // Can't image this target
                                     speckleTarget.Note = "Target not within separation limits.";
@@ -618,6 +680,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                                 speckleTarget.AirmassMax = record.AirmassMax;
                                 speckleTarget.MinAltitude = record.MinAltitude == 0d ? speckle.AltitudeMin : record.MinAltitude;
                                 speckleTarget.AltList = GetAltList(speckleTarget.Coordinates());
+                                speckleTarget.setDomeSlitAltTimeList(speckle, slitAz1, slitAz2);
                                 var imageTo = speckleTarget.ImageTo(NighttimeData, speckle.AltitudeMax, speckle.MDistance, speckleTarget.AirmassMin, speckleTarget.AirmassMax, speckle.MoonDistance);
                                 if (imageTo != null && imageTo.alt > speckleTarget.MinAltitude && imageTo.datetime >= NighttimeData.NauticalTwilightRiseAndSet.Set && imageTo.datetime <= NighttimeData.NauticalTwilightRiseAndSet.Rise) {
                                     speckleTarget.ImageTime = RoundUp(imageTo.datetime, TimeSpan.FromMinutes(5));
@@ -629,6 +692,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                                     speckleTarget.Note = "Target cannot be imaged tonight.";
                                 }
                                 speckleTarget.Template = record.Template != "" ? record.Template : Template != "" ? Template : speckle.DefaultTemplate;
+                                speckleTarget.TemplateRef = record.TemplateRef != "" ? record.TemplateRef : TemplateRef != "" ? TemplateRef : speckle.DefaultRefTemplate;
                                 speckleTarget.Exposures = record.Exposures > 0 ? record.Exposures : Exposures;
                                 speckleTarget.ExposureTime = record.ExposureTime > 0 ? record.ExposureTime : ExposureTime;
                                 speckleTarget.NoCalculation = record.NoCalculation;
@@ -638,7 +702,6 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                                     Logger.Debug("Failed to get secondary magnitude for " + speckleTarget.Target);
                                     speckleTarget.NoCalculation = 1;
                                 }
-                                speckleTarget.Separation = record.GaiaSep;
                                 speckleTarget.Completed_nights = record.Completed_nights;
                                 speckleTarget.Filter = record.Filter;
                                 speckleTarget.Priority = record.Priority;
@@ -682,7 +745,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
         }
 
         public override object Clone() {
-            var clone = new SpeckleTargetListContainer(profileService, sequenceMediator, nighttimeCalculator, applicationStatusMediator, cameraMediator, framingAssistantVM, applicationMediator) {
+            var clone = new SpeckleTargetListContainer(profileService, sequenceMediator, nighttimeCalculator, applicationStatusMediator, cameraMediator, framingAssistantVM, applicationMediator, telescopeMediator) {
                 Icon = Icon,
                 Name = Name,
                 Category = Category,

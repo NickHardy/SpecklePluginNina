@@ -89,6 +89,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             this.imageSaveMediator = imageSaveMediator;
             this.options = options;
             speckle = new Speckle();
+            PlatesolveFirst = true;
         }
 
         private CalculateRoiPosition(CalculateRoiPosition cloneMe) : this(cloneMe.profileService,
@@ -107,6 +108,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             var clone = new CalculateRoiPosition(this);
             clone.ImageFlippedX = ImageFlippedX;
             clone.ImageFlippedY = ImageFlippedY;
+            clone.PlatesolveFirst = PlatesolveFirst;
             return clone;
         }
 
@@ -128,7 +130,12 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
         [JsonProperty]
         public bool ImageFlippedY { get => _ImageFlippedY; set { _ImageFlippedY = value; RaisePropertyChanged(); } }
 
+        private bool _PlatesolveFirst;
+        [JsonProperty]
+        public bool PlatesolveFirst { get => _PlatesolveFirst; set { _PlatesolveFirst = value; RaisePropertyChanged(); } }
+
         public override async Task Execute(IProgress<ApplicationStatus> progress, CancellationToken token) {
+            bool getBiggestStar = !PlatesolveFirst;
             // save filter to restore after positioning
             var filter = filterWheelMediator.GetInfo()?.SelectedFilter;
             var plateSolver = plateSolverFactory.GetPlateSolver(profileService.ActiveProfile.PlateSolveSettings);
@@ -158,69 +165,74 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                 1
             );
 
-            Logger.Debug("Capturing image for platesolve.");
-            var exposureData = await imagingMediator.CaptureImage(seq, token, progress);
-            var imageData = await exposureData.ToImageData(progress, token);
+            if (PlatesolveFirst) {
 
-            var prepareTask = imagingMediator.PrepareImage(imageData, new PrepareImageParameters(true, true), token);
-            var image = prepareTask.Result;
-            var width = image.Image.PixelWidth;
-            var height = image.Image.PixelHeight;
-            var center = new Point(width / 2, height / 2);
-            var arcsecPerPix = AstroUtil.ArcsecPerPixel(profileService.ActiveProfile.CameraSettings.PixelSize * profileService.ActiveProfile.PlateSolveSettings.Binning, profileService.ActiveProfile.TelescopeSettings.FocalLength);
+                Logger.Debug("Capturing image for platesolve.");
+                var exposureData = await imagingMediator.CaptureImage(seq, token, progress);
+                var imageData = await exposureData.ToImageData(progress, token);
 
-            var imageSolver = new ImageSolver(plateSolver, null);
+                var prepareTask = imagingMediator.PrepareImage(imageData, new PrepareImageParameters(true, true), token);
+                var image = prepareTask.Result;
+                var width = image.Image.PixelWidth;
+                var height = image.Image.PixelHeight;
+                var center = new Point(width / 2, height / 2);
+                var arcsecPerPix = AstroUtil.ArcsecPerPixel(profileService.ActiveProfile.CameraSettings.PixelSize * profileService.ActiveProfile.PlateSolveSettings.Binning, profileService.ActiveProfile.TelescopeSettings.FocalLength);
 
-            Logger.Debug("Solving image");
-            var plateSolveResult = await imageSolver.Solve(image.RawImageData, parameter, progress, token);
-            if (plateSolveResult.Success) {
-                Logger.Debug("PlateSolveResult: " + JsonConvert.SerializeObject(plateSolveResult));
-                Logger.Debug("Calculating target position");
+                var imageSolver = new ImageSolver(plateSolver, null);
 
-                //Translate your coordinates to x/y in relation to center coordinates
-                var inputTarget = ItemUtility.RetrieveInputTarget(Parent);
-                Point targetPoint = inputTarget.InputCoordinates.Coordinates.XYProjection(plateSolveResult.Coordinates, center, arcsecPerPix, arcsecPerPix, plateSolveResult.Orientation, ProjectionType.Gnomonic);
-                Logger.Debug("Found target at " + targetPoint.X + "x" + targetPoint.Y);
+                Logger.Debug("Solving image");
+                var plateSolveResult = await imageSolver.Solve(image.RawImageData, parameter, progress, token);
+                if (plateSolveResult.Success) {
+                    Logger.Debug("PlateSolveResult: " + JsonConvert.SerializeObject(plateSolveResult));
+                    Logger.Debug("Calculating target position");
 
-                // Check if the target is in the image
-                if (targetPoint.X < 0 || targetPoint.X > width || targetPoint.Y < 0 || targetPoint.Y > height) {
-                    Notification.ShowError("TargetPoint is not within the image.");
-                    throw new SequenceEntityFailedException("Calculation failed. Target outside of image");
+                    //Translate your coordinates to x/y in relation to center coordinates
+                    var inputTarget = ItemUtility.RetrieveInputTarget(Parent);
+                    Point targetPoint = inputTarget.InputCoordinates.Coordinates.XYProjection(plateSolveResult.Coordinates, center, arcsecPerPix, arcsecPerPix, plateSolveResult.Orientation, ProjectionType.Gnomonic);
+                    Logger.Debug("Found target at " + targetPoint.X + "x" + targetPoint.Y);
+
+                    // Check if the target is in the image
+                    if (targetPoint.X < 0 || targetPoint.X > width || targetPoint.Y < 0 || targetPoint.Y > height) {
+                        Notification.ShowError("TargetPoint is not within the image.");
+                        throw new SequenceEntityFailedException("Calculation failed. Target outside of image");
+                    }
+
+                    // Check if we need to flip the targetPoint
+                    if (ImageFlippedX) { targetPoint.X = width - targetPoint.X; }
+                    if (ImageFlippedY) { targetPoint.Y = height - targetPoint.Y; }
+
+                    // Place the Roi around the star but within the image.
+                    speckleContainer.X = Math.Min(Math.Max(Math.Round(targetPoint.X - (speckleContainer.Width / 2), 0), 0), image.Image.PixelWidth - (speckleContainer.Width / 2));
+                    speckleContainer.Y = Math.Min(Math.Max(Math.Round(targetPoint.Y - (speckleContainer.Height / 2), 0), 0), image.Image.PixelHeight - (speckleContainer.Height / 2));
+                    Logger.Debug("Setting roi position to " + speckleContainer.X + "x" + speckleContainer.Y);
+
+                    if (speckleTarget != null) {
+                        speckleTarget.Orientation = plateSolveResult.PositionAngle;
+                        speckleTarget.ArcsecPerPix = arcsecPerPix;
+                    }
+                } else {
+                    getBiggestStar = true;
                 }
 
-                // Check if we need to flip the targetPoint
-                if (ImageFlippedX) { targetPoint.X = width - targetPoint.X; }
-                if (ImageFlippedY) { targetPoint.Y = height - targetPoint.Y; }
-
-                // Place the Roi around the star but within the image.
-                speckleContainer.X = Math.Min(Math.Max(Math.Round(targetPoint.X - (speckleContainer.Width / 2), 0), 0), image.Image.PixelWidth - (speckleContainer.Width / 2));
-                speckleContainer.Y = Math.Min(Math.Max(Math.Round(targetPoint.Y - (speckleContainer.Height / 2), 0), 0), image.Image.PixelHeight - (speckleContainer.Height / 2));
-                Logger.Debug("Setting roi position to " + speckleContainer.X + "x" + speckleContainer.Y);
-
-                if (speckleTarget != null) {
-                    speckleTarget.Orientation = plateSolveResult.Orientation;
-                    speckleTarget.ArcsecPerPix = arcsecPerPix;
+                if (!plateSolveResult.Success && speckleTarget != null) {
+                    speckleTarget.Note = "platesolve-failed";
+                    imageData.MetaData.GenericHeaders.Add(new StringMetaDataHeader("NOTE", speckleTarget.Note, "Note"));
                 }
+
+                var target = speckleContainer.Target;
+                if (target != null) {
+                    imageData.MetaData.Target.Name = target.TargetName;
+                    imageData.MetaData.Target.Coordinates = target.InputCoordinates.Coordinates;
+                    imageData.MetaData.Target.PositionAngle = plateSolveResult.PositionAngle;
+                }
+
+                imageData.MetaData.Sequence.Title = speckleContainer.Title;
+
+                await imageSaveMediator.Enqueue(imageData, prepareTask, progress, token);
+                imageHistoryVM.Add(imageData.MetaData.Image.Id, await imageData.Statistics, CaptureSequence.ImageTypes.LIGHT);
             }
 
-            if (!plateSolveResult.Success && speckleTarget != null) {
-                speckleTarget.Note = "platesolve-failed";
-                imageData.MetaData.GenericHeaders.Add(new StringMetaDataHeader("NOTE", speckleTarget.Note, "Note"));
-            }
-
-            var target = speckleContainer.Target;
-            if (target != null) {
-                imageData.MetaData.Target.Name = target.TargetName;
-                imageData.MetaData.Target.Coordinates = target.InputCoordinates.Coordinates;
-                imageData.MetaData.Target.Rotation = plateSolveResult.Orientation;
-            }
-
-            imageData.MetaData.Sequence.Title = speckleContainer.Title;
-
-            await imageSaveMediator.Enqueue(imageData, prepareTask, progress, token);
-            imageHistoryVM.Add(imageData.MetaData.Image.Id, await imageData.Statistics, CaptureSequence.ImageTypes.LIGHT);
-
-            if (!plateSolveResult.Success) {
+            if (getBiggestStar) {
                 // Platesolve failed so try to get the biggest star in the image
                 // First take another image, so the star isn't blown out
                 if (speckleTarget != null) {
@@ -247,13 +259,9 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                 Logger.Debug("Setting roi position to biggest star position " + speckleContainer.X + "x" + speckleContainer.Y);
             }
 
-
             // Switch filter back to the saved position
             if (filter != null) {
                 _ = await filterWheelMediator.ChangeFilter(filter, token, progress);
-            }
-            if (!plateSolveResult.Success) {
-                throw new SequenceEntityFailedException("Calculation failed to platesolve.");
             }
         }
 

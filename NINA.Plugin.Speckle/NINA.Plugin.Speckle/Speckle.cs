@@ -191,10 +191,46 @@ namespace NINA.Plugin.Speckle {
             }
         }
 
+        public bool DomePositionLock {
+            get => Settings.Default.DomePositionLock;
+            set {
+                Settings.Default.DomePositionLock = value;
+                CoreUtil.SaveSettings(Properties.Settings.Default);
+                RaisePropertyChanged();
+            }
+        }
+
+        public double DomePosition {
+            get => Settings.Default.DomePosition;
+            set {
+                Settings.Default.DomePosition = value;
+                CoreUtil.SaveSettings(Properties.Settings.Default);
+                RaisePropertyChanged();
+            }
+        }
+
+        public double DomeSlitWidth {
+            get => Settings.Default.DomeSlitWidth;
+            set {
+                Settings.Default.DomeSlitWidth = value;
+                CoreUtil.SaveSettings(Properties.Settings.Default);
+                RaisePropertyChanged();
+            }
+        }
+
         public string DefaultTemplate {
             get => Settings.Default.DefaultTemplate;
             set {
                 Settings.Default.DefaultTemplate = value;
+                CoreUtil.SaveSettings(Properties.Settings.Default);
+                RaisePropertyChanged();
+            }
+        }
+
+        public string DefaultRefTemplate {
+            get => Settings.Default.DefaultRefTemplate;
+            set {
+                Settings.Default.DefaultRefTemplate = value;
                 CoreUtil.SaveSettings(Properties.Settings.Default);
                 RaisePropertyChanged();
             }

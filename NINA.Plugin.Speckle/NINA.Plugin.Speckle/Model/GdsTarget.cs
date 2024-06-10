@@ -98,10 +98,12 @@ namespace NINA.Plugin.Speckle.Model {
         public int Completed_ref_cycles { get; set; }
         public double Rotation { get; set; }
         public string Template { get; set; }
+        public string TemplateRef { get; set; }
         public double AirmassMin { get; set; } = 0d;
         public double AirmassMax { get; set; } = 4d;
         public int GetRef { get; set; }
         public double MinAltitude { get; set; } = 0d;
+        public double Separation { get; set; }
 
     }
 
@@ -186,6 +188,8 @@ namespace NINA.Plugin.Speckle.Model {
             Map(m => m.AirmassMax).Name("AirmassMax").Optional().Default(4);
             Map(m => m.MinAltitude).Name("MinAltitude").Optional().Default(0);
             Map(m => m.GetRef).Name("GetRef").Optional().Default(1);
+            Map(m => m.TemplateRef).Name("TemplateRef").Optional().Default("");
+            Map(m => m.Separation).Name("Separation").Optional().Default(0);
         }
     }
 }

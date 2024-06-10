@@ -28,14 +28,17 @@ namespace NINA.Plugin.Speckle.Model {
         [JsonProperty]
         public double alt { get; set; }
         [JsonProperty]
+        public double az { get; set; }
+        [JsonProperty]
         public double deg { get; set; }
         [JsonProperty]
         public double airmass { get; set; }
         [JsonProperty]
         public double distanceToMoon { get; set; }
 
-        public AltTime(double alt, double deg, DateTime datetime, double airmass, double distanceToMoon) {
+        public AltTime(double alt, double az, double deg, DateTime datetime, double airmass, double distanceToMoon) {
             this.alt = alt;
+            this.az = az;
             this.deg = deg;
             this.datetime = datetime;
             this.airmass = airmass;

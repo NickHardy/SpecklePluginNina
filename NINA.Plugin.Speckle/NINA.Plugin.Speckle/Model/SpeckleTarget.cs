@@ -75,6 +75,8 @@ namespace NINA.Plugin.Speckle.Model {
         [JsonProperty]
         public string Template { get; set; }
         [JsonProperty]
+        public string TemplateRef { get; set; }
+        [JsonProperty]
         public string Filter { get; set; }
         [JsonProperty]
         public double Rotation { get; set; } = 0d;
@@ -89,6 +91,8 @@ namespace NINA.Plugin.Speckle.Model {
         public double MinAltitude { get; set; } = 0d;
 
         public List<AltTime> AltList { get; set; } = new List<AltTime>();
+        [JsonProperty]
+        public List<AltTime> DomeSlitAltTimeList { get; set; } = new List<AltTime>();
         [JsonProperty]
         public bool ImageTarget { get; set; } = true;
         [JsonProperty]
@@ -123,6 +127,7 @@ namespace NINA.Plugin.Speckle.Model {
         }
 
         public DateTime ImageTime { get; set; }
+        public DateTime? ImagedAt { get; set; }
         public double ImageTimeAlt { get; set; }
         public AltTime ImageTo(NighttimeData nighttimeData, double alt = 90d, double mDistance = 5d, double airmassMin = 0d, double airmassMax = 4d, double distanceToMoon = 20d) {
             DateTime twilightSet = nighttimeData.NauticalTwilightRiseAndSet.Set ?? DateTime.Now;
@@ -145,6 +150,22 @@ namespace NINA.Plugin.Speckle.Model {
                 .Where(x => x.alt < alt)
                 .Where(x => x.deg < MeridianAltTime().deg - mDistance || x.deg > MeridianAltTime().deg + mDistance)
                 .OrderByDescending(x => x.alt).FirstOrDefault();
+        }
+
+        public AltTime getCurrentDomeAltTime() {
+            DateTime begin = DateTime.Now;
+            DateTime end = DateTime.Now.AddMinutes(8);
+            return DomeSlitAltTimeList
+                .Where(x => x.datetime > begin && x.datetime < end)
+                .OrderBy(x => x.datetime).FirstOrDefault();
+        }
+
+        public void setDomeSlitAltTimeList(Speckle speckle, double begin, double end) {
+            DomeSlitAltTimeList = AltList
+                .Where(x => x.az > begin && x.az < end)
+                .Where(x => x.alt > speckle.AltitudeMin && x.alt < speckle.AltitudeMax)
+                .Where(x => x.airmass > this.AirmassMin && x.airmass < this.AirmassMax)
+                .ToList();
         }
     }
 

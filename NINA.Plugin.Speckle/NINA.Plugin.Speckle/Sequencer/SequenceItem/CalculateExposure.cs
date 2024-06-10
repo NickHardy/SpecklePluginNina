@@ -168,22 +168,23 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
                 CalculateAtmosphere(telescope, camera, RetrieveCurrentFilter()); // Calculate Atmospheric values:
 
                 ExposureTime = Calculate(telescope, camera, RetrieveCurrentFilter(), barlow);
+                if (ExposureTime == 0) return; // Something went wrong during calculation
                 progress.Report(new ApplicationStatus() {Status = "Calculated exposure time: "+ExposureTime});
-                    ItemUtility.RetrieveSpeckleContainer(Parent).Items.ToList().ForEach(x => {
-                        if (x is TakeRoiExposures takeRoiExposures)
-                        {
-                            Logger.Debug("Setting exposure time of "+ExposureTime+"..");
-                            takeRoiExposures.ExposureTime = ExposureTime;
-                            Logger.Debug("takeRoiExposures.ExposureTime is now "+takeRoiExposures.ExposureTime);
+                ItemUtility.RetrieveSpeckleContainer(Parent).Items.ToList().ForEach(x => {
+                    if (x is TakeRoiExposures takeRoiExposures)
+                    {
+                        Logger.Debug("Setting exposure time of "+ExposureTime+"..");
+                        takeRoiExposures.ExposureTime = ExposureTime;
+                        Logger.Debug("takeRoiExposures.ExposureTime is now "+takeRoiExposures.ExposureTime);
 
-                        }
-                        else if (x is TakeLiveExposures takeLiveExposures)
-                        {
-                            Logger.Debug("Setting exposure time of "+ExposureTime + "..");
-                            takeLiveExposures.ExposureTime = ExposureTime;
-                            Logger.Debug("takeLiveExposures.ExposureTime is now "+takeLiveExposures.ExposureTime);
-                        }
-                    });
+                    }
+                    else if (x is TakeLiveExposures takeLiveExposures)
+                    {
+                        Logger.Debug("Setting exposure time of "+ExposureTime + "..");
+                        takeLiveExposures.ExposureTime = ExposureTime;
+                        Logger.Debug("takeLiveExposures.ExposureTime is now "+takeLiveExposures.ExposureTime);
+                    }
+                });
             }
             catch (OperationCanceledException)
             {
@@ -363,6 +364,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
         public double Calculate(Telescope telescope, Camera camera, Filter filter, Barlow barlow)
         {
             var speckleTarget = Utility.ItemUtility.RetrieveSpeckleTarget(Parent);
+            var speckleContainer = Utility.ItemUtility.RetrieveSpeckleContainer(Parent);
             double photonshotnoise = 0;
             double darkcurrent = 0;
             double skyglownoise = 0;
@@ -376,6 +378,8 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
             double RNinPE = camera.ReadNoise * Math.Sqrt(Math.Pow(30.0, 2.0) * 0.785);
 
             TruePMag = Math.Min(speckleTarget.PMag, speckleTarget.SMag);
+            // use refMag if this is the reference star
+            TruePMag = speckleContainer.IsRef && speckleTarget.ReferenceStar.v_mag != 0.0 ? speckleTarget.ReferenceStar.v_mag : TruePMag;
             if (TruePMag < 7 || TruePMag > 15) 
                 throw new SequenceEntityFailedException("Calculation requested for "+speckleTarget.Target+", but primary mag is not in range of ASD simulations. Falling back to user's time in list."); 
             Logger.Debug("True Primary is "+TruePMag);
@@ -422,7 +426,8 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
                 // This "Debug iteration" fills up the logs if the target is faint. It should really be removed later, but is the most useful thing for when checking if it's working properly in the first ~1 week of live testing.(todo)
 
             } while (exposureTime < 5.0);
-            throw new SequenceEntityFailedException("Calculation failed for " +speckleTarget.Target+" as exposure time exceeded the maximum (5s).");
+            Notification.ShowInformation("Calculation failed for " + speckleTarget.Target + " as exposure time exceeded the maximum (5s).");
+            return 0d;
         }
         // --- End of calculation methods
 

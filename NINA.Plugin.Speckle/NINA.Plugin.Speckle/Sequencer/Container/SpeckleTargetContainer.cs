@@ -134,6 +134,16 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             }
         }
 
+        private bool _isRef;
+        [JsonProperty]
+        public bool IsRef {
+            get => _isRef;
+            set {
+                _isRef = value;
+                RaisePropertyChanged();
+            }
+        }
+
         [JsonProperty]
         public InputTarget Target {
             get => target;
