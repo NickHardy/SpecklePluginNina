@@ -619,6 +619,7 @@
                             <DataGridTextColumn Width="50" Binding="{Binding PMag}" Header="PMag" />
                             <DataGridTextColumn Width="50" Binding="{Binding SMag}" Header="SMag" />
                             <DataGridTextColumn Width="50" Binding="{Binding Separation}" Header="Sep" />
+                            <DataGridTextColumn Width="50" Binding="{Binding DomeSlitObservationTime}" Header="Time s" />
                             <DataGridTextColumn Width="100" Binding="{Binding ImageTime, StringFormat='{}{0:HH:mm:ss}'}" Header="Best image time" IsReadOnly="True" />
                             <DataGridTemplateColumn
                                 Width="*"
@@ -647,6 +648,7 @@
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
+                            <RowDefinition />
                             <RowDefinition />
                             <RowDefinition />
                             <RowDefinition />
@@ -726,8 +728,21 @@
                             </StackPanel>
 
                         </StackPanel>
-
+                        
                         <StackPanel Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="6" Margin="5" Orientation="Horizontal">
+                            <Button
+                            Height="25"
+                            Width="200"
+                            Margin="0,0,5,0"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Center"
+                            Command="{Binding LoadTargetCommand}">
+                                <TextBlock Padding="5,0" Foreground="{StaticResource ButtonForegroundBrush}" Text="Load selected" />
+                            </Button>
+
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="7" Margin="5" Orientation="Horizontal">
                             <TextBlock VerticalAlignment="Center" Text="Targets total/loaded" />
                             <TextBlock VerticalAlignment="Center" Text=": " />
                             <TextBlock VerticalAlignment="Center" Text="{Binding GdsTargets.Count, Mode=OneWay}" />

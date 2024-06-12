@@ -467,6 +467,20 @@
                             HorizontalAlignment="Right"
                             IsChecked="{Binding ImageFlippedY}">
                     </CheckBox>
+                    
+                    <TextBlock
+                        Margin="7.5,0,7.5,0"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Text="|" />
+                    <TextBlock
+                            VerticalAlignment="Center"
+                            Text="Platesolve" />
+                    <CheckBox
+                            Width="80"
+                            HorizontalAlignment="Right"
+                            IsChecked="{Binding PlatesolveFirst}">
+                    </CheckBox>
 
                 </StackPanel>
             </view:SequenceBlockView.SequenceItemContent>

@@ -581,9 +581,9 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             if (hourEndAngle < hourAngle) {
                 hourEndAngle += 24;
             }
-
+            
             List<AltTime> altList = new List<AltTime>();
-            for (double angle = hourAngle; angle < hourEndAngle; angle += 0.05) {
+            for (double angle = hourAngle; angle < hourEndAngle; angle += speckle.DomePositionLock ? 0.01 : 0.05) {
                 var degAngle = AstroUtil.HoursToDegrees(angle);
                 var altitude = AstroUtil.GetAltitude(degAngle, profileService.ActiveProfile.AstrometrySettings.Latitude, coords.Dec);
                 var azimuth = AstroUtil.GetAzimuth(degAngle, altitude, profileService.ActiveProfile.AstrometrySettings.Latitude, coords.Dec);
@@ -594,7 +594,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                 // Run the whole thing and get the top value
                 if (altitude > horizonAltitude)
                     altList.Add(new AltTime(altitude, azimuth, degAngle, start, AstroUtil.Airmass(altitude), CalculateSeparation(start, coords)));
-                start = start.AddHours(0.05);
+                start = start.AddHours(speckle.DomePositionLock ? 0.01 : 0.05);
             }
             return altList;
         }

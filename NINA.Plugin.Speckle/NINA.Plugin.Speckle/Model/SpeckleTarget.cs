@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using NINA.Plugin.Speckle.Sequencer.Container;
 using System.Linq;
 using System.Threading;
+using System.Runtime.ExceptionServices;
 
 namespace NINA.Plugin.Speckle.Model {
 
@@ -94,6 +95,8 @@ namespace NINA.Plugin.Speckle.Model {
         [JsonProperty]
         public List<AltTime> DomeSlitAltTimeList { get; set; } = new List<AltTime>();
         [JsonProperty]
+        public double DomeSlitObservationTime { get; set; }
+        [JsonProperty]
         public bool ImageTarget { get; set; } = true;
         [JsonProperty]
         public string Note { get; set; }
@@ -166,6 +169,12 @@ namespace NINA.Plugin.Speckle.Model {
                 .Where(x => x.alt > speckle.AltitudeMin && x.alt < speckle.AltitudeMax)
                 .Where(x => x.airmass > this.AirmassMin && x.airmass < this.AirmassMax)
                 .ToList();
+
+            if (DomeSlitAltTimeList.Count > 0) {
+                var firstTime = DomeSlitAltTimeList.OrderBy(x => x.datetime).First().datetime;
+                var lastTime = DomeSlitAltTimeList.OrderBy(x => x.datetime).Last().datetime;
+                DomeSlitObservationTime = (lastTime - firstTime).TotalSeconds;
+            }
         }
     }
 

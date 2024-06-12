@@ -7,8 +7,8 @@ using System.Runtime.InteropServices;
 
 // [MANDATORY] The assembly versioning
 //Should be incremented for each new release build of a plugin
-[assembly: AssemblyVersion("2.0.1.0")]
-[assembly: AssemblyFileVersion("2.0.1.0")]
+[assembly: AssemblyVersion("2.1.0.0")]
+[assembly: AssemblyFileVersion("2.1.0.0")]
 
 // [MANDATORY] The name of your plugin
 [assembly: AssemblyTitle("Speckle Interferometry")]
@@ -19,7 +19,7 @@ using System.Runtime.InteropServices;
 // The following attributes are not required for the plugin per se, but are required by the official manifest meta data
 
 // Your name
-[assembly: AssemblyCompany("NickHardy")]
+[assembly: AssemblyCompany("Nick Hardy & Leon Bewersdorff")]
 // The product name that this plugin is part of
 [assembly: AssemblyProduct("Speckle Interferometry")]
 [assembly: AssemblyCopyright("")]
@@ -82,9 +82,8 @@ Videos explaning double star observing and speckle interferometry can be found h
   This instruction can be used to platesolve the image and set the position of the Roi image to fit the target in the Speckle Target Container.
   Make sure the focal length and pixelsize are filled in correctly.
 
-* Calculate exposure time (Still under development)  
-  Use this instruction to check if your Roi image is not to bright. The speckle star should not exceed 1/3 of the camera ADU.
-  The max time will be set to the ExposureTime set for the target in the list container. It will check the brightness and lower the exposuretime until it reaches the target ADU.
+* Calculate exposure time  
+  Use this instruction to calculate the exposure needed to get enough signal in your speckle images. Make sure to enter all the correct values for the scope in the options.
   When it finds a good exposure time it will copy that time into the 'Take Video Roi Exposures' and 'Take Roi Exposures' instructions in the same Speckle Target Container.
 
 * Take Video Roi Exposures  
@@ -138,7 +137,7 @@ For listing targets and processing data the following programs can be used by co
   Currently there's no way to upload data to the WDS catalog. The way to get data into the catalog is to write an academic paper en submit it to [jdso](http://www.jdso.org/).
   Hopefully in future it will be possible to upload data for submission to the WDS catalog. (Still working on that)
 
-A big thank you goes out to Leon(@lbew#3670) for testing this plugin with me. 
+A big thank you goes out to Leon(@lbew#3670) for testing this plugin with me and adding the exposure calculation to the plugin.
 Also many thanks to the members and friends of Fairborn Institute for all the input given to create this plugin and to Planewave for trusting me with two of their scopes.
 
 I'd also like to thank Jocelyn Serot, for his help with image processing. You can visit his [website](http://www.astrosurf.com/legalet/Astro/Welcome.html) or try out his [LiveSpeckle plugin](http://www.astrosurf.com/legalet/Astro/LiveSpeckle.html) for [Genika Astro](https://airylab.com/genika-astro/).
