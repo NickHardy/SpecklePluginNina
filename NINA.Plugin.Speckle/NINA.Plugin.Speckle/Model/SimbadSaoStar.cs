@@ -22,7 +22,7 @@ using System.Collections.Generic;
 namespace NINA.Plugin.Speckle.Model {
 
     [JsonObject(MemberSerialization.OptIn)]
-    public class SimbadSaoStar {
+    public class SimbadSaoStar : TargetBase {
         public SimbadSaoStar(List<object> obj) {
             main_id = (string)obj[0];
             ra = Convert.ToDouble(obj[1]);

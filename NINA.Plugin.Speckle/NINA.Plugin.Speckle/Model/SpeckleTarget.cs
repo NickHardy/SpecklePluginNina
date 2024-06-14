@@ -26,11 +26,8 @@ using System.Runtime.ExceptionServices;
 namespace NINA.Plugin.Speckle.Model {
 
     [JsonObject(MemberSerialization.OptIn)]
-    public class SpeckleTarget {
-        static int nextId;
-        public int TargetId { get; private set; }
+    public class SpeckleTarget : TargetBase {
         public SpeckleTarget() {
-            TargetId = Interlocked.Increment(ref nextId);
         }
 
         [JsonProperty]
@@ -91,17 +88,13 @@ namespace NINA.Plugin.Speckle.Model {
         [JsonProperty]
         public double MinAltitude { get; set; } = 0d;
 
-        public List<AltTime> AltList { get; set; } = new List<AltTime>();
-        [JsonProperty]
-        public List<AltTime> DomeSlitAltTimeList { get; set; } = new List<AltTime>();
-        [JsonProperty]
-        public double DomeSlitObservationTime { get; set; }
         [JsonProperty]
         public bool ImageTarget { get; set; } = true;
         [JsonProperty]
         public string Note { get; set; }
 
         public List<SimbadSaoStar> ReferenceStarList { get; set; }
+        [JsonProperty]
         public SimbadSaoStar ReferenceStar { get; set; } = new SimbadSaoStar();
 
         public List<SimbadStarCluster> StarClusterList { get; set; }
@@ -121,61 +114,9 @@ namespace NINA.Plugin.Speckle.Model {
             return new Coordinates(Angle.ByDegree(RaDeg), Angle.ByDegree(DecDeg), Epoch.J2000);
         }
 
-        public AltTime MeridianAltTime() {
-            return AltList.OrderByDescending((x) => x.alt).FirstOrDefault();
-        }
-
-        public AltTime ImageFrom(double alt = 40d) {
-            return AltList.Where(x => x.datetime > DateTime.Now).Where((x) => x.alt > alt).OrderBy((x) => x.alt).FirstOrDefault();
-        }
-
         public DateTime ImageTime { get; set; }
         public DateTime? ImagedAt { get; set; }
         public double ImageTimeAlt { get; set; }
-        public AltTime ImageTo(NighttimeData nighttimeData, double alt = 90d, double mDistance = 5d, double airmassMin = 0d, double airmassMax = 4d, double distanceToMoon = 20d) {
-            DateTime twilightSet = nighttimeData.NauticalTwilightRiseAndSet.Set ?? DateTime.Now;
-            DateTime twilightRise = nighttimeData.NauticalTwilightRiseAndSet.Rise ?? DateTime.Now.AddHours(24);
-            DateTime minTime = new DateTime(Math.Max(twilightSet.Ticks, DateTime.Now.Ticks));
-            return AltList.Where(x => x.datetime > minTime && x.datetime < twilightRise.AddMinutes(-15))
-                .Where(x => x.alt <= alt)
-                .Where(x => x.airmass >= airmassMin)
-                .Where(x => x.airmass <= airmassMax)
-                .Where(x => x.distanceToMoon >= distanceToMoon)
-                .Where(x => x.deg <= MeridianAltTime().deg - mDistance || x.deg >= MeridianAltTime().deg + mDistance)
-                .OrderByDescending(x => x.alt).FirstOrDefault();
-        }
-
-        public AltTime getCurrentAltTime(double alt = 90d, double mDistance = 5d) {
-            DateTime begin = DateTime.Now;
-            DateTime end = DateTime.Now.AddMinutes(8);
-            return AltList
-                .Where(x => x.datetime > begin && x.datetime < end)
-                .Where(x => x.alt < alt)
-                .Where(x => x.deg < MeridianAltTime().deg - mDistance || x.deg > MeridianAltTime().deg + mDistance)
-                .OrderByDescending(x => x.alt).FirstOrDefault();
-        }
-
-        public AltTime getCurrentDomeAltTime() {
-            DateTime begin = DateTime.Now;
-            DateTime end = DateTime.Now.AddMinutes(8);
-            return DomeSlitAltTimeList
-                .Where(x => x.datetime > begin && x.datetime < end)
-                .OrderBy(x => x.datetime).FirstOrDefault();
-        }
-
-        public void setDomeSlitAltTimeList(Speckle speckle, double begin, double end) {
-            DomeSlitAltTimeList = AltList
-                .Where(x => x.az > begin && x.az < end)
-                .Where(x => x.alt > speckle.AltitudeMin && x.alt < speckle.AltitudeMax)
-                .Where(x => x.airmass > this.AirmassMin && x.airmass < this.AirmassMax)
-                .ToList();
-
-            if (DomeSlitAltTimeList.Count > 0) {
-                var firstTime = DomeSlitAltTimeList.OrderBy(x => x.datetime).First().datetime;
-                var lastTime = DomeSlitAltTimeList.OrderBy(x => x.datetime).Last().datetime;
-                DomeSlitObservationTime = (lastTime - firstTime).TotalSeconds;
-            }
-        }
     }
 
     public sealed class SpeckleTargetMap : ClassMap<SpeckleTarget> {
