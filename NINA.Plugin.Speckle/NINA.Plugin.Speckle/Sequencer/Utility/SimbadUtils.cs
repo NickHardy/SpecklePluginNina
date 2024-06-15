@@ -28,6 +28,7 @@ using System.Net;
 using System.IO;
 using Newtonsoft.Json;
 using NINA.Core.Utility.Notification;
+using System.Net.Http;
 
 namespace NINA.Plugin.Speckle.Sequencer.Utility {
 
@@ -66,15 +67,15 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
             return Task.FromResult(starClusters);
         }
 
-    public Task<List<SimbadSaoStar>> FindSimbadSaoStars(IProgress<ApplicationStatus> externalProgress, CancellationToken token, Coordinates coords, double maxDistance = 5d, double targetMag = 8.0d, double maxMag = 10.0d) {
-        List<SimbadSaoStar> stars = new List<SimbadSaoStar>();
+    public Task<List<SimbadStar>> FindSimbadSaoStars(IProgress<ApplicationStatus> externalProgress, CancellationToken token, Coordinates coords, double maxDistance = 5d, double targetMag = 8.0d, double maxMag = 10.0d) {
+        List<SimbadStar> stars = new List<SimbadStar>();
         try {
             using (var localCTS = CancellationTokenSource.CreateLinkedTokenSource(token)) {
                 localCTS.CancelAfter(TimeSpan.FromSeconds(30));
                 externalProgress.Report(new ApplicationStatus() { Status = "Retrieving stars in the SAO catalogue from Simbad" });
                 var url = "http://simbad.u-strasbg.fr/simbad/sim-tap/sync";
 
-                string query = "SELECT TOP 10 basic.main_id, basic.ra, basic.dec, basic.otype_txt, allfluxes.v, allfluxes.b - allfluxes.v AS color, DISTANCE(POINT('ICRS', " + coords.RADegrees + ", " + coords.Dec + "), POINT('ICRS', basic.ra, basic.dec)) as dist " +
+                string query = $"SELECT TOP 10 basic.main_id, basic.ra, basic.dec, basic.otype_txt, allfluxes.v, allfluxes.b - allfluxes.v AS color, DISTANCE(POINT('ICRS', {coords.RADegrees}, {coords.Dec}), POINT('ICRS', basic.ra, basic.dec)) as dist " +
                                "FROM basic " +
                                "JOIN ident ON (basic.oid = ident.oidref) " +
                                "JOIN allfluxes USING (oidref) " +
@@ -96,7 +97,15 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
                 VoTable voTable = PostForm(url, dictionary);
                 if (voTable != null) {
                     foreach (List<object> obj in voTable.Data) {
-                        stars.Add(new SimbadSaoStar(obj));
+                        SimbadStar star = new SimbadStar {
+                            main_id = obj[0].ToString(),
+                            ra = Convert.ToDouble(obj[1]),
+                            dec = Convert.ToDouble(obj[2]),
+                            v_mag = Convert.ToDouble(obj[4]),
+                            color = Convert.ToDouble(obj[5]),
+                            distance = Convert.ToDouble(obj[6])
+                        };
+                        stars.Add(star);
                     }
                 }
             }
@@ -110,6 +119,52 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
         return Task.FromResult(stars);
     }
 
+    public async Task<SimbadStarDetails> GetStarByPosition(IProgress<ApplicationStatus> externalProgress, CancellationToken token, double ra, double dec, double targetMag) {
+        SimbadStarDetails starDetails = null;
+        try {
+            using (var localCTS = CancellationTokenSource.CreateLinkedTokenSource(token)) {
+                localCTS.CancelAfter(TimeSpan.FromSeconds(30));
+                externalProgress.Report(new ApplicationStatus() { Status = "Retrieving target star data from Simbad" });
+                var url = "http://simbad.u-strasbg.fr/simbad/sim-tap/sync";
+                var query = $"SELECT TOP 1 basic.main_id, basic.ra, basic.dec, basic.otype_txt, allfluxes.b, allfluxes.v, allfluxes.b - allfluxes.v AS color, DISTANCE(POINT('ICRS', basic.ra, basic.dec), POINT('ICRS', {ra}, {dec})) AS \"distance\" " +
+                            $"FROM basic " +
+                            $"JOIN allfluxes ON (basic.oid = allfluxes.oidref) " +
+                            $"WHERE allfluxes.v BETWEEN {targetMag - 0.5} AND {targetMag + 0.5} " +
+                            $"AND DISTANCE(POINT('ICRS', basic.ra, basic.dec), POINT('ICRS', {ra}, {dec})) <= 0.083333 " +  // 5 arcmin in °
+                            $"ORDER BY \"distance\";";
+
+                Dictionary<string, string> dictionary = new Dictionary<string, string>
+                {
+                    ["request"] = "doQuery",
+                    ["lang"] = "adql",
+                    ["format"] = "json",
+                    ["query"] = query
+                };
+
+                VoTable voTable = await PostForm(url, dictionary, localCTS.Token);
+                if (voTable != null && voTable.Data.Count > 0) {
+                    var obj = voTable.Data.First();
+                    starDetails = new SimbadStarDetails {
+                        main_id = obj[0].ToString(),
+                        ra = Convert.ToDouble(obj[1]),
+                        dec = Convert.ToDouble(obj[2]),
+                        otype_txt = obj[3].ToString(),
+                        b_mag = Convert.ToDouble(obj[4]),
+                        v_mag = Convert.ToDouble(obj[5]),
+                        color = Convert.ToDouble(obj[6]),
+                        distance = Convert.ToDouble(obj[7])
+                    };
+                }
+            }
+        } catch (OperationCanceledException) {
+        } catch (Exception ex) {
+            Logger.Error(ex);
+            Notification.ShowError(ex.Message);
+        } finally {
+            externalProgress.Report(new ApplicationStatus() { Status = "Completed" });
+        }
+        return starDetails;
+    }
 
         public Task<List<SimbadBinaryStar>> FindSimbadBinaryStars(IProgress<ApplicationStatus> externalProgress, CancellationToken token, Coordinates coords, double maxDistance = 5d) {
             List<SimbadBinaryStar> stars = new List<SimbadBinaryStar>();

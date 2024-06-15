@@ -93,9 +93,9 @@ namespace NINA.Plugin.Speckle.Model {
         [JsonProperty]
         public string Note { get; set; }
 
-        public List<SimbadSaoStar> ReferenceStarList { get; set; }
+        public List<SimbadStar> ReferenceStarList { get; set; }
         [JsonProperty]
-        public SimbadSaoStar ReferenceStar { get; set; } = new SimbadSaoStar();
+        public SimbadStar ReferenceStar { get; set; } = new SimbadStar();
 
         public List<SimbadStarCluster> StarClusterList { get; set; }
         public SimbadStarCluster StarCluster { get; set; } = new SimbadStarCluster();

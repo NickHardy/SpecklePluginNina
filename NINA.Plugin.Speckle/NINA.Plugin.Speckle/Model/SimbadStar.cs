@@ -22,8 +22,8 @@ using System.Collections.Generic;
 namespace NINA.Plugin.Speckle.Model {
 
     [JsonObject(MemberSerialization.OptIn)]
-    public class SimbadSaoStar : TargetBase {
-        public SimbadSaoStar(List<object> obj) {
+    public class SimbadStar : TargetBase {
+        public SimbadStar(List<object> obj) {
             main_id = (string)obj[0];
             ra = Convert.ToDouble(obj[1]);
             dec = Convert.ToDouble(obj[2]);
@@ -31,7 +31,7 @@ namespace NINA.Plugin.Speckle.Model {
             distance = Convert.ToDouble(obj[4]);
         }
 
-        public SimbadSaoStar() {
+        public SimbadStar() {
             main_id = "";
         }
 
@@ -45,6 +45,8 @@ namespace NINA.Plugin.Speckle.Model {
         public double v_mag { get; set; }
         [JsonProperty]
         public double distance { get; set; }
+        [JsonProperty]
+        public double color { get; set; }
 
         public Coordinates Coordinates() {
             return new Coordinates(Angle.ByDegree(ra), Angle.ByDegree(dec), Epoch.J2000);
