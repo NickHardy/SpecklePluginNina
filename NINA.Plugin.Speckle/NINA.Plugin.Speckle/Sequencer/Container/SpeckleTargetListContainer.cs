@@ -114,7 +114,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             RetrieveTemplates();
             OpenFileCommand = new GalaSoft.MvvmLight.Command.RelayCommand<bool>((o) => { using (executeCTS = new CancellationTokenSource()) { OpenFile(); } });
             DropTargetCommand = new GalaSoft.MvvmLight.Command.RelayCommand<object>(DropTarget);
-            LoadTargetCommand = new GalaSoft.MvvmLight.Command.RelayCommand<object>(LoadTarget);
+            LoadTargetCommand = new GalaSoft.MvvmLight.Command.RelayCommand(LoadTarget);
             DeleteTargetCommand = new GalaSoft.MvvmLight.Command.RelayCommand<object>(DeleteTarget);
         }
 
@@ -226,8 +226,12 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             }
         }
 
-        public void LoadTarget(Object o) {
-            Logger.Debug("Object" + o.GetType()); // Add SpeckleTarget to the sequence
+        public void LoadTarget() {
+            var templateName = string.IsNullOrWhiteSpace(SpeckleTarget.Template) ? speckle.DefaultTemplate : SpeckleTarget.Template;
+            LoadSpeckleTarget(templateName);
+
+            var refTemplateName = string.IsNullOrWhiteSpace(SpeckleTarget.TemplateRef) ? speckle.DefaultRefTemplate : SpeckleTarget.TemplateRef;
+            LoadReferenceTarget(string.IsNullOrWhiteSpace(refTemplateName) ? templateName : refTemplateName);
         }
         public void DeleteTarget(Object o) {
             Logger.Debug("Object" + o.GetType());
@@ -263,118 +267,24 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             CurrentSpeckleTarget = SpeckleTarget;
             TargetNr++;
 
-            var templates = sequenceMediator.GetDeepSkyObjectContainerTemplates();
+            var templateName = string.IsNullOrWhiteSpace(SpeckleTarget.Template) ? speckle.DefaultTemplate : SpeckleTarget.Template;
+            LoadSpeckleTarget(templateName);
 
-            // Set target
-            var template = templates.FirstOrDefault(x => x.Name == (string.IsNullOrWhiteSpace(SpeckleTarget.Template) ? speckle.DefaultTemplate : SpeckleTarget.Template));
-            if (template == null) {
-                Notification.ShowError("No template found. Check the selected template: " + SpeckleTarget.Template);
-                return false;
-            }
-            SpeckleTargetContainer speckleTargetContainer = (SpeckleTargetContainer)template.Clone();
-            speckleTargetContainer.Target = new InputTarget(Angle.ByDegree(profileService.ActiveProfile.AstrometrySettings.Latitude), Angle.ByDegree(profileService.ActiveProfile.AstrometrySettings.Longitude), profileService.ActiveProfile.AstrometrySettings.Horizon) {
-                TargetName = SpeckleTarget.Target + "_c" + (SpeckleTarget.Completed_cycles + 1),
-                InputCoordinates = new InputCoordinates() {
-                    Coordinates = SpeckleTarget.Coordinates()
-                },
-                PositionAngle = SpeckleTarget.Rotation
-            };
-            speckleTargetContainer.Title = SpeckleTarget.User;
-            speckleTargetContainer.IsRef = false;
-            speckleTargetContainer.Name = SpeckleTarget.User + "_" + SpeckleTarget.Target + "_c" + (SpeckleTarget.Completed_cycles + 1);
-            speckleTargetContainer.Items.ToList().ForEach(x => {
-                if (x is TakeRoiExposures takeRoiExposures) {
-                    takeRoiExposures.ExposureTime = SpeckleTarget.ExposureTime;
-                    takeRoiExposures.TotalExposureCount = SpeckleTarget.Exposures;
-                }
-                if (x is TakeLiveExposures takeLiveExposures) {
-                    takeLiveExposures.ExposureTime = SpeckleTarget.ExposureTime;
-                    takeLiveExposures.TotalExposureCount = SpeckleTarget.Exposures;
-                }
-                if (x is WaitForTime waitForTime) {
-                    waitForTime.Hours = SpeckleTarget.ImageTime.Hour;
-                    waitForTime.Minutes = SpeckleTarget.ImageTime.Minute;
-                    waitForTime.Seconds = SpeckleTarget.ImageTime.Second;
-                }
-                if (x is SwitchFilter switchFilter && SpeckleTarget.Filter != null && SpeckleTarget.Filter != "-" && SpeckleTarget.Filter.Length > 0) {
-                    switchFilter.Filter = Filters?.FirstOrDefault(f => f.Name == SpeckleTarget.Filter);
-                }
-                if (x is MoveRotatorMechanical rotatorMechanical) {
-                    rotatorMechanical.MechanicalPosition = (float)SpeckleTarget.Rotation;
-                }
-            });
-            _ = _dispatcher.BeginInvoke(DispatcherPriority.Send, new Action(() => {
-                lock (Items) {
-                    this.InsertIntoSequenceBlocks(100, speckleTargetContainer);
-                    Logger.Debug("Adding target container: " + speckleTargetContainer);
-                }
-            }));
+            var refTemplateName = string.IsNullOrWhiteSpace(SpeckleTarget.TemplateRef) ? speckle.DefaultRefTemplate : SpeckleTarget.TemplateRef;
+            LoadReferenceTarget(string.IsNullOrWhiteSpace(refTemplateName) ? templateName : refTemplateName);
 
-            // Set Reference
-            var templateRef = templates.FirstOrDefault(x => x.Name == (string.IsNullOrWhiteSpace(SpeckleTarget.TemplateRef) ? speckle.DefaultRefTemplate : SpeckleTarget.TemplateRef));
-            if (templateRef == null) {
-                templateRef = template;
-            }
-            using (executeCTS = new CancellationTokenSource()) {
-                RetrieveReferenceStars(new Progress<ApplicationStatus>(p => AppStatus = p), executeCTS.Token);
-            }
-            if (SpeckleTarget.ReferenceStar != null && SpeckleTarget.ReferenceStar.main_id != "") {
-                SpeckleTargetContainer speckleTargetContainerRef = (SpeckleTargetContainer)templateRef.Clone();
-                speckleTargetContainerRef.Target = new InputTarget(Angle.ByDegree(profileService.ActiveProfile.AstrometrySettings.Latitude), Angle.ByDegree(profileService.ActiveProfile.AstrometrySettings.Longitude), profileService.ActiveProfile.AstrometrySettings.Horizon) {
-                    TargetName = SpeckleTarget.Target + "_c" + (SpeckleTarget.Completed_cycles + 1) + "_ref_" + SpeckleTarget.ReferenceStar.main_id,
-                    InputCoordinates = new InputCoordinates() {
-                        Coordinates = SpeckleTarget.ReferenceStar.Coordinates()
-                    },
-                    PositionAngle = SpeckleTarget.Rotation
-                };
-                speckleTargetContainerRef.Title = SpeckleTarget.User;
-                speckleTargetContainerRef.IsRef = true;
-                speckleTargetContainerRef.Name = SpeckleTarget.User + "_" + SpeckleTarget.Target + "_" + (SpeckleTarget.Completed_cycles + 1) + "_ref_" + SpeckleTarget.ReferenceStar.main_id;
-                speckleTargetContainerRef.Items.ToList().ForEach(x => {
-                    if (x is CalculateExposure calculateExposure)
-                    {
-                        calculateExposure.ExposureTime = SpeckleTarget.ExposureTime;
-                    }
-                    if (x is TakeRoiExposures takeRoiExposures) {
-                        takeRoiExposures.ExposureTime = SpeckleTarget.ExposureTime;
-                        takeRoiExposures.TotalExposureCount = Math.Min(speckle.ReferenceExposures, SpeckleTarget.Exposures);
-                    }
-                    if (x is TakeLiveExposures takeLiveExposures) {
-                        takeLiveExposures.ExposureTime = SpeckleTarget.ExposureTime;
-                        takeLiveExposures.TotalExposureCount = Math.Min(speckle.ReferenceExposures, SpeckleTarget.Exposures);
-                    }
-                    if (x is WaitForTime waitForTime) {
-                        waitForTime.Hours = SpeckleTarget.ImageTime.Hour;
-                        waitForTime.Minutes = SpeckleTarget.ImageTime.Minute;
-                        waitForTime.Seconds = SpeckleTarget.ImageTime.Second;
-                    }
-                    if (x is SwitchFilter switchFilter && SpeckleTarget.Filter != null && SpeckleTarget.Filter != "-" && SpeckleTarget.Filter.Length > 0) {
-                        switchFilter.Filter = Filters?.FirstOrDefault(f => f.Name == SpeckleTarget.Filter);
-                    }
-                    if (x is MoveRotatorMechanical rotatorMechanical) {
-                        rotatorMechanical.MechanicalPosition = (float)SpeckleTarget.Rotation;
-                    }
-                });
-
-                _ = _dispatcher.BeginInvoke(DispatcherPriority.Send, new Action(() => {
-                    lock (Items) {
-                        this.InsertIntoSequenceBlocks(100, speckleTargetContainerRef);
-                        Logger.Debug("Adding reference container: " + speckleTargetContainerRef);
-                    }
-                }));
-            }
             RaiseAllPropertiesChanged();
             return true;
         }
 
-        private void LoadSpeckleTarget() {
+        private void LoadSpeckleTarget(string templateName) {
 
             var templates = sequenceMediator.GetDeepSkyObjectContainerTemplates();
 
             // Set target
-            var template = templates.FirstOrDefault(x => x.Name == (string.IsNullOrWhiteSpace(SpeckleTarget.Template) ? speckle.DefaultTemplate : SpeckleTarget.Template));
+            var template = templates.FirstOrDefault(x => x.Name == templateName);
             if (template == null) {
-                Notification.ShowError("No template found. Check the selected template: " + SpeckleTarget.Template);
+                Notification.ShowError("No template found. Check the selected template: " + templateName);
             }
             else {
                 SpeckleTargetContainer speckleTargetContainer = (SpeckleTargetContainer)template.Clone();
@@ -418,58 +328,64 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             }
         }
 
-        private void LoadReferenceTarget() {
+        private void LoadReferenceTarget(string templateName) {
             var templates = sequenceMediator.GetDeepSkyObjectContainerTemplates();
 
             // Set Reference
-            var templateRef = templates.FirstOrDefault(x => x.Name == (string.IsNullOrWhiteSpace(SpeckleTarget.TemplateRef) ? speckle.DefaultRefTemplate : SpeckleTarget.TemplateRef));
+            var templateRef = templates.FirstOrDefault(x => x.Name == templateName);
 
-            using (executeCTS = new CancellationTokenSource()) {
-                RetrieveReferenceStars(new Progress<ApplicationStatus>(p => AppStatus = p), executeCTS.Token);
+            var template = templates.FirstOrDefault(x => x.Name == templateName);
+            if (template == null) {
+                Notification.ShowError("No template found. Check the selected template: " + templateName);
             }
-            if (SpeckleTarget.ReferenceStar != null && SpeckleTarget.ReferenceStar.main_id != "") {
-                SpeckleTargetContainer speckleTargetContainerRef = (SpeckleTargetContainer)templateRef.Clone();
-                speckleTargetContainerRef.Target = new InputTarget(Angle.ByDegree(profileService.ActiveProfile.AstrometrySettings.Latitude), Angle.ByDegree(profileService.ActiveProfile.AstrometrySettings.Longitude), profileService.ActiveProfile.AstrometrySettings.Horizon) {
-                    TargetName = SpeckleTarget.Target + "_c" + (SpeckleTarget.Completed_cycles + 1) + "_ref_" + SpeckleTarget.ReferenceStar.main_id,
-                    InputCoordinates = new InputCoordinates() {
-                        Coordinates = SpeckleTarget.ReferenceStar.Coordinates()
-                    },
-                    PositionAngle = SpeckleTarget.Rotation
-                };
-                speckleTargetContainerRef.Title = SpeckleTarget.User;
-                speckleTargetContainerRef.IsRef = true;
-                speckleTargetContainerRef.Name = SpeckleTarget.User + "_" + SpeckleTarget.Target + "_" + (SpeckleTarget.Completed_cycles + 1) + "_ref_" + SpeckleTarget.ReferenceStar.main_id;
-                speckleTargetContainerRef.Items.ToList().ForEach(x => {
-                    if (x is CalculateExposure calculateExposure) {
-                        calculateExposure.ExposureTime = SpeckleTarget.ExposureTime;
-                    }
-                    if (x is TakeRoiExposures takeRoiExposures) {
-                        takeRoiExposures.ExposureTime = SpeckleTarget.ExposureTime;
-                        takeRoiExposures.TotalExposureCount = Math.Min(speckle.ReferenceExposures, SpeckleTarget.Exposures);
-                    }
-                    if (x is TakeLiveExposures takeLiveExposures) {
-                        takeLiveExposures.ExposureTime = SpeckleTarget.ExposureTime;
-                        takeLiveExposures.TotalExposureCount = Math.Min(speckle.ReferenceExposures, SpeckleTarget.Exposures);
-                    }
-                    if (x is WaitForTime waitForTime) {
-                        waitForTime.Hours = SpeckleTarget.ImageTime.Hour;
-                        waitForTime.Minutes = SpeckleTarget.ImageTime.Minute;
-                        waitForTime.Seconds = SpeckleTarget.ImageTime.Second;
-                    }
-                    if (x is SwitchFilter switchFilter && SpeckleTarget.Filter != null && SpeckleTarget.Filter != "-" && SpeckleTarget.Filter.Length > 0) {
-                        switchFilter.Filter = Filters?.FirstOrDefault(f => f.Name == SpeckleTarget.Filter);
-                    }
-                    if (x is MoveRotatorMechanical rotatorMechanical) {
-                        rotatorMechanical.MechanicalPosition = (float)SpeckleTarget.Rotation;
-                    }
-                });
+            else {
+                using (executeCTS = new CancellationTokenSource()) {
+                    RetrieveReferenceStars(new Progress<ApplicationStatus>(p => AppStatus = p), executeCTS.Token);
+                }
+                if (SpeckleTarget.ReferenceStar != null && SpeckleTarget.ReferenceStar.main_id != "") {
+                    SpeckleTargetContainer speckleTargetContainerRef = (SpeckleTargetContainer)templateRef.Clone();
+                    speckleTargetContainerRef.Target = new InputTarget(Angle.ByDegree(profileService.ActiveProfile.AstrometrySettings.Latitude), Angle.ByDegree(profileService.ActiveProfile.AstrometrySettings.Longitude), profileService.ActiveProfile.AstrometrySettings.Horizon) {
+                        TargetName = SpeckleTarget.Target + "_c" + (SpeckleTarget.Completed_cycles + 1) + "_ref_" + SpeckleTarget.ReferenceStar.main_id,
+                        InputCoordinates = new InputCoordinates() {
+                            Coordinates = SpeckleTarget.ReferenceStar.Coordinates()
+                        },
+                        PositionAngle = SpeckleTarget.Rotation
+                    };
+                    speckleTargetContainerRef.Title = SpeckleTarget.User;
+                    speckleTargetContainerRef.IsRef = true;
+                    speckleTargetContainerRef.Name = SpeckleTarget.User + "_" + SpeckleTarget.Target + "_" + (SpeckleTarget.Completed_cycles + 1) + "_ref_" + SpeckleTarget.ReferenceStar.main_id;
+                    speckleTargetContainerRef.Items.ToList().ForEach(x => {
+                        if (x is CalculateExposure calculateExposure) {
+                            calculateExposure.ExposureTime = SpeckleTarget.ExposureTime;
+                        }
+                        if (x is TakeRoiExposures takeRoiExposures) {
+                            takeRoiExposures.ExposureTime = SpeckleTarget.ExposureTime;
+                            takeRoiExposures.TotalExposureCount = Math.Min(speckle.ReferenceExposures, SpeckleTarget.Exposures);
+                        }
+                        if (x is TakeLiveExposures takeLiveExposures) {
+                            takeLiveExposures.ExposureTime = SpeckleTarget.ExposureTime;
+                            takeLiveExposures.TotalExposureCount = Math.Min(speckle.ReferenceExposures, SpeckleTarget.Exposures);
+                        }
+                        if (x is WaitForTime waitForTime) {
+                            waitForTime.Hours = SpeckleTarget.ImageTime.Hour;
+                            waitForTime.Minutes = SpeckleTarget.ImageTime.Minute;
+                            waitForTime.Seconds = SpeckleTarget.ImageTime.Second;
+                        }
+                        if (x is SwitchFilter switchFilter && SpeckleTarget.Filter != null && SpeckleTarget.Filter != "-" && SpeckleTarget.Filter.Length > 0) {
+                            switchFilter.Filter = Filters?.FirstOrDefault(f => f.Name == SpeckleTarget.Filter);
+                        }
+                        if (x is MoveRotatorMechanical rotatorMechanical) {
+                            rotatorMechanical.MechanicalPosition = (float)SpeckleTarget.Rotation;
+                        }
+                    });
 
-                _ = _dispatcher.BeginInvoke(DispatcherPriority.Send, new Action(() => {
-                    lock (Items) {
-                        this.InsertIntoSequenceBlocks(100, speckleTargetContainerRef);
-                        Logger.Debug("Adding reference container: " + speckleTargetContainerRef);
-                    }
-                }));
+                    _ = _dispatcher.BeginInvoke(DispatcherPriority.Send, new Action(() => {
+                        lock (Items) {
+                            this.InsertIntoSequenceBlocks(100, speckleTargetContainerRef);
+                            Logger.Debug("Adding reference container: " + speckleTargetContainerRef);
+                        }
+                    }));
+                }
             }
         }
 
