@@ -222,7 +222,7 @@
                 Margin="5,0,0,0"
                 HorizontalAlignment="Left"
                 VerticalAlignment="Center"
-                Text="{Binding DefaultTemplateRef}" />
+                Text="{Binding DefaultRefTemplate}" />
 
                             <TextBlock Grid.Row="5" Grid.Column="0" VerticalAlignment="Center" Text="Default User" />
                             <TextBox

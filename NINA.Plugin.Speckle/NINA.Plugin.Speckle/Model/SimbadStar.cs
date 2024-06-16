@@ -47,6 +47,10 @@ namespace NINA.Plugin.Speckle.Model {
         public double distance { get; set; }
         [JsonProperty]
         public double color { get; set; }
+        [JsonProperty]
+        public string otype_txt { get; set; }
+        [JsonProperty]
+        public double b_mag { get; set; }
 
         public Coordinates Coordinates() {
             return new Coordinates(Angle.ByDegree(ra), Angle.ByDegree(dec), Epoch.J2000);

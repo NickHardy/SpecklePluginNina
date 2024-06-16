@@ -507,4 +507,27 @@
         </view:SequenceBlockView>
     </DataTemplate>
 
+    <DataTemplate x:Key="NINA.Plugin.Speckle.Sequencer.SequenceItem.LoadReferenceStar_Mini">
+        <mini:MiniSequenceItem>
+            <mini:MiniSequenceItem.SequenceItemContent>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock VerticalAlignment="Center" Text="{Binding SelectedReferenceStar}" />
+                </StackPanel>
+            </mini:MiniSequenceItem.SequenceItemContent>
+        </mini:MiniSequenceItem>
+    </DataTemplate>
+
+    <DataTemplate DataType="{x:Type local:LoadReferenceStar}">
+        <view:SequenceBlockView>
+            <view:SequenceBlockView.SequenceItemContent>
+                <ComboBox
+                    ItemsSource="{Binding ReferenceStarList, Mode=TwoWay}"
+                    SelectedItem="{Binding SimbadStar, Mode=TwoWay}"
+                    SelectedValue="{Binding SimbadStarMainId, Mode=TwoWay}"
+                    SelectedValuePath="main_id"
+                    DisplayMemberPath="main_id"/>
+            </view:SequenceBlockView.SequenceItemContent>
+        </view:SequenceBlockView>
+    </DataTemplate>
+
 </ResourceDictionary>

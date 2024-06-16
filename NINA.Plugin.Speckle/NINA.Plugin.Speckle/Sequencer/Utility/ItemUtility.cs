@@ -111,9 +111,13 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
 
         public static SpeckleTarget RetrieveSpeckleTarget(ISequenceContainer parent) {
             if (parent != null) {
-                var container = parent as SpeckleTargetListContainer;
-                if (container != null) {
+                var container = parent as SpeckleTargetContainer;
+                if (container != null && container.SpeckleTarget != null) {
                     return container.SpeckleTarget;
+                }
+                var listContainer = parent as SpeckleTargetListContainer;
+                if (listContainer != null) {
+                    return listContainer.SpeckleTarget;
                 }
                 else {
                     return RetrieveSpeckleTarget(parent.Parent);

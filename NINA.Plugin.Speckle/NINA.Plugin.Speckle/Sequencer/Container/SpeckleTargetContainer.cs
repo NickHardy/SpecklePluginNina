@@ -39,6 +39,7 @@ using NINA.Sequencer.Container;
 using NINA.Sequencer;
 using NINA.Equipment.Interfaces.Mediator;
 using NINA.Equipment.Equipment.MyCamera;
+using NINA.Plugin.Speckle.Model;
 
 namespace NINA.Plugin.Speckle.Sequencer.Container {
 
@@ -140,6 +141,17 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             get => _isRef;
             set {
                 _isRef = value;
+                RaisePropertyChanged();
+            }
+        }
+
+        private SpeckleTarget _speckleTarget;
+
+        [JsonProperty]
+        public SpeckleTarget SpeckleTarget {
+            get => _speckleTarget;
+            set {
+                _speckleTarget = value;
                 RaisePropertyChanged();
             }
         }
