@@ -104,9 +104,12 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             TargetNr = 0;
             User = speckle.User;
             Template = speckle.DefaultTemplate;
+            TemplateRef = speckle.DefaultRefTemplate;
             Cycles = speckle.Cycles;
             Exposures = speckle.Exposures;
             ExposureTime = speckle.ExposureTime;
+            AutoLoadTargetStar = true;
+            AutoLoadReferenceStar = true;
             SpeckleTargets = new AsyncObservableCollection<SpeckleTarget>();
             GdsTargets = new AsyncObservableCollection<GdsTarget>();
             SimUtils = new SimbadUtils();
@@ -161,6 +164,16 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
 
         [JsonProperty]
         public double ExposureTime { get => _ExposureTime; set { _ExposureTime = value; RaisePropertyChanged(); } }
+
+        private bool _AutoLoadTargetStar;
+
+        [JsonProperty]
+        public bool AutoLoadTargetStar { get => _AutoLoadTargetStar; set { _AutoLoadTargetStar = value; RaisePropertyChanged(); } }
+
+        private bool _AutoLoadReferenceStar;
+
+        [JsonProperty]
+        public bool AutoLoadReferenceStar { get => _AutoLoadReferenceStar; set { _AutoLoadReferenceStar = value; RaisePropertyChanged(); } }
 
         private SpeckleTarget _speckleTarget;
 
@@ -231,8 +244,16 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                 var templateName = string.IsNullOrWhiteSpace(SpeckleTarget.Template) ? speckle.DefaultTemplate : SpeckleTarget.Template;
                 await LoadSpeckleTarget(templateName);
 
-                var refTemplateName = string.IsNullOrWhiteSpace(SpeckleTarget.TemplateRef) ? speckle.DefaultRefTemplate : SpeckleTarget.TemplateRef;
-                await LoadReferenceTarget(SpeckleTarget, string.IsNullOrWhiteSpace(refTemplateName) ? templateName : refTemplateName);
+                if (AutoLoadReferenceStar) {
+                    var refTemplateName = string.IsNullOrWhiteSpace(SpeckleTarget.TemplateRef) ? speckle.DefaultRefTemplate : SpeckleTarget.TemplateRef;
+                    await LoadReferenceTarget(SpeckleTarget, string.IsNullOrWhiteSpace(refTemplateName) ? templateName : refTemplateName).ConfigureAwait(false);
+                }
+                else {
+                    using (executeCTS = new CancellationTokenSource()) {
+                        if (SpeckleTarget.ReferenceStarList == null || SpeckleTarget.ReferenceStarList.Count == 0)
+                            await RetrieveReferenceStars(new Progress<ApplicationStatus>(p => AppStatus = p), executeCTS.Token).ConfigureAwait(false);
+                    }
+                }
             }
         }
         public void DeleteTarget(Object o) {
@@ -270,10 +291,19 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             TargetNr++;
 
             var templateName = string.IsNullOrWhiteSpace(SpeckleTarget.Template) ? speckle.DefaultTemplate : SpeckleTarget.Template;
-            await LoadSpeckleTarget(templateName).ConfigureAwait(false);
+            if (AutoLoadTargetStar) {
+                await LoadSpeckleTarget(templateName).ConfigureAwait(false);
+            }
 
-            var refTemplateName = string.IsNullOrWhiteSpace(SpeckleTarget.TemplateRef) ? speckle.DefaultRefTemplate : SpeckleTarget.TemplateRef;
-            await LoadReferenceTarget(SpeckleTarget, string.IsNullOrWhiteSpace(refTemplateName) ? templateName : refTemplateName).ConfigureAwait(false);
+            if (AutoLoadReferenceStar) {
+                var refTemplateName = string.IsNullOrWhiteSpace(SpeckleTarget.TemplateRef) ? speckle.DefaultRefTemplate : SpeckleTarget.TemplateRef;
+                await LoadReferenceTarget(SpeckleTarget, string.IsNullOrWhiteSpace(refTemplateName) ? templateName : refTemplateName).ConfigureAwait(false);
+            } else {
+                using (executeCTS = new CancellationTokenSource()) {
+                    if (SpeckleTarget.ReferenceStarList == null || SpeckleTarget.ReferenceStarList.Count == 0)
+                        await RetrieveReferenceStars(new Progress<ApplicationStatus>(p => AppStatus = p), executeCTS.Token).ConfigureAwait(false);
+                }
+            }
 
             RaiseAllPropertiesChanged();
             return true;
@@ -340,7 +370,8 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             }
             else {
                 using (executeCTS = new CancellationTokenSource()) {
-                    await RetrieveReferenceStars(new Progress<ApplicationStatus>(p => AppStatus = p), executeCTS.Token).ConfigureAwait(false);
+                    if (speckleTarget.ReferenceStarList == null || speckleTarget.ReferenceStarList.Count == 0)
+                        await RetrieveReferenceStars(new Progress<ApplicationStatus>(p => AppStatus = p), executeCTS.Token).ConfigureAwait(false);
                 }
                 if (speckleTarget.ReferenceStar != null && speckleTarget.ReferenceStar.main_id != "") {
                     SpeckleTargetContainer speckleTargetContainerRef = (SpeckleTargetContainer)template.Clone();
@@ -608,9 +639,9 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                     // prioritize stars with a matching color and those which are at the top of setDomeSlitAltTimeList => these have the most time to pass across the shutter
                     // rather prioritize targets that don't perfectly match in color, but there is some time to still observe it, vs a target that's perfect but gone in 20s
                     SpeckleTarget.ReferenceStar = SpeckleTarget.ReferenceStarList
-                        .Where(r => r.setDomeSlitAltTimeList != null && r.setDomeSlitAltTimeList.Any())
+                        .Where(r => r.DomeSlitAltTimeList != null && r.DomeSlitAltTimeList.Any())
                         .OrderBy(r => Math.Abs(r.color - targetColor))
-                        .ThenBy(r => r.setDomeSlitAltTimeList.OrderBy(altTime => altTime.datetime).FirstOrDefault()?.datetime)
+                        .ThenBy(r => r.DomeSlitAltTimeList.OrderBy(altTime => altTime.datetime).FirstOrDefault()?.datetime)
                         .FirstOrDefault();
 
                     Logger.Debug(JsonConvert.SerializeObject(SpeckleTarget.ReferenceStarList, Formatting.Indented));

@@ -13,7 +13,7 @@ using System.Runtime.InteropServices;
 // [MANDATORY] The name of your plugin
 [assembly: AssemblyTitle("Speckle Interferometry")]
 // [MANDATORY] A short description of your plugin
-[assembly: AssemblyDescription("This plugin automates the acquisition of speckle interferometry data for closely seperatd objects.")]
+[assembly: AssemblyDescription("This plugin automates the acquisition of speckle interferometry data for closely seperated objects.")]
 
 
 // The following attributes are not required for the plugin per se, but are required by the official manifest meta data
