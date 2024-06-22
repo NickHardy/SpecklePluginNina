@@ -640,8 +640,17 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                     // rather prioritize targets that don't perfectly match in color, but there is some time to still observe it, vs a target that's perfect but gone in 20s
                     SpeckleTarget.ReferenceStar = SpeckleTarget.ReferenceStarList
                         .Where(r => r.DomeSlitAltTimeList != null && r.DomeSlitAltTimeList.Any())
-                        .OrderBy(r => Math.Abs(r.color - targetColor))
-                        .ThenBy(r => r.DomeSlitAltTimeList.OrderBy(altTime => altTime.datetime).FirstOrDefault()?.datetime)
+                        .OrderByDescending(r => r.DomeSlitObservationTime)
+                        .ToList()
+                        .Select(r => new 
+                        { 
+                            Star = r,
+                            IsWithin10Percent = r.DomeSlitObservationTime >= SpeckleTarget.ReferenceStarList.Max(s => s.DomeSlitObservationTime) * 0.9
+                        })
+                        .OrderByDescending(r => r.IsWithin10Percent) // Prioritize all reference stars within 10% of the longest domeslitobservation time
+                        .ThenBy(r => r.IsWithin10Percent ? Math.Abs(r.Star.color - targetColor) : double.MaxValue) // Then freely sort by color for those within 10%
+                        .ThenBy(r => r.Star.DomeSlitAltTimeList.OrderBy(altTime => altTime.datetime).FirstOrDefault()?.datetime)
+                        .Select(r => r.Star)
                         .FirstOrDefault();
 
                     Logger.Debug(JsonConvert.SerializeObject(SpeckleTarget.ReferenceStarList, Formatting.Indented));
