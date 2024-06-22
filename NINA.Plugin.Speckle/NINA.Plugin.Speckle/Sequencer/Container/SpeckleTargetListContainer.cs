@@ -605,11 +605,12 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                         rstar.setDomeSlitAltTimeList(speckle, slitAz1, slitAz2);
                     }
 
-                    // prioritize stars with a matching color and those which are at the top of AltList
+                    // prioritize stars with a matching color and those which are at the top of setDomeSlitAltTimeList => these have the most time to pass across the shutter
+                    // rather prioritize targets that don't perfectly match in color, but there is some time to still observe it, vs a target that's perfect but gone in 20s
                     SpeckleTarget.ReferenceStar = SpeckleTarget.ReferenceStarList
-                        .Where(r => r.AltList != null && r.AltList.Any())
+                        .Where(r => r.setDomeSlitAltTimeList != null && r.setDomeSlitAltTimeList.Any())
                         .OrderBy(r => Math.Abs(r.color - targetColor))
-                        .ThenBy(r => r.AltList.OrderBy(altTime => altTime.datetime).FirstOrDefault()?.datetime)
+                        .ThenBy(r => r.setDomeSlitAltTimeList.OrderBy(altTime => altTime.datetime).FirstOrDefault()?.datetime)
                         .FirstOrDefault();
 
                     Logger.Debug(JsonConvert.SerializeObject(SpeckleTarget.ReferenceStarList, Formatting.Indented));
