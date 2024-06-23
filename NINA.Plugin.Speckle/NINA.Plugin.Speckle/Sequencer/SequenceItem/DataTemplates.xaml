@@ -523,9 +523,7 @@
                 <ComboBox
                     ItemsSource="{Binding ReferenceStarList, Mode=TwoWay}"
                     SelectedItem="{Binding SimbadStar, Mode=TwoWay}"
-                    SelectedValue="{Binding SimbadStarMainId, Mode=TwoWay}"
-                    SelectedValuePath="main_id"
-                    DisplayMemberPath="main_id"/>
+                    SelectedValue="{Binding SimbadStarMainId, Mode=TwoWay}"/>
             </view:SequenceBlockView.SequenceItemContent>
         </view:SequenceBlockView>
     </DataTemplate>

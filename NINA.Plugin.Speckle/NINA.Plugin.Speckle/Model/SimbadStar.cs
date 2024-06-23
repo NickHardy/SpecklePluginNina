@@ -57,7 +57,7 @@ namespace NINA.Plugin.Speckle.Model {
             return new Coordinates(Angle.ByDegree(ra), Angle.ByDegree(dec), Epoch.J2000);
         }
         public override string ToString() {
-            return $"{main_id}, dist: {distance}";
+            return $"{main_id}, distance: {Math.Round(distance, 3)}°, color: {Math.Round(color, 2)} (B-V)";
         }
     }
 }

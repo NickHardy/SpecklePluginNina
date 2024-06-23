@@ -614,19 +614,21 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
         private async Task RetrieveReferenceStars(IProgress<ApplicationStatus> externalProgress, CancellationToken token) {
             if (SpeckleTarget.GetRef > 0 && (SpeckleTarget.ReferenceStarList == null || !SpeckleTarget.ReferenceStarList.Any())) {
                 SimbadStar targetStar = new SimbadStar();
-                double targetColor;
+                double targetColor = 0.65;
+                double minMagnitude = speckle.MinReferenceMag;
+                double maxMagnitude = speckle.MaxReferenceMag;
 
                 try {
                     targetStar = await RetrieveTargetStar(externalProgress, token);
                     if (targetStar == null) throw new Exception("Target star not found.");
                     targetColor = targetStar.color;
-                } catch (Exception ex) {
+                    minMagnitude = speckle.MinReferenceMag > targetStar.v_mag ? targetStar.v_mag - 1d : speckle.MinReferenceMag;
+                    maxMagnitude = Math.Min(targetStar.v_mag, speckle.MaxReferenceMag);
+                }
+                catch (Exception ex) {
                     Logger.Debug("Couldn't find target star for SpeckleTarget. Assuming G-type star. Error: " + ex.Message);
-                    targetColor = 0.65;  // b-v of a g type star
                 }
 
-                double minMagnitude = speckle.MinReferenceMag > targetStar.v_mag ? targetStar.v_mag - 1d : speckle.MinReferenceMag;
-                double maxMagnitude = Math.Min(targetStar.v_mag, speckle.MaxReferenceMag);
                 SpeckleTarget.ReferenceStarList = await SimUtils.FindSimbadSaoStars(externalProgress, token, SpeckleTarget.Coordinates(), speckle.SearchRadius, minMagnitude, maxMagnitude).ConfigureAwait(false);
 
                 if (speckle.DomePositionLock) {

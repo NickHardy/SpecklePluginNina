@@ -124,13 +124,12 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
             try {
                 using (var localCTS = CancellationTokenSource.CreateLinkedTokenSource(token)) {
                     localCTS.CancelAfter(TimeSpan.FromSeconds(30));
-                    externalProgress.Report(new ApplicationStatus() { Status = "Retrieving target star data from Simbad" });
+                    externalProgress.Report(new ApplicationStatus() { Status = "Retrieving target star from Simbad" });
                     var url = "http://simbad.u-strasbg.fr/simbad/sim-tap/sync";
                     var query = $"SELECT TOP 1 basic.main_id, basic.ra, basic.dec, basic.otype_txt, allfluxes.b, allfluxes.v, allfluxes.b - allfluxes.v AS color, DISTANCE(POINT('ICRS', basic.ra, basic.dec), POINT('ICRS', {ra}, {dec})) AS \"distance\" " +
                                 $"FROM basic " +
                                 $"JOIN allfluxes ON (basic.oid = allfluxes.oidref) " +
-                                $"WHERE allfluxes.v BETWEEN {targetMag - 0.5} AND {targetMag + 0.5} " +
-                                $"AND DISTANCE(POINT('ICRS', basic.ra, basic.dec), POINT('ICRS', {ra}, {dec})) <= 0.083333 " +  // 5 arcmin in °
+                                $"WHERE DISTANCE(POINT('ICRS', basic.ra, basic.dec), POINT('ICRS', {ra}, {dec})) <= 0.083333 " +  // 5 arcmin in °
                                 $"ORDER BY \"distance\";";
 
                     Dictionary<string, string> dictionary = new Dictionary<string, string>
