@@ -75,7 +75,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
                     externalProgress.Report(new ApplicationStatus() { Status = "Retrieving stars in the SAO catalogue from Simbad" });
                     var url = "http://simbad.u-strasbg.fr/simbad/sim-tap/sync";
 
-                    string query = $"SELECT TOP 10 basic.main_id, basic.ra, basic.dec, basic.otype_txt, allfluxes.v, allfluxes.b - allfluxes.v AS color, DISTANCE(POINT('ICRS', {coords.RADegrees}, {coords.Dec}), POINT('ICRS', basic.ra, basic.dec)) as dist " +
+                    string query = $"SELECT TOP 200 basic.main_id, basic.ra, basic.dec, basic.otype_txt, allfluxes.v, allfluxes.b - allfluxes.v AS color, DISTANCE(POINT('ICRS', {coords.RADegrees}, {coords.Dec}), POINT('ICRS', basic.ra, basic.dec)) as dist " +
                                    "FROM basic " +
                                    "JOIN ident ON (basic.oid = ident.oidref) " +
                                    "JOIN allfluxes USING (oidref) " +
