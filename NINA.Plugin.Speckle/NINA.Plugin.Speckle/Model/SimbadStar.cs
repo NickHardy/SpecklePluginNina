@@ -18,6 +18,7 @@ using NINA.Astrometry;
 using CsvHelper.Configuration;
 using System;
 using System.Collections.Generic;
+using NINA.Plugin.Speckle.Sequencer.SequenceItem;
 
 namespace NINA.Plugin.Speckle.Model {
 
@@ -55,6 +56,8 @@ namespace NINA.Plugin.Speckle.Model {
         public Coordinates Coordinates() {
             return new Coordinates(Angle.ByDegree(ra), Angle.ByDegree(dec), Epoch.J2000);
         }
-
+        public override string ToString() {
+            return $"{main_id}, dist: {distance}";
+        }
     }
 }

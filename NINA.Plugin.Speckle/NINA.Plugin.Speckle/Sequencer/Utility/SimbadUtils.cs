@@ -67,7 +67,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
             return starClusters;
         }
 
-        public async Task<List<SimbadStar>> FindSimbadSaoStars(IProgress<ApplicationStatus> externalProgress, CancellationToken token, Coordinates coords, double maxDistance = 5d, double targetMag = 8.0d, double maxMag = 10.0d) {
+        public async Task<List<SimbadStar>> FindSimbadSaoStars(IProgress<ApplicationStatus> externalProgress, CancellationToken token, Coordinates coords, double maxDistance = 5d, double minMag = 0.0d, double maxMag = 10.0d) {
             List<SimbadStar> stars = new List<SimbadStar>();
             try {
                 using (var localCTS = CancellationTokenSource.CreateLinkedTokenSource(token)) {
@@ -79,7 +79,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
                                    "FROM basic " +
                                    "JOIN ident ON (basic.oid = ident.oidref) " +
                                    "JOIN allfluxes USING (oidref) " +
-                                   "WHERE ident.id LIKE 'SAO%' AND basic.otype_txt = '*' AND allfluxes.v BETWEEN " + targetMag + " AND " + maxMag + " " +
+                                   "WHERE ident.id LIKE 'SAO%' AND basic.otype_txt = '*' AND allfluxes.v BETWEEN " + minMag + " AND " + maxMag + " " +
                                    "AND CONTAINS(POINT('ICRS', " + coords.RADegrees + ", " + coords.Dec + "), CIRCLE('ICRS', " + coords.RADegrees + ", " + coords.Dec + ", " + maxDistance + ")) = 1 " +
                                    "AND basic.ra IS NOT NULL " +
                                    "AND basic.dec IS NOT NULL " +

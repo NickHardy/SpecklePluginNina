@@ -241,7 +241,7 @@ namespace NINA.Plugin.Speckle.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("10")]
+        [global::System.Configuration.DefaultSettingValueAttribute("8")]
         public double MaxReferenceMag {
             get {
                 return ((double)(this["MaxReferenceMag"]));
@@ -392,6 +392,18 @@ namespace NINA.Plugin.Speckle.Properties {
             }
             set {
                 this["DomeSlitWidth"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        public double MinReferenceMag {
+            get {
+                return ((double)(this["MinReferenceMag"]));
+            }
+            set {
+                this["MinReferenceMag"] = value;
             }
         }
     }

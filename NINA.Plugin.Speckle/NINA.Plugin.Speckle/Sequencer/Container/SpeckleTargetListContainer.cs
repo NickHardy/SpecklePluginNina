@@ -613,7 +613,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
 
         private async Task RetrieveReferenceStars(IProgress<ApplicationStatus> externalProgress, CancellationToken token) {
             if (SpeckleTarget.GetRef > 0 && (SpeckleTarget.ReferenceStarList == null || !SpeckleTarget.ReferenceStarList.Any())) {
-                SimbadStar targetStar;
+                SimbadStar targetStar = new SimbadStar();
                 double targetColor;
 
                 try {
@@ -625,8 +625,9 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                     targetColor = 0.65;  // b-v of a g type star
                 }
 
-                double magnitude = SpeckleTarget.PMag > 1 ? Math.Min(SpeckleTarget.PMag - 1, Math.Min(SpeckleTarget.SMag - 1, 8d)) : 8d;
-                SpeckleTarget.ReferenceStarList = await SimUtils.FindSimbadSaoStars(externalProgress, token, SpeckleTarget.Coordinates(), speckle.SearchRadius, magnitude, speckle.MaxReferenceMag).ConfigureAwait(false);
+                double minMagnitude = speckle.MinReferenceMag > targetStar.v_mag ? targetStar.v_mag - 1d : speckle.MinReferenceMag;
+                double maxMagnitude = Math.Min(targetStar.v_mag, speckle.MaxReferenceMag);
+                SpeckleTarget.ReferenceStarList = await SimUtils.FindSimbadSaoStars(externalProgress, token, SpeckleTarget.Coordinates(), speckle.SearchRadius, minMagnitude, maxMagnitude).ConfigureAwait(false);
 
                 if (speckle.DomePositionLock) {
                     var slitAz1 = speckle.DomePosition - (speckle.DomeSlitWidth / 2);
@@ -638,7 +639,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
 
                     // prioritize stars with a matching color and those which are at the top of setDomeSlitAltTimeList => these have the most time to pass across the shutter
                     // rather prioritize targets that don't perfectly match in color, but there is some time to still observe it, vs a target that's perfect but gone in 20s
-                    SpeckleTarget.ReferenceStar = SpeckleTarget.ReferenceStarList
+                    SpeckleTarget.ReferenceStarList = SpeckleTarget.ReferenceStarList
                         .Where(r => r.DomeSlitAltTimeList != null && r.DomeSlitAltTimeList.Any())
                         .OrderByDescending(r => r.DomeSlitObservationTime)
                         .ToList()
@@ -647,11 +648,11 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                             Star = r,
                             IsWithin10Percent = r.DomeSlitObservationTime >= SpeckleTarget.ReferenceStarList.Max(s => s.DomeSlitObservationTime) * 0.9
                         })
-                        .OrderByDescending(r => r.IsWithin10Percent) // Prioritize all reference stars within 10% of the longest domeslitobservation time
-                        .ThenBy(r => r.IsWithin10Percent ? Math.Abs(r.Star.color - targetColor) : double.MaxValue) // Then freely sort by color for those within 10%
+                        .Where(r => r.IsWithin10Percent) // Prioritize all reference stars within 10% of the longest domeslitobservation time
+                        .OrderBy(r => Math.Abs(r.Star.color - targetColor)) // Then freely sort by color for those within 10%
                         .ThenBy(r => r.Star.DomeSlitAltTimeList.OrderBy(altTime => altTime.datetime).FirstOrDefault()?.datetime)
-                        .Select(r => r.Star)
-                        .FirstOrDefault();
+                        .Select(r => r.Star).ToList();
+                    SpeckleTarget.ReferenceStar = SpeckleTarget.ReferenceStarList.FirstOrDefault();
 
                     Logger.Debug(JsonConvert.SerializeObject(SpeckleTarget.ReferenceStarList, Formatting.Indented));
                 } else {
@@ -662,7 +663,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                         .FirstOrDefault();
                 }
                 if (SpeckleTarget.ReferenceStar == null) {
-                    Logger.Debug("Couldn't find reference SAO star for SpeckleTarget within " + speckle.SearchRadius + " degrees and magnitudes: " + magnitude + " and " + speckle.MaxReferenceMag);
+                    Logger.Debug("Couldn't find reference SAO star for SpeckleTarget within " + speckle.SearchRadius + " degrees and magnitudes: " + minMagnitude + " and " + maxMagnitude);
                 }
                 RaiseAllPropertiesChanged();
             }

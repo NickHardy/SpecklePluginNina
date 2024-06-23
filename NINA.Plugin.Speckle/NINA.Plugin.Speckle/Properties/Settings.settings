@@ -57,7 +57,7 @@
       <Value Profile="(Default)">15</Value>
     </Setting>
     <Setting Name="MaxReferenceMag" Type="System.Double" Scope="User">
-      <Value Profile="(Default)">10</Value>
+      <Value Profile="(Default)">8</Value>
     </Setting>
     <Setting Name="MoonDistance" Type="System.Double" Scope="User">
       <Value Profile="(Default)">20</Value>
@@ -93,6 +93,9 @@
       <Value Profile="(Default)">0</Value>
     </Setting>
     <Setting Name="DomeSlitWidth" Type="System.Double" Scope="User">
+      <Value Profile="(Default)">0</Value>
+    </Setting>
+    <Setting Name="MinReferenceMag" Type="System.Double" Scope="User">
       <Value Profile="(Default)">0</Value>
     </Setting>
   </Settings>
