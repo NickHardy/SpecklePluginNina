@@ -623,7 +623,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                     if (targetStar == null) throw new Exception("Target star not found.");
                     targetColor = targetStar.color;
                     minMagnitude = speckle.MinReferenceMag > targetStar.v_mag ? targetStar.v_mag - 1d : speckle.MinReferenceMag;
-                    maxMagnitude = Math.Min(targetStar.v_mag, speckle.MaxReferenceMag);
+                    maxMagnitude = speckle.MaxReferenceMag; //Math.Min(targetStar.v_mag, speckle.MaxReferenceMag);
                 }
                 catch (Exception ex) {
                     Logger.Debug("Couldn't find target star for SpeckleTarget. Assuming G-type star. Error: " + ex.Message);
@@ -648,11 +648,10 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                         .Select(r => new 
                         { 
                             Star = r,
-                            IsWithin10Percent = r.DomeSlitObservationTime >= SpeckleTarget.ReferenceStarList.Max(s => s.DomeSlitObservationTime) * 0.9
+                            IsWithin30Percent = r.DomeSlitObservationTime >= SpeckleTarget.ReferenceStarList.Max(s => s.DomeSlitObservationTime) * 0.7
                         })
-                        .Where(r => r.IsWithin10Percent) // Prioritize all reference stars within 10% of the longest domeslitobservation time
+                        .Where(r => r.IsWithin30Percent) // Prioritize all reference stars within 30% of the longest domeslitobservation time
                         .OrderBy(r => Math.Abs(r.Star.color - targetColor)) // Then freely sort by color for those within 10%
-                        .ThenBy(r => r.Star.DomeSlitAltTimeList.OrderBy(altTime => altTime.datetime).FirstOrDefault()?.datetime)
                         .Select(r => r.Star).ToList();
                     SpeckleTarget.ReferenceStar = SpeckleTarget.ReferenceStarList.FirstOrDefault();
 
@@ -661,7 +660,6 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                     // color match first, then distance (the distance is already limited in the simbadutils)
                     SpeckleTarget.ReferenceStar = SpeckleTarget.ReferenceStarList
                         .OrderBy(r => Math.Abs(r.color - targetColor))
-                        .ThenBy(r => r.distance)
                         .FirstOrDefault();
                 }
                 if (SpeckleTarget.ReferenceStar == null) {

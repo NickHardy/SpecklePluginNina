@@ -74,16 +74,18 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
                     localCTS.CancelAfter(TimeSpan.FromSeconds(30));
                     externalProgress.Report(new ApplicationStatus() { Status = "Retrieving stars in the SAO catalogue from Simbad" });
                     var url = "http://simbad.u-strasbg.fr/simbad/sim-tap/sync";
+                    double maxDistanceRadians = maxDistance * Math.PI / 180;
+                    double minDistanceRadians = (1.0 / 60.0) * (Math.PI / 180); // 1 arcminute in radians
 
-                    string query = $"SELECT TOP 200 basic.main_id, basic.ra, basic.dec, basic.otype_txt, allfluxes.v, allfluxes.b - allfluxes.v AS color, DISTANCE(POINT('ICRS', {coords.RADegrees}, {coords.Dec}), POINT('ICRS', basic.ra, basic.dec)) as dist " +
-                                   "FROM basic " +
-                                   "JOIN ident ON (basic.oid = ident.oidref) " +
-                                   "JOIN allfluxes USING (oidref) " +
-                                   "WHERE ident.id LIKE 'SAO%' AND basic.otype_txt = '*' AND allfluxes.v BETWEEN " + minMag + " AND " + maxMag + " " +
-                                   "AND CONTAINS(POINT('ICRS', " + coords.RADegrees + ", " + coords.Dec + "), CIRCLE('ICRS', " + coords.RADegrees + ", " + coords.Dec + ", " + maxDistance + ")) = 1 " +
-                                   "AND basic.ra IS NOT NULL " +
-                                   "AND basic.dec IS NOT NULL " +
-                                   "ORDER BY dist;";
+                    string query = $"SELECT TOP 100 basic.main_id, basic.ra, basic.dec, basic.otype_txt, allfluxes.v, allfluxes.b - allfluxes.v AS color, " +
+                                   $"2 * ASIN(SQRT(POWER(SIN(({coords.Dec} - basic.dec) * PI() / 360), 2) + COS({coords.Dec} * PI() / 180) * COS(basic.dec * PI() / 180) * POWER(SIN(({coords.RADegrees} - basic.ra) * PI() / 360), 2))) AS dist " +
+                                   $"FROM basic " +
+                                   $"JOIN ident ON basic.oid = ident.oidref " +
+                                   $"JOIN allfluxes ON basic.oid = allfluxes.oidref " +
+                                   $"WHERE ident.id LIKE 'SAO%' AND basic.otype_txt = '*' AND allfluxes.v BETWEEN {minMag} AND {maxMag} " +
+                                   $"AND basic.ra IS NOT NULL AND basic.dec IS NOT NULL " +
+                                   $"AND 2 * ASIN(SQRT(POWER(SIN(({coords.Dec} - basic.dec) * PI() / 360), 2) + COS({coords.Dec} * PI() / 180) * COS(basic.dec * PI() / 180) * POWER(SIN(({coords.RADegrees} - basic.ra) * PI() / 360), 2))) BETWEEN {minDistanceRadians} AND {maxDistanceRadians} " +
+                                   $"ORDER BY dist;";
 
                     Dictionary<string, string> dictionary = new Dictionary<string, string>();
                     dictionary.Add("request", "doQuery");
@@ -103,7 +105,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
                                 dec = Convert.ToDouble(obj[2]),
                                 v_mag = Convert.ToDouble(obj[4]),
                                 color = Convert.ToDouble(obj[5]),
-                                distance = Convert.ToDouble(obj[6])
+                                distance = Convert.ToDouble(obj[6]) * (180 / Math.PI) // Convert radians to degrees
                             };
                             stars.Add(star);
                         }
