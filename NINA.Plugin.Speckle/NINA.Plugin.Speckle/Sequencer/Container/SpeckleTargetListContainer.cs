@@ -639,27 +639,28 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                         rstar.setDomeSlitAltTimeList(speckle, slitAz1, slitAz2);
                     }
 
-                    // prioritize stars with a matching color and those which are at the top of setDomeSlitAltTimeList => these have the most time to pass across the shutter
-                    // rather prioritize targets that don't perfectly match in color, but there is some time to still observe it, vs a target that's perfect but gone in 20s
+                    // Filter stars with non-null and non-empty DomeSlitAltTimeList
                     SpeckleTarget.ReferenceStarList = SpeckleTarget.ReferenceStarList
                         .Where(r => r.DomeSlitAltTimeList != null && r.DomeSlitAltTimeList.Any())
-                        .OrderByDescending(r => r.DomeSlitObservationTime)
-                        .ToList()
-                        .Select(r => new 
-                        { 
-                            Star = r,
-                            IsWithin30Percent = r.DomeSlitObservationTime >= SpeckleTarget.ReferenceStarList.Max(s => s.DomeSlitObservationTime) * 0.7
-                        })
-                        .Where(r => r.IsWithin30Percent) // Prioritize all reference stars within 30% of the longest domeslitobservation time
-                        .OrderBy(r => Math.Abs(r.Star.color - targetColor)) // Then freely sort by color for those within 10%
-                        .Select(r => r.Star).ToList();
+                        .ToList();
+
+                    // Sort by closeness to the target color and then by dome slit observation time for those within the top 30% of observation times
+                    var topObservationTime = SpeckleTarget.ReferenceStarList.Max(s => s.DomeSlitObservationTime) * 0.7;
+                    SpeckleTarget.ReferenceStarList = SpeckleTarget.ReferenceStarList
+                        .Where(r => r.DomeSlitObservationTime >= topObservationTime)
+                        .OrderBy(r => Math.Abs(r.color - targetColor))
+                        .ThenBy(r => r.DomeSlitAltTimeList.OrderBy(altTime => altTime.datetime).FirstOrDefault()?.datetime)
+                        .ToList();
+
                     SpeckleTarget.ReferenceStar = SpeckleTarget.ReferenceStarList.FirstOrDefault();
 
                     Logger.Debug(JsonConvert.SerializeObject(SpeckleTarget.ReferenceStarList, Formatting.Indented));
+
                 } else {
                     // color match first, then distance (the distance is already limited in the simbadutils)
                     SpeckleTarget.ReferenceStar = SpeckleTarget.ReferenceStarList
                         .OrderBy(r => Math.Abs(r.color - targetColor))
+                        .ThenBy(r => r.distance)
                         .FirstOrDefault();
                 }
                 if (SpeckleTarget.ReferenceStar == null) {
