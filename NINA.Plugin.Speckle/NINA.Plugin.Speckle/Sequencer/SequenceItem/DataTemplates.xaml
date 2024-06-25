@@ -481,7 +481,21 @@
                             HorizontalAlignment="Right"
                             IsChecked="{Binding PlatesolveFirst}">
                     </CheckBox>
-
+                    <TextBlock
+                        Margin="7.5,0,7.5,0"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Text="|" />
+                    <StackPanel Orientation="Horizontal">
+                        <ninactrl:UnitTextBox
+                            MinWidth="40"
+                            Margin="5,0,0,0"
+                            VerticalAlignment="Center"
+                            VerticalContentAlignment="Center"
+                            Text="{Binding ExposureTime}"
+                            TextAlignment="Right"
+                            Unit="s" />
+                    </StackPanel>
                 </StackPanel>
             </view:SequenceBlockView.SequenceItemContent>
         </view:SequenceBlockView>
@@ -523,7 +537,8 @@
                 <ComboBox
                     ItemsSource="{Binding ReferenceStarList, Mode=TwoWay}"
                     SelectedItem="{Binding SimbadStar, Mode=TwoWay}"
-                    SelectedValue="{Binding SimbadStarMainId, Mode=TwoWay}"/>
+                    SelectedValue="{Binding SimbadStarMainId, Mode=TwoWay}"
+                    SelectedValuePath="main_id"/>
             </view:SequenceBlockView.SequenceItemContent>
         </view:SequenceBlockView>
     </DataTemplate>

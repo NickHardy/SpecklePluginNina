@@ -291,9 +291,9 @@ namespace NINA.Plugin.Speckle {
         }
 
         public double MinReferenceMag {
-            get => Settings.Default.MaxReferenceMag;
+            get => Settings.Default.MinReferenceMag;
             set {
-                Settings.Default.MaxReferenceMag = value;
+                Settings.Default.MinReferenceMag = value;
                 CoreUtil.SaveSettings(Properties.Settings.Default);
                 RaisePropertyChanged();
             }

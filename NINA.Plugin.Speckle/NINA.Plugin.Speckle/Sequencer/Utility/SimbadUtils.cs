@@ -128,11 +128,9 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
                     localCTS.CancelAfter(TimeSpan.FromSeconds(30));
                     externalProgress.Report(new ApplicationStatus() { Status = "Retrieving target star from Simbad" });
                     var url = "http://simbad.u-strasbg.fr/simbad/sim-tap/sync";
-                    var query = $"SELECT TOP 1 basic.main_id, basic.ra, basic.dec, basic.otype_txt, allfluxes.b, allfluxes.v, allfluxes.b - allfluxes.v AS color, DISTANCE(POINT('ICRS', basic.ra, basic.dec), POINT('ICRS', {ra}, {dec})) AS \"distance\" " +
-                                $"FROM basic " +
-                                $"JOIN allfluxes ON (basic.oid = allfluxes.oidref) " +
-                                $"WHERE DISTANCE(POINT('ICRS', basic.ra, basic.dec), POINT('ICRS', {ra}, {dec})) <= 0.083333 " +  // 5 arcmin in °
-                                $"ORDER BY \"distance\";";
+                    var query = $"SELECT basic.main_id, basic.ra, basic.dec, basic.otype_txt, allfluxes.b, allfluxes.v, allfluxes.b - allfluxes.v AS color ";
+                        query += $"FROM basic JOIN allfluxes ON(basic.oid = allfluxes.oidref) ";
+                        query += $"WHERE CONTAINS(POINT('ICRS', basic.ra, basic.dec), CIRCLE('ICRS', {ra}, {dec}, 0.083333)) = 1";
 
                     Dictionary<string, string> dictionary = new Dictionary<string, string>
                     {
@@ -153,7 +151,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
                             b_mag = Convert.ToDouble(obj[4]),
                             v_mag = Convert.ToDouble(obj[5]),
                             color = Convert.ToDouble(obj[6]),
-                            distance = Convert.ToDouble(obj[7])
+                            //distance = Convert.ToDouble(obj[7])
                         };
                     }
                 }

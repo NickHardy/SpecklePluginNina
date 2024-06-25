@@ -45,6 +45,14 @@ using NINA.Sequencer.SequenceItem;
 using NINA.Plugin.Speckle.Sequencer.Utility;
 using NINA.Image.ImageData;
 using NINA.Equipment.Equipment.MyTelescope;
+using NINA.Equipment.Equipment.MyFocuser;
+using NINA.Equipment.Equipment.MyRotator;
+using NINA.Equipment.Equipment.MyWeatherData;
+using NINA.Equipment.Equipment.MyFilterWheel;
+using NINA.Equipment.Utility;
+using System.Reflection;
+using NINA.Image.Interfaces;
+using System.Text.RegularExpressions;
 
 namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
 
@@ -54,18 +62,26 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
     [ExportMetadata("Category", "Speckle Interferometry")]
     [Export(typeof(ISequenceItem))]
     [JsonObject(MemberSerialization.OptIn)]
-    public class TakeLiveExposures : NINA.Sequencer.SequenceItem.SequenceItem, IExposureItem, IValidatable {
+    public class TakeLiveExposures : NINA.Sequencer.SequenceItem.SequenceItem, IExposureItem, IValidatable, ICameraConsumer, ITelescopeConsumer, IFilterWheelConsumer, IFocuserConsumer, IRotatorConsumer, IWeatherDataConsumer {
         private ICameraMediator cameraMediator;
         private IImagingMediator imagingMediator;
         private IImageSaveMediator imageSaveMediator;
         private IImageHistoryVM imageHistoryVM;
         private IProfileService profileService;
         private IFilterWheelMediator filterWheelMediator;
+        private FilterWheelInfo filterWheelInfo;
+        private IFocuserMediator focuserMediator;
+        private FocuserInfo focuserInfo;
         private ITelescopeMediator telescopeMediator;
+        private IRotatorMediator rotatorMediator;
+        private RotatorInfo rotatorInfo;
+        private WeatherDataInfo weatherDataInfo;
+        private IWeatherDataMediator weatherDataMediator;
+        private IOptionsVM options;
         private Speckle speckle;
 
         [ImportingConstructor]
-        public TakeLiveExposures(IProfileService profileService, ICameraMediator cameraMediator, IImagingMediator imagingMediator, IImageSaveMediator imageSaveMediator, IImageHistoryVM imageHistoryVM, IFilterWheelMediator filterWheelMediator, ITelescopeMediator telescopeMediator) {
+        public TakeLiveExposures(IProfileService profileService, ICameraMediator cameraMediator, IImagingMediator imagingMediator, IImageSaveMediator imageSaveMediator, IImageHistoryVM imageHistoryVM, IFilterWheelMediator filterWheelMediator, IOptionsVM options, ITelescopeMediator telescopeMediator, IFocuserMediator focuserMediator, IRotatorMediator rotatorMediator, IWeatherDataMediator weatherDataMediator) {
             Gain = -1;
             Offset = -1;
             ExposureTimeMultiplier = 1;
@@ -75,13 +91,30 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             this.imageSaveMediator = imageSaveMediator;
             this.imageHistoryVM = imageHistoryVM;
             this.profileService = profileService;
-            this.filterWheelMediator = filterWheelMediator;
+
+            this.cameraMediator = cameraMediator;
+            this.cameraMediator.RegisterConsumer(this);
+
             this.telescopeMediator = telescopeMediator;
-            CameraInfo = this.cameraMediator.GetInfo();
+            this.telescopeMediator.RegisterConsumer(this);
+
+            this.filterWheelMediator = filterWheelMediator;
+            this.filterWheelMediator.RegisterConsumer(this);
+
+            this.focuserMediator = focuserMediator;
+            this.focuserMediator.RegisterConsumer(this);
+
+            this.rotatorMediator = rotatorMediator;
+            this.rotatorMediator.RegisterConsumer(this);
+
+            this.weatherDataMediator = weatherDataMediator;
+            this.weatherDataMediator.RegisterConsumer(this);
+
+            this.options = options;
             speckle = new Speckle();
         }
 
-        private TakeLiveExposures(TakeLiveExposures cloneMe) : this(cloneMe.profileService, cloneMe.cameraMediator, cloneMe.imagingMediator, cloneMe.imageSaveMediator, cloneMe.imageHistoryVM, cloneMe.filterWheelMediator, cloneMe.telescopeMediator) {
+        private TakeLiveExposures(TakeLiveExposures cloneMe) : this(cloneMe.profileService, cloneMe.cameraMediator, cloneMe.imagingMediator, cloneMe.imageSaveMediator, cloneMe.imageHistoryVM, cloneMe.filterWheelMediator, cloneMe.options, cloneMe.telescopeMediator, cloneMe.focuserMediator, cloneMe.rotatorMediator, cloneMe.weatherDataMediator) {
             CopyMetaData(cloneMe);
         }
 
@@ -228,7 +261,6 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
 
             var target = RetrieveTarget(Parent);
             var title = ItemUtility.RetrieveSpeckleTitle(Parent);
-            TelescopeInfo = this.telescopeMediator.GetInfo();
 
             var localCTS = CancellationTokenSource.CreateLinkedTokenSource(token);
 
@@ -241,31 +273,9 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                     var imageData = await exposureData.ToImageData(progress, localCTS.Token);
 
                     imageData.MetaData.Sequence.Title = title;
-                    imageData.MetaData.Image.ExposureStart = DateTime.Now - TimeSpan.FromSeconds(ExposureTime * ExposureTimeMultiplier);
-                    imageData.MetaData.Image.ExposureNumber = ExposureCount;
-                    imageData.MetaData.Image.ExposureTime = ExposureTime * ExposureTimeMultiplier;
+                    AddMetaData(imageData.MetaData, target, ItemUtility.RetrieveSpeckleTargetRoi(Parent));
 
-                    imageData.MetaData.GenericHeaders.Add(new DoubleMetaDataHeader("JD-END", AstroUtil.GetJulianDate(DateTime.Now), "Julian exposure end date"));
-                    imageData.MetaData.GenericHeaders.Add(new DoubleMetaDataHeader("JD-BEG", AstroUtil.GetJulianDate(imageData.MetaData.Image.ExposureStart), "Julian exposure start date"));
-                    imageData.MetaData.GenericHeaders.Add(new DoubleMetaDataHeader("JD-OBS", AstroUtil.GetJulianDate(imageData.MetaData.Image.ExposureStart.AddSeconds(ExposureTime * ExposureTimeMultiplier / 2)), "Julian exposure mid date"));
-
-                    if (target != null) {
-                        imageData.MetaData.Target.Name = target.DeepSkyObject.NameAsAscii;
-                        imageData.MetaData.Target.Coordinates = target.InputCoordinates.Coordinates;
-                        imageData.MetaData.Target.PositionAngle = target.PositionAngle;
-                    }
-
-                    if (filterWheelMediator.GetInfo().Connected)
-                        imageData.MetaData.FilterWheel.Filter = filterWheelMediator.GetInfo().SelectedFilter.Name;
-
-                    ItemUtility.FromTelescopeInfo(imageData.MetaData, TelescopeInfo);
-
-                    imageData.MetaData.GenericHeaders.Add(new DoubleMetaDataHeader("ROIX", capture.SubSambleRectangle.X, "X-position of the ROI"));
-                    imageData.MetaData.GenericHeaders.Add(new DoubleMetaDataHeader("ROIY", capture.SubSambleRectangle.Y, "Y-position of the ROI"));
-                    imageData.MetaData.GenericHeaders.Add(new DoubleMetaDataHeader("XORGSUBF", capture.SubSambleRectangle.X, "X-position of the ROI"));
-                    imageData.MetaData.GenericHeaders.Add(new DoubleMetaDataHeader("YORGSUBF", capture.SubSambleRectangle.Y, "Y-position of the ROI"));
-
-                    // Only show first and last image in Imaging window
+                    // Only show first and last image in Imaging window and every nth image
                     if (ExposureCount == 1 || ExposureCount % speckle.ShowEveryNthImage == 0 || ExposureCount == TotalExposureCount) {
                         _ = imagingMediator.PrepareImage(imageData, imageParams, token);
                     }
@@ -297,6 +307,48 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             }
         }
 
+        private void AddMetaData(
+            ImageMetaData metaData,
+            InputTarget target,
+            ObservableRectangle subSambleRectangle) {
+
+            if (target != null) {
+                metaData.Target.Name = target.DeepSkyObject?.NameAsAscii;
+                metaData.Target.Coordinates = target.InputCoordinates.Coordinates;
+                metaData.Target.PositionAngle = target.PositionAngle;
+            }
+            metaData.Image.ExposureStart = DateTime.Now - TimeSpan.FromSeconds(ExposureTime * ExposureTimeMultiplier);
+            metaData.Image.ExposureNumber = ExposureCount;
+            metaData.Image.ExposureTime = ExposureTime * ExposureTimeMultiplier;
+
+            metaData.Image.ImageType = ImageType;
+
+            // Fill all available info from profile
+            metaData.FromProfile(profileService.ActiveProfile);
+            metaData.FromCameraInfo(CameraInfo);
+            metaData.FromTelescopeInfo(telescopeInfo);
+            metaData.FromFilterWheelInfo(filterWheelInfo);
+            metaData.FromRotatorInfo(rotatorInfo);
+            metaData.FromFocuserInfo(focuserInfo);
+            metaData.FromWeatherDataInfo(weatherDataInfo);
+
+            if (metaData.Target.Coordinates == null || double.IsNaN(metaData.Target.Coordinates.RA))
+                metaData.Target.Coordinates = metaData.Telescope.Coordinates;
+
+            Assembly assembly = Assembly.GetExecutingAssembly();
+            metaData.GenericHeaders.Add(new StringMetaDataHeader("PLCREATE", "Speckle-" + assembly.GetName().Version.ToString(), "The plugin used to create this file."));
+
+            metaData.GenericHeaders.Add(new StringMetaDataHeader("CAMERA", CameraInfo.Name));
+
+            metaData.GenericHeaders.Add(new DoubleMetaDataHeader("ROIX", subSambleRectangle.X, "X-position of the ROI"));
+            metaData.GenericHeaders.Add(new DoubleMetaDataHeader("ROIY", subSambleRectangle.Y, "Y-position of the ROI"));
+            metaData.GenericHeaders.Add(new DoubleMetaDataHeader("XORGSUBF", subSambleRectangle.X, "X-position of the ROI"));
+            metaData.GenericHeaders.Add(new DoubleMetaDataHeader("YORGSUBF", subSambleRectangle.Y, "Y-position of the ROI"));
+
+            metaData.GenericHeaders.Add(new DoubleMetaDataHeader("JD-END", AstroUtil.GetJulianDate(DateTime.Now), "Julian exposure end date"));
+            metaData.GenericHeaders.Add(new DoubleMetaDataHeader("JD-BEG", AstroUtil.GetJulianDate(metaData.Image.ExposureStart), "Julian exposure start date"));
+            metaData.GenericHeaders.Add(new DoubleMetaDataHeader("JD-OBS", AstroUtil.GetJulianDate(metaData.Image.ExposureStart.AddSeconds(ExposureTime * ExposureTimeMultiplier / 2)), "Julian exposure mid date"));
+        }
         private bool IsLightSequence() {
             return ImageType == CaptureSequence.ImageTypes.SNAPSHOT || ImageType == CaptureSequence.ImageTypes.LIGHT;
         }
@@ -345,6 +397,46 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
 
             Issues = i;
             return i.Count == 0;
+        }
+        public void UpdateDeviceInfo(CameraInfo cameraStatus) {
+            CameraInfo = cameraStatus;
+        }
+
+        public void UpdateDeviceInfo(TelescopeInfo deviceInfo) {
+            this.telescopeInfo = deviceInfo;
+        }
+
+        public void UpdateDeviceInfo(FilterWheelInfo deviceInfo) {
+            this.filterWheelInfo = deviceInfo;
+        }
+
+        public void UpdateDeviceInfo(FocuserInfo deviceInfo) {
+            this.focuserInfo = deviceInfo;
+        }
+
+        public void UpdateDeviceInfo(RotatorInfo deviceInfo) {
+            this.rotatorInfo = deviceInfo;
+        }
+
+        public void UpdateDeviceInfo(WeatherDataInfo deviceInfo) {
+            this.weatherDataInfo = deviceInfo;
+        }
+
+        public void UpdateEndAutoFocusRun(AutoFocusInfo info) {
+            ;
+        }
+
+        public void UpdateUserFocused(FocuserInfo info) {
+            ;
+        }
+
+        public void Dispose() {
+            this.cameraMediator.RemoveConsumer(this);
+            this.telescopeMediator.RemoveConsumer(this);
+            this.filterWheelMediator.RemoveConsumer(this);
+            this.focuserMediator.RemoveConsumer(this);
+            this.rotatorMediator.RemoveConsumer(this);
+            this.weatherDataMediator.RemoveConsumer(this);
         }
 
         public override TimeSpan GetEstimatedDuration() {

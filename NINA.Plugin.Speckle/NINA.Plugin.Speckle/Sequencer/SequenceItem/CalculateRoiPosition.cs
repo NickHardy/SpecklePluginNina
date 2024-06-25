@@ -90,6 +90,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             this.options = options;
             speckle = new Speckle();
             PlatesolveFirst = true;
+            ExposureTime = 5;
         }
 
         private CalculateRoiPosition(CalculateRoiPosition cloneMe) : this(cloneMe.profileService,
@@ -133,6 +134,10 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
         private bool _PlatesolveFirst;
         [JsonProperty]
         public bool PlatesolveFirst { get => _PlatesolveFirst; set { _PlatesolveFirst = value; RaisePropertyChanged(); } }
+
+        private double _ExposureTime;
+        [JsonProperty]
+        public double ExposureTime { get => _ExposureTime; set { _ExposureTime = value; RaisePropertyChanged(); } }
 
         public override async Task Execute(IProgress<ApplicationStatus> progress, CancellationToken token) {
             bool getBiggestStar = !PlatesolveFirst;
@@ -235,11 +240,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             if (getBiggestStar) {
                 // Platesolve failed so try to get the biggest star in the image
                 // First take another image, so the star isn't blown out
-                if (speckleTarget != null) {
-                    seq.ExposureTime = speckleTarget.PMag != 0 && speckleTarget.PMag < 9 ? 5 : 10;
-                } else {
-                    seq.ExposureTime = 10;
-                }
+                seq.ExposureTime = ExposureTime;
                 var exposureData2 = await imagingMediator.CaptureImage(seq, token, progress);
                 var imageData2 = await exposureData2.ToImageData(progress, token);
 
