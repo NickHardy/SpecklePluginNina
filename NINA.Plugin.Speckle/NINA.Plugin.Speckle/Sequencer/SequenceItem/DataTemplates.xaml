@@ -26,6 +26,8 @@
             <converters:InverseBooleanToVisibilityCollapsedConverter x:Key="InverseBooleanToVisibilityCollapsedConverter" />
         </wpfutil:SharedResourceDictionary>
     </ResourceDictionary.MergedDictionaries>
+c:\users\leon\desktop\net8version\nina.plugin.speckle\nina.plugin.speckle\sequencer\sequenceitem\datatemplates.xaml.cs
+c:\users\leon\desktop\net8version\nina.plugin.speckle\nina.plugin.speckle\sequencer\sequenceitem\datatemplates.xaml
 
     <WrapPanel
         x:Key="TakeExposureDetails"
@@ -501,46 +503,27 @@
         </view:SequenceBlockView>
     </DataTemplate>
 
-    <DataTemplate x:Key="NINA.Plugin.Speckle.Sequencer.SequenceItem.CalculateExposure_Mini">
-        <mini:MiniSequenceItem>
-            <mini:MiniSequenceItem.SequenceItemContent>
-                <StackPanel Orientation="Horizontal">
-
-                </StackPanel>
-            </mini:MiniSequenceItem.SequenceItemContent>
-        </mini:MiniSequenceItem>
-    </DataTemplate>
-
-    <DataTemplate DataType="{x:Type local:CalculateExposure}">
-        <view:SequenceBlockView>
-            <view:SequenceBlockView.SequenceItemContent>
-                <StackPanel Orientation="Horizontal">
-
-                </StackPanel>
-            </view:SequenceBlockView.SequenceItemContent>
-        </view:SequenceBlockView>
-    </DataTemplate>
-
-    <DataTemplate x:Key="NINA.Plugin.Speckle.Sequencer.SequenceItem.LoadReferenceStar_Mini">
-        <mini:MiniSequenceItem>
-            <mini:MiniSequenceItem.SequenceItemContent>
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock VerticalAlignment="Center" Text="{Binding SelectedReferenceStar}" />
-                </StackPanel>
-            </mini:MiniSequenceItem.SequenceItemContent>
-        </mini:MiniSequenceItem>
-    </DataTemplate>
-
     <DataTemplate DataType="{x:Type local:LoadReferenceStar}">
         <view:SequenceBlockView>
             <view:SequenceBlockView.SequenceItemContent>
                 <ComboBox
-                    ItemsSource="{Binding ReferenceStarList, Mode=TwoWay}"
-                    SelectedItem="{Binding SimbadStar, Mode=TwoWay}"
-                    SelectedValue="{Binding SimbadStarMainId, Mode=TwoWay}"
-                    SelectedValuePath="main_id"/>
+                ItemsSource="{Binding ReferenceStarList, Mode=TwoWay}"
+                SelectedItem="{Binding SimbadStar, Mode=TwoWay}"
+                SelectedValue="{Binding SimbadStarMainId, Mode=TwoWay}"
+                HorizontalContentAlignment="Stretch"
+                SelectedValuePath="main_id">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock 
+                            Text="{Binding main_id}" 
+                            TextAlignment="Right" 
+                            HorizontalAlignment="Stretch" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
             </view:SequenceBlockView.SequenceItemContent>
         </view:SequenceBlockView>
     </DataTemplate>
+
 
 </ResourceDictionary>
