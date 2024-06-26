@@ -174,6 +174,11 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
 
         [JsonProperty]
         public bool AutoLoadReferenceStar { get => _AutoLoadReferenceStar; set { _AutoLoadReferenceStar = value; RaisePropertyChanged(); } }
+        
+        private string _SearchTarget;
+
+        [JsonProperty]
+        public string SearchTarget { get => _SearchTarget; set { _SearchTarget = value; RaisePropertyChanged(); RaisePropertyChanged("SpeckleTargetsView"); } }
 
         private SpeckleTarget _speckleTarget;
 
@@ -209,7 +214,13 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
         }
 
         public AsyncObservableCollection<SpeckleTarget> SpeckleTargetsView {
-            get => new AsyncObservableCollection<SpeckleTarget>(SpeckleTargets.Where(x => x.ImageTarget).ToList());
+            get {
+                if (string.IsNullOrWhiteSpace(SearchTarget)) {
+                    return new AsyncObservableCollection<SpeckleTarget>(SpeckleTargets.Where(x => x.ImageTarget).ToList());
+                } else {
+                    return new AsyncObservableCollection<SpeckleTarget>(SpeckleTargets.Where(x => x.ImageTarget && x.Target.IndexOf(SearchTarget, StringComparison.OrdinalIgnoreCase) >= 0).ToList());
+                }
+            }
         }
 
         public int SpeckleTargetCount {
@@ -769,12 +780,8 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                                     speckleTarget.ImageTarget = false; // Can't image this target
                                     speckleTarget.Note = "Target finished.";
                                 }
-                                if (record.Gmag0 > 0 && (record.Gmag0 < speckle.MinMag || record.Gmag0 > speckle.MaxMag)) {
-                                    Logger.Debug("Magnitude not within limits. Skipping target " + speckleTarget.Target + " for user " + speckleTarget.User);
-                                    speckleTarget.ImageTarget = false; // Can't image this target
-                                    speckleTarget.Note = "Target not within magnitude limits.";
-                                }
-                                speckleTarget.Separation = record.Separation != 0 ? record.Separation : record.GaiaSep;
+                                double.TryParse(record.Sep, out var sep);
+                                speckleTarget.Separation = record.Separation != 0 ? record.Separation : sep;
                                 if (speckleTarget.Separation > 0 && (speckleTarget.Separation < speckle.MinSep || speckleTarget.Separation > speckle.MaxSep)) {
                                     Logger.Debug("Seperation not within limits. Skipping target " + speckleTarget.Target + " for user " + speckleTarget.User);
                                     speckleTarget.ImageTarget = false; // Can't image this target
@@ -807,6 +814,11 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                                 speckleTarget.NoCalculation = record.NoCalculation;
                                 speckleTarget.PMag = record.Gmag0 != 0 ? record.Gmag0 : record.PMag;
                                 speckleTarget.SMag = record.Gmag1 != 0 ? record.Gmag1 : record.SMag;
+                                if (speckleTarget.PMag > 0 && (speckleTarget.PMag < speckle.MinMag || speckleTarget.PMag > speckle.MaxMag)) {
+                                    Logger.Debug("Magnitude not within limits. Skipping target " + speckleTarget.Target + " for user " + speckleTarget.User);
+                                    speckleTarget.ImageTarget = false; // Can't image this target
+                                    speckleTarget.Note = "Target not within magnitude limits.";
+                                }
                                 if (speckleTarget.SMag == 0) {
                                     Logger.Debug("Failed to get secondary magnitude for " + speckleTarget.Target);
                                     speckleTarget.NoCalculation = 1;

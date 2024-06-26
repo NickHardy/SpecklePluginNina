@@ -754,10 +754,18 @@
                     </Grid>
                     <Grid Grid.ColumnSpan="2" Grid.Row="1">
                         <StackPanel Grid.ColumnSpan="2" Orientation="Horizontal">
+                            <TextBlock VerticalAlignment="Center" Text="Search target" />
+                            <TextBox
+                            MinWidth="100"
+                            Margin="5,0,0,0"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Center"
+                            Text="{Binding SearchTarget, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            
                             <Button
                             Height="25"
                             Width="200"
-                            Margin="0,0,5,0"
+                            Margin="5,0,5,0"
                             HorizontalAlignment="Left"
                             VerticalAlignment="Center"
                             Command="{Binding LoadTargetCommand}">

@@ -164,7 +164,7 @@ namespace NINA.Plugin.Speckle.Model {
             Map(m => m.RA).Name("RA").Optional().Default("");
             Map(m => m.Decl).Name("Decl").Optional().Default("");
             Map(m => m.PA).Name("PA").Optional().Default("");
-            Map(m => m.Sep).Name("Sep").Optional().Default("");
+            Map(m => m.Sep).Name("Sep").Optional().Default("0");
             Map(m => m.Date).Name("Date").Optional().Default("");
             Map(m => m.Nobs).Name("Nobs").Optional().Default("");
             Map(m => m.Mag0).Name("Mag0").Optional().Default("");
