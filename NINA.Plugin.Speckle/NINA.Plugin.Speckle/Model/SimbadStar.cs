@@ -53,11 +53,13 @@ namespace NINA.Plugin.Speckle.Model {
         [JsonProperty]
         public double b_mag { get; set; }
 
+        public string Title {
+            get => $"{main_id}, Distance: {Math.Round(distance, 3)}°, Color: {Math.Round(color, 2)} (B-V), VMag: {Math.Round(v_mag, 2)}";
+        }
+
         public Coordinates Coordinates() {
             return new Coordinates(Angle.ByDegree(ra), Angle.ByDegree(dec), Epoch.J2000);
         }
-        public override string ToString() {
-            return $"{main_id}, Distance: {Math.Round(distance, 3)}°, Color: {Math.Round(color, 2)} (B-V), VMag: {Math.Round(v_mag, 2)}";
-        }
+
     }
 }

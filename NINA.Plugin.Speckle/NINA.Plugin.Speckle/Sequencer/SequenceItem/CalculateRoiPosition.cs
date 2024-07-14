@@ -110,6 +110,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             clone.ImageFlippedX = ImageFlippedX;
             clone.ImageFlippedY = ImageFlippedY;
             clone.PlatesolveFirst = PlatesolveFirst;
+            clone.ExposureTime = ExposureTime;
             return clone;
         }
 
@@ -193,7 +194,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
 
                     //Translate your coordinates to x/y in relation to center coordinates
                     var inputTarget = ItemUtility.RetrieveInputTarget(Parent);
-                    Point targetPoint = inputTarget.InputCoordinates.Coordinates.XYProjection(plateSolveResult.Coordinates, center, arcsecPerPix, arcsecPerPix, plateSolveResult.Orientation, ProjectionType.Gnomonic);
+                    Point targetPoint = inputTarget.InputCoordinates.Coordinates.XYProjection(plateSolveResult.Coordinates, center, arcsecPerPix, arcsecPerPix, plateSolveResult.PositionAngle, ProjectionType.Gnomonic);
                     Logger.Debug("Found target at " + targetPoint.X + "x" + targetPoint.Y);
 
                     // Check if the target is in the image

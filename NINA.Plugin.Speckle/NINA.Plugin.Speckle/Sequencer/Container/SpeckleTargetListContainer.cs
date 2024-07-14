@@ -285,7 +285,12 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
 
         public async Task<bool> LoadNewTarget() {
             RegisterStatusCurrentTarget();
-            SpeckleTarget = GetNextTarget();
+
+            if (AutoLoadTargetStar) {
+                SpeckleTarget = GetNextTarget();
+            } else {
+                SpeckleTarget = null;
+            }
 
             // Remove finished instructions
             foreach (ISequenceItem item in Items) {
@@ -295,6 +300,8 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             if (SpeckleTarget == null) {
                 CurrentSpeckleTarget = null;
                 await CoreUtil.Wait(TimeSpan.FromMilliseconds(300));
+                if (!AutoLoadTargetStar)
+                    base.ResetAll();
                 RaiseAllPropertiesChanged();
                 return false;
             }

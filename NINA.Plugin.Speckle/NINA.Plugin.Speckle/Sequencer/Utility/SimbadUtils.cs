@@ -76,7 +76,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
                     var url = "http://simbad.u-strasbg.fr/simbad/sim-tap/sync";
                     double maxDistanceRadians = maxDistance * Math.PI / 180;
                     double minDistanceRadians = (1.0 / 60.0) * (Math.PI / 180); // 1 arcminute in radians
-
+                    // TODO check for wds reference
                     string query = $"SELECT TOP 100 basic.main_id, basic.ra, basic.dec, basic.otype_txt, allfluxes.v, allfluxes.b - allfluxes.v AS color, " +
                                    $"2 * ASIN(SQRT(POWER(SIN(({coords.Dec} - basic.dec) * PI() / 360), 2) + COS({coords.Dec} * PI() / 180) * COS(basic.dec * PI() / 180) * POWER(SIN(({coords.RADegrees} - basic.ra) * PI() / 360), 2))) AS dist " +
                                    $"FROM basic " +
@@ -275,57 +275,5 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
                 return null;
             }
         }
-
-        //private VoTable PostFormOld(string url, Dictionary<string, string> dictionary) {
-        //    var boundary = "---------------------------" + DateTime.Now.Ticks.ToString("x");
-        //    string FormDataTemplate = "--{0}\r\nContent-Disposition: form-data; name=\"{1}\"\r\n\r\n{2}\r\n";
-
-        //    HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
-        //    request.Timeout = 30 * 60 * 1000;
-        //    request.Method = "POST";
-        //    request.KeepAlive = true;
-        //    request.ContentType = "multipart/form-data; boundary=" + boundary;
-        //    Stream requestStream = request.GetRequestStream();
-        //    foreach (string key in dictionary.Keys) {
-        //        string item = String.Format(FormDataTemplate, boundary, key, dictionary[key]);
-        //        byte[] itemBytes = System.Text.Encoding.UTF8.GetBytes(item);
-        //        requestStream.Write(itemBytes, 0, itemBytes.Length);
-        //    }
-        //    byte[] endBytes = System.Text.Encoding.UTF8.GetBytes("--" + boundary + "--");
-        //    requestStream.Write(endBytes, 0, endBytes.Length);
-        //    requestStream.Close();
-        //    WebResponse response = (WebResponse)request.GetResponse();
-
-        //    // For debugging
-        //    /*            ITraceWriter traceWriter = new MemoryTraceWriter();
-
-        //                var settings = new JsonSerializerSettings {
-        //                    NullValueHandling = NullValueHandling.Ignore,
-        //                    MissingMemberHandling = MissingMemberHandling.Ignore,
-        //                    Formatting = Newtonsoft.Json.Formatting.None,
-        //                    DateFormatHandling = DateFormatHandling.IsoDateFormat,
-        //                    FloatParseHandling = FloatParseHandling.Decimal,
-        //                    TraceWriter = traceWriter
-        //                };
-
-        //                using (Stream stream = response.GetResponseStream()) {
-        //                    StreamReader reader = new StreamReader(stream, Encoding.UTF8);
-        //                    String responseString = reader.ReadToEnd();
-        //                    return JsonConvert.DeserializeObject<SimbadCompStarChart>(responseString, settings);
-        //                }*/
-
-        //    try {
-        //        var serializer = new JsonSerializer();
-
-        //        using (var sr = new StreamReader(response.GetResponseStream(), Encoding.UTF8))
-        //        using (var jsonTextReader = new JsonTextReader(sr)) {
-        //            return serializer.Deserialize<VoTable>(jsonTextReader);
-        //        }
-        //    } catch {
-        //        Logger.Info("Failed to get information from url:" + url);
-        //        return null;
-        //    }
-        //}
-
     }
 }

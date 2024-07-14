@@ -515,7 +515,7 @@ c:\users\leon\desktop\net8version\nina.plugin.speckle\nina.plugin.speckle\sequen
                     <ComboBox.ItemTemplate>
                         <DataTemplate>
                             <TextBlock 
-                            Text="{Binding main_id}" 
+                            Text="{Binding Title}" 
                             TextAlignment="Right" 
                             HorizontalAlignment="Stretch" />
                         </DataTemplate>

@@ -128,8 +128,9 @@ namespace NINA.Plugin.Speckle.Sequencer.Container.ExecutionStrategy {
 
             var listContainer = context as SpeckleTargetListContainer;
             if (next == null && listContainer != null) {
-                listContainer.LoadNewTarget().ConfigureAwait(false).GetAwaiter().GetResult();
-                next = new WaitForTimeSpan();
+                var targetLoaded = listContainer.LoadNewTarget().ConfigureAwait(false).GetAwaiter().GetResult();
+                if (targetLoaded)
+                    next = new WaitForTimeSpan();
             }
             var canContinue = false;
             if (next != null) {
