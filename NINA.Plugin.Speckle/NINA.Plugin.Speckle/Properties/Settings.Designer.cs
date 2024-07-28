@@ -406,5 +406,29 @@ namespace NINA.Plugin.Speckle.Properties {
                 this["MinReferenceMag"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool UseSimbadRefStars {
+            get {
+                return ((bool)(this["UseSimbadRefStars"]));
+            }
+            set {
+                this["UseSimbadRefStars"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool UseUSNOSingleStarList {
+            get {
+                return ((bool)(this["UseUSNOSingleStarList"]));
+            }
+            set {
+                this["UseUSNOSingleStarList"] = value;
+            }
+        }
     }
 }

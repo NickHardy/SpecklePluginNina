@@ -180,6 +180,8 @@
                                 <RowDefinition MinHeight="25" />
                                 <RowDefinition MinHeight="25" />
                                 <RowDefinition MinHeight="25" />
+                                <RowDefinition MinHeight="25" />
+                                <RowDefinition MinHeight="25" />
                             </Grid.RowDefinitions>
 
                             <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Text="Default number of cycles" />
@@ -259,6 +261,25 @@
                 VerticalAlignment="Center"
                 Text="{Binding ReferenceExposures}" />
 
+                            <TextBlock Grid.Row="8" Grid.Column="0" VerticalAlignment="Center" Text="Get simbad reference stars" />
+                            <CheckBox
+                                Grid.Row="8"
+                                Grid.Column="1"
+                                MinWidth="80"
+                                Margin="5,0,0,0"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Center"
+                                IsChecked="{Binding UseSimbadRefStars}" />
+
+                            <TextBlock Grid.Row="9" Grid.Column="0" VerticalAlignment="Center" Text="Get USNO reference stars" />
+                            <CheckBox
+                                Grid.Row="9"
+                                Grid.Column="1"
+                                MinWidth="80"
+                                Margin="5,0,0,0"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Center"
+                                IsChecked="{Binding UseUSNOSingleStarList}" />
                         </Grid>
                         <Grid Grid.Column="2" Margin="10,0">
                             <Grid.ColumnDefinitions>

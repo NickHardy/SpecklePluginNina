@@ -308,6 +308,24 @@ namespace NINA.Plugin.Speckle {
             }
         }
 
+        public bool UseSimbadRefStars {
+            get => Settings.Default.UseSimbadRefStars;
+            set {
+                Settings.Default.UseSimbadRefStars = value;
+                CoreUtil.SaveSettings(Properties.Settings.Default);
+                RaisePropertyChanged();
+            }
+        }
+
+        public bool UseUSNOSingleStarList {
+            get => Settings.Default.UseUSNOSingleStarList;
+            set {
+                Settings.Default.UseUSNOSingleStarList = value;
+                CoreUtil.SaveSettings(Properties.Settings.Default);
+                RaisePropertyChanged();
+            }
+        }
+
         public bool GetGalaxyFillins {
             get => Settings.Default.GetGalaxyFillins;
             set {

@@ -29,6 +29,8 @@ using System.IO;
 using Newtonsoft.Json;
 using NINA.Core.Utility.Notification;
 using System.Net.Http;
+using System.Globalization;
+using System.Reflection;
 
 namespace NINA.Plugin.Speckle.Sequencer.Utility {
 
@@ -81,8 +83,10 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
                                    $"2 * ASIN(SQRT(POWER(SIN(({coords.Dec} - basic.dec) * PI() / 360), 2) + COS({coords.Dec} * PI() / 180) * COS(basic.dec * PI() / 180) * POWER(SIN(({coords.RADegrees} - basic.ra) * PI() / 360), 2))) AS dist " +
                                    $"FROM basic " +
                                    $"JOIN ident ON basic.oid = ident.oidref " +
+                                   $"JOIN ids ON basic.oid = ids.oidref " +
                                    $"JOIN allfluxes ON basic.oid = allfluxes.oidref " +
                                    $"WHERE ident.id LIKE 'SAO%' AND basic.otype_txt = '*' AND allfluxes.v BETWEEN {minMag} AND {maxMag} " +
+                                   $"AND ids.ids NOT LIKE '%WDS%' AND ids.ids NOT LIKE '%IDS%' AND ids.ids NOT LIKE '%CCDM%' " +
                                    $"AND basic.ra IS NOT NULL AND basic.dec IS NOT NULL " +
                                    $"AND 2 * ASIN(SQRT(POWER(SIN(({coords.Dec} - basic.dec) * PI() / 360), 2) + COS({coords.Dec} * PI() / 180) * COS(basic.dec * PI() / 180) * POWER(SIN(({coords.RADegrees} - basic.ra) * PI() / 360), 2))) BETWEEN {minDistanceRadians} AND {maxDistanceRadians} " +
                                    $"ORDER BY dist;";
@@ -116,6 +120,50 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
                 Logger.Error(ex);
                 Notification.ShowError(ex.Message);
             } finally {
+                externalProgress.Report(new ApplicationStatus() { Status = "" });
+            }
+            return stars;
+        }
+
+        public async Task<List<SimbadStar>> FindSingleBrightStars(IProgress<ApplicationStatus> externalProgress, CancellationToken token, Coordinates coords, double maxDistance = 5d, double minMag = 0.0d, double maxMag = 10.0d) {
+            List<SimbadStar> stars = new List<SimbadStar>();
+            var assemblyFolder = new Uri(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)).LocalPath;
+            var i = 1;
+            try {
+                using (StreamReader sr = new StreamReader(Path.Combine(assemblyFolder, "SingleBrightStarsUSNO2006.txt"))) {
+                    externalProgress.Report(new ApplicationStatus() { Status = "Retrieving stars from the SingleBrightStars list" });
+                    string line;
+                    // Skip the header line
+                    sr.ReadLine();
+
+                    while ((line = sr.ReadLine()) != null) {
+                        i++;
+                        token.ThrowIfCancellationRequested();
+                        SimbadStar record = new SimbadStar {
+                            main_id = $"{line.Substring(0, 7).Trim()} {line.Substring(32, 10).Trim()}",
+                            ra = AstroUtil.HMSToDegrees($"{line.Substring(47, 10).Trim()}"),
+                            dec = AstroUtil.DMSToDegrees($"{line.Substring(58, 10).Trim()}"),
+                            v_mag = double.Parse($"{line.Substring(73, 5).Trim()}", CultureInfo.InvariantCulture)
+                        };
+                        var color = line.Length >= 84 ? line.Substring(79, line.Length - 79).Trim() + "0" : "0";
+                        record.color = double.Parse(color, CultureInfo.InvariantCulture);
+                        Separation sep = coords - record.Coordinates();
+                        record.distance = sep?.Distance?.Degree ?? double.NaN;
+                        if (record.distance == double.NaN || record.distance > maxDistance)
+                            continue;
+                        if (record.v_mag < minMag || record.v_mag > maxMag)
+                            continue;
+                        stars.Add(record);
+                    }
+                }
+            }
+            catch (OperationCanceledException) {
+            }
+            catch (Exception ex) {
+                Logger.Error(ex);
+                Notification.ShowError(ex.Message);
+            }
+            finally {
                 externalProgress.Report(new ApplicationStatus() { Status = "" });
             }
             return stars;

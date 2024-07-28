@@ -647,7 +647,11 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                     Logger.Debug("Couldn't find target star for SpeckleTarget. Assuming G-type star. Error: " + ex.Message);
                 }
 
-                SpeckleTarget.ReferenceStarList = await SimUtils.FindSimbadSaoStars(externalProgress, token, SpeckleTarget.Coordinates(), speckle.SearchRadius, minMagnitude, maxMagnitude).ConfigureAwait(false);
+                SpeckleTarget.ReferenceStarList = new List<SimbadStar>();
+                if (speckle.UseSimbadRefStars)
+                    SpeckleTarget.ReferenceStarList.AddRange(await SimUtils.FindSimbadSaoStars(externalProgress, token, SpeckleTarget.Coordinates(), speckle.SearchRadius, minMagnitude, maxMagnitude).ConfigureAwait(false));
+                if (speckle.UseUSNOSingleStarList)
+                    SpeckleTarget.ReferenceStarList.AddRange(await SimUtils.FindSingleBrightStars(externalProgress, token, SpeckleTarget.Coordinates(), speckle.SearchRadius, minMagnitude, maxMagnitude).ConfigureAwait(false));
 
                 if (speckle.DomePositionLock) {
                     var slitAz1 = speckle.DomePosition - (speckle.DomeSlitWidth / 2);
@@ -672,14 +676,13 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
 
                     SpeckleTarget.ReferenceStar = SpeckleTarget.ReferenceStarList.FirstOrDefault();
 
-                    Logger.Debug(JsonConvert.SerializeObject(SpeckleTarget.ReferenceStarList, Formatting.Indented));
-
                 } else {
                     // color match first, then distance (the distance is already limited in the simbadutils)
-                    SpeckleTarget.ReferenceStar = SpeckleTarget.ReferenceStarList
+                    SpeckleTarget.ReferenceStarList = SpeckleTarget.ReferenceStarList
                         .OrderBy(r => Math.Abs(r.color - targetColor))
                         .ThenBy(r => r.distance)
-                        .FirstOrDefault();
+                        .ToList();
+                    SpeckleTarget.ReferenceStar = SpeckleTarget.ReferenceStarList.FirstOrDefault();
                 }
                 if (SpeckleTarget.ReferenceStar == null) {
                     Logger.Debug("Couldn't find reference SAO star for SpeckleTarget within " + speckle.SearchRadius + " degrees and magnitudes: " + minMagnitude + " and " + maxMagnitude);
