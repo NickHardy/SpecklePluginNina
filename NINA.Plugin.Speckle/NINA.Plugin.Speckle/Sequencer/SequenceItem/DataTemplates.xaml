@@ -26,8 +26,6 @@
             <converters:InverseBooleanToVisibilityCollapsedConverter x:Key="InverseBooleanToVisibilityCollapsedConverter" />
         </wpfutil:SharedResourceDictionary>
     </ResourceDictionary.MergedDictionaries>
-c:\users\leon\desktop\net8version\nina.plugin.speckle\nina.plugin.speckle\sequencer\sequenceitem\datatemplates.xaml.cs
-c:\users\leon\desktop\net8version\nina.plugin.speckle\nina.plugin.speckle\sequencer\sequenceitem\datatemplates.xaml
 
     <WrapPanel
         x:Key="TakeExposureDetails"
