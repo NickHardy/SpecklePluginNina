@@ -1,0 +1,34 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <OutputType>Library</OutputType>
+    <AssemblyName>SpeckleInterferometry</AssemblyName>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <UseWindowsForms>true</UseWindowsForms>
+    <UseWPF>true</UseWPF>
+    <ImportWindowsDesktopTargets>true</ImportWindowsDesktopTargets>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="CsvHelper" Version="31.0.2" />
+    <PackageReference Include="NINA.Plugin" Version="3.0.0.3005-rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="ReachFramework" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Update="Properties\Settings.Designer.cs">
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+  </ItemGroup>
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="if not exist &quot;%25localappdata%25\NINA\Plugins&quot; (&#xD;&#xA;    echo &quot;Creating Plugins %25localappdata%25\NINA\Plugins folder&quot;&#xD;&#xA;    mkdir  &quot;%25localappdata%25\NINA\Plugins&quot;&#xD;&#xA;)&#xD;&#xA;if not exist &quot;%25localappdata%25\NINA\Plugins\3.0.0&quot; (&#xD;&#xA;    echo &quot;Creating Plugins %25localappdata%25\NINA\Plugins\3.0.0 folder&quot;&#xD;&#xA;    mkdir  &quot;%25localappdata%25\NINA\Plugins\3.0.0&quot;&#xD;&#xA;)&#xD;&#xA;&#xD;&#xA;if exist &quot;%25localappdata%25\NINA\Plugins\3.0.0\$(TargetName)&quot; (&#xD;&#xA;    echo &quot; folder cleanup&quot;&#xD;&#xA;    rmdir &quot;%25localappdata%25\NINA\Plugins\3.0.0\$(TargetName)&quot; /S /Q&#xD;&#xA;)&#xD;&#xA;&#xD;&#xA;if not exist &quot;%25localappdata%25\NINA\Plugins\3.0.0\$(TargetName)&quot; (&#xD;&#xA;    echo &quot;Creating %25localappdata%25\NINA\Plugin\3.0.0\$(TargetName) folder&quot;&#xD;&#xA;    mkdir  &quot;%25localappdata%25\NINA\Plugins\3.0.0\$(TargetName)&quot;&#xD;&#xA;)&#xD;&#xA;&#xD;&#xA;echo &quot;Copying $(TargetDir)$(TargetFileName) to plugin folder&quot;&#xD;&#xA;copy &quot;$(TargetDir)$(TargetFileName)&quot; &quot;%25localappdata%25\NINA\Plugins\3.0.0\$(TargetName)\$(TargetName).dll&quot;&#xD;&#xA;copy &quot;$(ProjectDir)\Resources\*&quot; &quot;%25localappdata%25\NINA\Plugins\3.0.0\$(TargetName)\&quot;" />
+  </Target>
+</Project>
