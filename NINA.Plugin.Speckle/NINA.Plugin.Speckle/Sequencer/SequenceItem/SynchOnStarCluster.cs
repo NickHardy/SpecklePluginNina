@@ -83,7 +83,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             this.plateSolverFactory = plateSolverFactory;
             this.windowServiceFactory = windowServiceFactory;
             Coordinates = new InputCoordinates();
-            speckle = new Speckle();
+            speckle = new Speckle(profileService);
 
             SearchRadius = speckle.SearchRadius;
             SlewBackToTarget = true;

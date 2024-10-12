@@ -100,7 +100,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             this.telescopeMediator = telescopeMediator;
 
             //Task.Run(() => NighttimeData = nighttimeCalculator.Calculate(DateTime.Now.AddHours(4)));
-            speckle = new Speckle();
+            speckle = new Speckle(profileService);
             TargetNr = 0;
             User = speckle.User;
             Template = speckle.DefaultTemplate;

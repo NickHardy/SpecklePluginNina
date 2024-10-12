@@ -88,7 +88,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             this.imageHistoryVM = imageHistoryVM;
             this.imageSaveMediator = imageSaveMediator;
             this.options = options;
-            speckle = new Speckle();
+            speckle = new Speckle(profileService);
             PlatesolveFirst = true;
             ExposureTime = 5;
         }
