@@ -1,22 +1,20 @@
-﻿using NINA.Plugin.Speckle.Properties;
-using NINA.Core.Utility;
-using NINA.Plugin;
-using NINA.Plugin.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel.Composition;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
+﻿using Newtonsoft.Json;
 using NINA.Core.Model;
-using NINA.WPF.Base.Interfaces.ViewModel;
-using NINA.WPF.Base.Interfaces.Mediator;
+using NINA.Core.Utility;
 using NINA.Image.ImageData;
+using NINA.Plugin.Interfaces;
 using NINA.Plugin.Speckle.Model;
-using Newtonsoft.Json;
+using NINA.Profile;
 using NINA.Profile.Interfaces;
+using NINA.WPF.Base.Interfaces.Mediator;
+using NINA.WPF.Base.Interfaces.ViewModel;
+using System;
+using System.ComponentModel.Composition;
+using System.ComponentModel;
+using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
+using Settings = NINA.Plugin.Speckle.Properties.Settings;
 
 namespace NINA.Plugin.Speckle {
     /// <summary>
@@ -27,368 +25,358 @@ namespace NINA.Plugin.Speckle {
     /// The user interface for the settings will be defined by a DataTemplate with the key having the naming convention "<Speckle.Name>_Options" where Speckle.Name corresponds to the AssemblyTitle - In this template example it is found in the Options.xaml
     /// </summary>
     [Export(typeof(IPluginManifest))]
-    public class Speckle : PluginBase {
+    public class Speckle : PluginBase, INotifyPropertyChanged {
 
         private readonly IProfileService _profileService;
-        public ImagePattern notePattern = new ImagePattern("$$NOTE$$", "Possible note about target", "Speckle");
+        private readonly PluginOptionsAccessor _pluginOptionsAccessor;
+
+        public ImagePattern notePattern = new("$$NOTE$$", "Possible note about target", "Speckle");
 
         [ImportingConstructor]
         public Speckle(IProfileService profileService, IOptionsVM options, IImageSaveMediator imageSaveMediator) {
-            if (Settings.Default.UpdateSettings) {
-                Settings.Default.Upgrade();
-                Settings.Default.UpdateSettings = false;
-                CoreUtil.SaveSettings(Settings.Default);
-            }
             _profileService = profileService;
-            notePattern.Value = "";
+            _profileService.ProfileChanged += ProfileService_ProfileChanged;
+
+            Guid? guid = PluginOptionsAccessor.GetAssemblyGuid(typeof(Speckle)) ?? throw new Exception($"GUID was not found in assembly metadata");
+            _pluginOptionsAccessor = new PluginOptionsAccessor(_profileService, guid.Value);
+
+            if (!SpeckleSettingsMigrated) {
+                Logger.Info($"Migrating app settings to NINA profile {_profileService.ActiveProfile.Name} ({_profileService.ActiveProfile.Id})");
+                MigrateSettingsToProfile();
+                SpeckleSettingsMigrated = true;
+            }
+
+            notePattern.Value = string.Empty;
             options.AddImagePattern(notePattern);
 
             imageSaveMediator.BeforeFinalizeImageSaved += ImageSaveMediator_BeforeFinalizeImageSaved;
-            if (Settings.Default.Telescope == "") {
-                Telescope = new Telescope("PW1000", 1000, 470, 6000);
-            } else {
-                Telescope = JsonConvert.DeserializeObject<Telescope>(Settings.Default.Telescope);
-            }
-            if (Settings.Default.Barlow == "") {
-                Barlow = new Barlow("2x Barlow", 2);
-            } else {
-                Barlow = JsonConvert.DeserializeObject<Barlow>(Settings.Default.Barlow);
-            }
-            if (FilterTransmission == "") {
-                FilterTransmissionList = new AsyncObservableCollection<Filter>();
-                var filters = _profileService.ActiveProfile.FilterWheelSettings.FilterWheelFilters;
-                foreach (var filter in filters) {
-                    FilterTransmissionList.Add(new Filter(filter.Name, new double[] { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }));
-                }
-            }
         }
 
-        public Speckle() {
-            if (Settings.Default.UpdateSettings) {
-                Settings.Default.Upgrade();
-                Settings.Default.UpdateSettings = false;
-                CoreUtil.SaveSettings(Settings.Default);
-            }
-            if (Settings.Default.Telescope == "") {
-                Telescope = new Telescope("PW1000", 1000, 470, 6000);
-            }
-            else {
-                Telescope = JsonConvert.DeserializeObject<Telescope>(Settings.Default.Telescope);
-            }
-            if (Settings.Default.Barlow == "") {
-                Barlow = new Barlow("2x Barlow", 2);
-            }
-            else {
-                Barlow = JsonConvert.DeserializeObject<Barlow>(Settings.Default.Barlow);
-            }
+        public Speckle(IProfileService profileService) {
+            _profileService = profileService;
+            _profileService.ProfileChanged += ProfileService_ProfileChanged;
+
+            Guid? guid = PluginOptionsAccessor.GetAssemblyGuid(typeof(Speckle)) ?? throw new Exception($"GUID was not found in assembly metadata");
+            _pluginOptionsAccessor = new PluginOptionsAccessor(_profileService, guid.Value);
+        }
+
+        public override Task Teardown() {
+            _profileService.ProfileChanged -= ProfileService_ProfileChanged;
+            return base.Teardown();
         }
 
         public double MDistance {
-            get => Settings.Default.MDistance;
+            get => _pluginOptionsAccessor.GetValueDouble(nameof(MDistance), 5d);
             set {
-                Settings.Default.MDistance = value;
-                CoreUtil.SaveSettings(Properties.Settings.Default);
+                _pluginOptionsAccessor.SetValueDouble(nameof(MDistance), value);
                 RaisePropertyChanged();
             }
         }
 
         public double MoonDistance {
-            get => Settings.Default.MoonDistance;
+            get => _pluginOptionsAccessor.GetValueDouble(nameof(MoonDistance), 20d);
             set {
-                Settings.Default.MoonDistance = value;
-                CoreUtil.SaveSettings(Properties.Settings.Default);
+                _pluginOptionsAccessor.SetValueDouble(nameof(MoonDistance), value);
                 RaisePropertyChanged();
             }
         }
 
         public double SearchRadius {
-            get => Settings.Default.SearchRadius;
+            get => _pluginOptionsAccessor.GetValueDouble(nameof(SearchRadius), 5d);
             set {
-                Settings.Default.SearchRadius = value;
-                CoreUtil.SaveSettings(Properties.Settings.Default);
+                _pluginOptionsAccessor.SetValueDouble(nameof(SearchRadius), value);
                 RaisePropertyChanged();
             }
         }
 
         public double AltitudeMin {
-            get => Settings.Default.AltitudeMin;
+            get => _pluginOptionsAccessor.GetValueDouble(nameof(AltitudeMin), 40d);
             set {
-                Settings.Default.AltitudeMin = value;
-                CoreUtil.SaveSettings(Properties.Settings.Default);
+                _pluginOptionsAccessor.SetValueDouble(nameof(AltitudeMin), value);
                 RaisePropertyChanged();
             }
         }
 
         public double AltitudeMax {
-            get => Settings.Default.AltitudeMax;
+            get => _pluginOptionsAccessor.GetValueDouble(nameof(AltitudeMax), 80d);
             set {
-                Settings.Default.AltitudeMax = value;
-                CoreUtil.SaveSettings(Properties.Settings.Default);
+                _pluginOptionsAccessor.SetValueDouble(nameof(AltitudeMax), value);
                 RaisePropertyChanged();
             }
         }
 
         public int Nights {
-            get => Settings.Default.Nights;
+            get => _pluginOptionsAccessor.GetValueInt32(nameof(Nights), 2);
             set {
-                Settings.Default.Nights = value;
-                CoreUtil.SaveSettings(Properties.Settings.Default);
+                _pluginOptionsAccessor.SetValueInt32(nameof(Nights), value);
                 RaisePropertyChanged();
             }
         }
 
         public int Cycles {
-            get => Settings.Default.Cycles;
+            get => _pluginOptionsAccessor.GetValueInt32(nameof(Cycles), 1);
             set {
-                Settings.Default.Cycles = value;
-                CoreUtil.SaveSettings(Properties.Settings.Default);
+                _pluginOptionsAccessor.SetValueInt32(nameof(Cycles), value);
                 RaisePropertyChanged();
             }
         }
 
         public int Priority {
-            get => Settings.Default.Priority;
+            get => _pluginOptionsAccessor.GetValueInt32(nameof(Priority), 1);
             set {
-                Settings.Default.Priority = value;
-                CoreUtil.SaveSettings(Properties.Settings.Default);
+                _pluginOptionsAccessor.SetValueInt32(nameof(Priority), value);
                 RaisePropertyChanged();
             }
         }
 
         public double MinMag {
-            get => Settings.Default.MinMag;
+            get => _pluginOptionsAccessor.GetValueDouble(nameof(MinMag), 5d);
             set {
-                Settings.Default.MinMag = value;
-                CoreUtil.SaveSettings(Properties.Settings.Default);
+                _pluginOptionsAccessor.SetValueDouble(nameof(MinMag), value);
                 RaisePropertyChanged();
             }
         }
 
         public double MaxMag {
-            get => Settings.Default.MaxMag;
+            get => _pluginOptionsAccessor.GetValueDouble(nameof(MaxMag), 12d);
             set {
-                Settings.Default.MaxMag = value;
-                CoreUtil.SaveSettings(Properties.Settings.Default);
+                _pluginOptionsAccessor.SetValueDouble(nameof(MaxMag), value);
                 RaisePropertyChanged();
             }
         }
 
         public double MinSep {
-            get => Settings.Default.MinSep;
+            get => _pluginOptionsAccessor.GetValueDouble(nameof(MinSep), 0d);
             set {
-                Settings.Default.MinSep = value;
-                CoreUtil.SaveSettings(Properties.Settings.Default);
+                _pluginOptionsAccessor.SetValueDouble(nameof(MinSep), value);
                 RaisePropertyChanged();
             }
         }
 
         public double MaxSep {
-            get => Settings.Default.MaxSep;
+            get => _pluginOptionsAccessor.GetValueDouble(nameof(MaxSep), 10d);
             set {
-                Settings.Default.MaxSep = value;
-                CoreUtil.SaveSettings(Properties.Settings.Default);
+                _pluginOptionsAccessor.SetValueDouble(nameof(MaxSep), value);
                 RaisePropertyChanged();
             }
         }
 
         public bool DomePositionLock {
-            get => Settings.Default.DomePositionLock;
+            get => _pluginOptionsAccessor.GetValueBoolean(nameof(DomePositionLock), false);
             set {
-                Settings.Default.DomePositionLock = value;
-                CoreUtil.SaveSettings(Properties.Settings.Default);
+                _pluginOptionsAccessor.SetValueBoolean(nameof(DomePositionLock), value);
                 RaisePropertyChanged();
             }
         }
 
         public double DomePosition {
-            get => Settings.Default.DomePosition;
+            get => _pluginOptionsAccessor.GetValueDouble(nameof(DomePosition), 0d);
             set {
-                Settings.Default.DomePosition = value;
-                CoreUtil.SaveSettings(Properties.Settings.Default);
+                _pluginOptionsAccessor.SetValueDouble(nameof(DomePosition), value);
                 RaisePropertyChanged();
             }
         }
 
         public double DomeSlitWidth {
-            get => Settings.Default.DomeSlitWidth;
+            get => _pluginOptionsAccessor.GetValueDouble(nameof(DomeSlitWidth), 0d);
             set {
-                Settings.Default.DomeSlitWidth = value;
-                CoreUtil.SaveSettings(Properties.Settings.Default);
+                _pluginOptionsAccessor.SetValueDouble(nameof(DomeSlitWidth), value);
                 RaisePropertyChanged();
             }
         }
 
         public string DefaultTemplate {
-            get => Settings.Default.DefaultTemplate;
+            get => _pluginOptionsAccessor.GetValueString(nameof(DefaultTemplate), string.Empty);
             set {
-                Settings.Default.DefaultTemplate = value;
-                CoreUtil.SaveSettings(Properties.Settings.Default);
+                _pluginOptionsAccessor.SetValueString(nameof(DefaultTemplate), value);
                 RaisePropertyChanged();
             }
         }
 
         public string DefaultRefTemplate {
-            get => Settings.Default.DefaultRefTemplate;
+            get => _pluginOptionsAccessor.GetValueString(nameof(DefaultRefTemplate), string.Empty);
             set {
-                Settings.Default.DefaultRefTemplate = value;
-                CoreUtil.SaveSettings(Properties.Settings.Default);
+                _pluginOptionsAccessor.SetValueString(nameof(DefaultRefTemplate), value);
                 RaisePropertyChanged();
             }
         }
 
         public int Exposures {
-            get => Settings.Default.Exposures;
+            get => _pluginOptionsAccessor.GetValueInt32(nameof(Exposures), 1000);
             set {
-                Settings.Default.Exposures = value;
-                CoreUtil.SaveSettings(Properties.Settings.Default);
+                _pluginOptionsAccessor.SetValueInt32(nameof(Exposures), value);
                 RaisePropertyChanged();
             }
         }
 
         public double ExposureTime {
-            get => Settings.Default.ExposureTime;
+            get => _pluginOptionsAccessor.GetValueDouble(nameof(ExposureTime), 1d);
             set {
-                Settings.Default.ExposureTime = value;
-                CoreUtil.SaveSettings(Properties.Settings.Default);
+                _pluginOptionsAccessor.SetValueDouble(nameof(ExposureTime), value);
                 RaisePropertyChanged();
             }
         }
 
         public string User {
-            get => Settings.Default.User;
+            get => _pluginOptionsAccessor.GetValueString(nameof(User), string.Empty);
             set {
-                Settings.Default.User = value;
-                CoreUtil.SaveSettings(Properties.Settings.Default);
+                _pluginOptionsAccessor.SetValueString(nameof(User), value);
                 RaisePropertyChanged();
             }
         }
 
         public int ShowEveryNthImage {
-            get => Settings.Default.ShowEveryNthImage;
+            get => _pluginOptionsAccessor.GetValueInt32(nameof(ShowEveryNthImage), 10);
             set {
-                Settings.Default.ShowEveryNthImage = value;
-                CoreUtil.SaveSettings(Properties.Settings.Default);
+                _pluginOptionsAccessor.SetValueInt32(nameof(ShowEveryNthImage), value);
                 RaisePropertyChanged();
             }
         }
 
         public int CheckImageTimeWithinMinutes {
-            get => Settings.Default.CheckImageTimeWithinMinutes;
+            get => _pluginOptionsAccessor.GetValueInt32(nameof(CheckImageTimeWithinMinutes), 15);
             set {
-                Settings.Default.CheckImageTimeWithinMinutes = value;
-                CoreUtil.SaveSettings(Properties.Settings.Default);
+                _pluginOptionsAccessor.SetValueInt32(nameof(CheckImageTimeWithinMinutes), value);
                 RaisePropertyChanged();
             }
         }
 
         public double MaxReferenceMag {
-            get => Settings.Default.MaxReferenceMag;
+            get => _pluginOptionsAccessor.GetValueDouble(nameof(MaxReferenceMag), 8d);
             set {
-                Settings.Default.MaxReferenceMag = value;
-                CoreUtil.SaveSettings(Properties.Settings.Default);
+                _pluginOptionsAccessor.SetValueDouble(nameof(MaxReferenceMag), value);
                 RaisePropertyChanged();
             }
         }
 
         public double MinReferenceMag {
-            get => Settings.Default.MinReferenceMag;
+            get => _pluginOptionsAccessor.GetValueDouble(nameof(MinReferenceMag), 0d);
             set {
-                Settings.Default.MinReferenceMag = value;
-                CoreUtil.SaveSettings(Properties.Settings.Default);
+                _pluginOptionsAccessor.SetValueDouble(nameof(MinReferenceMag), value);
                 RaisePropertyChanged();
             }
         }
 
         public int ReferenceExposures {
-            get => Settings.Default.ReferenceExposures;
+            get => _pluginOptionsAccessor.GetValueInt32(nameof(ReferenceExposures), 300);
             set {
-                Settings.Default.ReferenceExposures = value;
-                CoreUtil.SaveSettings(Properties.Settings.Default);
+                _pluginOptionsAccessor.SetValueInt32(nameof(ReferenceExposures), value);
                 RaisePropertyChanged();
             }
         }
 
         public bool UseSimbadRefStars {
-            get => Settings.Default.UseSimbadRefStars;
+            get => _pluginOptionsAccessor.GetValueBoolean(nameof(UseSimbadRefStars), true);
             set {
-                Settings.Default.UseSimbadRefStars = value;
-                CoreUtil.SaveSettings(Properties.Settings.Default);
+                _pluginOptionsAccessor.SetValueBoolean(nameof(UseSimbadRefStars), value);
                 RaisePropertyChanged();
             }
         }
 
         public bool UseUSNOSingleStarList {
-            get => Settings.Default.UseUSNOSingleStarList;
+            get => _pluginOptionsAccessor.GetValueBoolean(nameof(UseUSNOSingleStarList), true);
             set {
-                Settings.Default.UseUSNOSingleStarList = value;
-                CoreUtil.SaveSettings(Properties.Settings.Default);
+                _pluginOptionsAccessor.SetValueBoolean(nameof(UseUSNOSingleStarList), value);
                 RaisePropertyChanged();
             }
         }
 
         public bool GetGalaxyFillins {
-            get => Settings.Default.GetGalaxyFillins;
+            get => _pluginOptionsAccessor.GetValueBoolean(nameof(GetGalaxyFillins), false);
             set {
-                Settings.Default.GetGalaxyFillins = value;
-                CoreUtil.SaveSettings(Properties.Settings.Default);
+                _pluginOptionsAccessor.SetValueBoolean(nameof(GetGalaxyFillins), value);
                 RaisePropertyChanged();
             }
         }
+
         public double MaxGalaxyMag {
-            get => Settings.Default.MaxGalaxyMag;
+            get => _pluginOptionsAccessor.GetValueDouble(nameof(MaxGalaxyMag), 16d);
             set {
-                Settings.Default.MaxGalaxyMag = value;
-                CoreUtil.SaveSettings(Properties.Settings.Default);
+                _pluginOptionsAccessor.SetValueDouble(nameof(MaxGalaxyMag), value);
                 RaisePropertyChanged();
             }
         }
+
         public string GalaxyTemplate {
-            get => Settings.Default.GalaxyTemplate;
+            get => _pluginOptionsAccessor.GetValueString(nameof(GalaxyTemplate), string.Empty);
             set {
-                Settings.Default.GalaxyTemplate = value;
-                CoreUtil.SaveSettings(Properties.Settings.Default);
+                _pluginOptionsAccessor.SetValueString(nameof(GalaxyTemplate), value);
                 RaisePropertyChanged();
             }
         }
 
-        private Telescope _telescope;
+        public string TelescopeName {
+            get => Telescope.TelescopeName;
+            set {
+                var telescope = Telescope;
+                telescope.TelescopeName = value;
+                Telescope = telescope;
+                RaisePropertyChanged();
+            }
+        }
+
+        public double ApertureD {
+            get => Telescope.ApertureD;
+            set {
+                var telescope = Telescope;
+                telescope.ApertureD = value;
+                Telescope = telescope;
+                RaisePropertyChanged();
+            }
+        }
+
+        public double ObstructionD {
+            get => Telescope.ObstructionD;
+            set {
+                var telescope = Telescope;
+                telescope.ObstructionD = value;
+                Telescope = telescope;
+                RaisePropertyChanged();
+            }
+        }
+
+        public double Focallength {
+            get => Telescope.Focallength;
+            set {
+                var telescope = Telescope;
+                telescope.Focallength = value;
+                Telescope = telescope;
+                RaisePropertyChanged();
+            }
+        }
+
         public Telescope Telescope {
-            get => _telescope;
+            get => JsonConvert.DeserializeObject<Telescope>(_pluginOptionsAccessor.GetValueString(nameof(Telescope), DefaultTelescope()));
             set {
-                _telescope = value;
-                RaisePropertyChanged(); 
+                _pluginOptionsAccessor.SetValueString(nameof(Telescope), JsonConvert.SerializeObject(value));
+                RaisePropertyChanged();
             }
         }
 
-        private Barlow _barlow;
+        public string BarlowName {
+            get => Barlow.BarlowName;
+            set {
+                var barlow = Barlow;
+                barlow.BarlowName = value;
+                Barlow = barlow;
+                RaisePropertyChanged();
+            }
+        }
+
+        public double BarlowFactor {
+            get => Barlow.BarlowFactor;
+            set {
+                var barlow = Barlow;
+                barlow.BarlowFactor = value;
+                Barlow = barlow;
+                RaisePropertyChanged();
+            }
+        }
+
         public Barlow Barlow {
-            get => _barlow;
+            get => JsonConvert.DeserializeObject<Barlow>(_pluginOptionsAccessor.GetValueString(nameof(Barlow), DefaultBarlow()));
             set {
-                _barlow = value;
-                RaisePropertyChanged(); 
-            }
-        }
-
-        public string FilterTransmission {
-            get => Settings.Default.FilterTransmission;
-            set {
-                Settings.Default.FilterTransmission = value;
-                CoreUtil.SaveSettings(Properties.Settings.Default);
-                RaisePropertyChanged();
-            }
-        }
-
-        private AsyncObservableCollection<Filter> _filterTransmissionList;
-        public AsyncObservableCollection<Filter> FilterTransmissionList {
-            get {
-                if (_filterTransmissionList == null)
-                    _filterTransmissionList = JsonConvert.DeserializeObject<AsyncObservableCollection<Filter>>(FilterTransmission);
-                return _filterTransmissionList;
-            }
-            set {
-                _filterTransmissionList = value;
-                RaisePropertyChanged();
-                FilterTransmission = JsonConvert.SerializeObject(_filterTransmissionList);
+                _pluginOptionsAccessor.SetValueString(nameof(Barlow), JsonConvert.SerializeObject(value));
             }
         }
 
@@ -409,8 +397,69 @@ namespace NINA.Plugin.Speckle {
 
         public event PropertyChangedEventHandler PropertyChanged;
 
+        private void ProfileService_ProfileChanged(object sender, EventArgs e) {
+            RaiseAllPropertiesChanged();
+        }
+
         protected void RaisePropertyChanged([CallerMemberName] string propertyName = null) {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        protected void RaiseAllPropertiesChanged() {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(null));
+        }
+
+        private static string DefaultTelescope() {
+            return JsonConvert.SerializeObject(new Telescope("PW1000", 1000, 470, 6000));
+        }
+
+        private static string DefaultBarlow() {
+            return JsonConvert.SerializeObject(new Barlow("2x Barlow", 2));
+        }
+
+        private bool SpeckleSettingsMigrated {
+            get => _pluginOptionsAccessor.GetValueBoolean(nameof(SpeckleSettingsMigrated), false);
+            set {
+                _pluginOptionsAccessor.SetValueBoolean(nameof(SpeckleSettingsMigrated), value);
+            }
+        }
+
+        // Migrate settings from Settings to Profile
+        // This is a one-time operation that pertains only to settings that existed before the use of profiles for storing settings.
+        // Newer settings should not be put in here.
+        private void MigrateSettingsToProfile() {
+            AltitudeMax = Settings.Default.AltitudeMax;
+            AltitudeMin = Settings.Default.AltitudeMin;
+            CheckImageTimeWithinMinutes = Settings.Default.CheckImageTimeWithinMinutes;
+            Cycles = Settings.Default.Cycles;
+            DefaultRefTemplate = Settings.Default.DefaultRefTemplate;
+            DefaultTemplate = Settings.Default.DefaultTemplate;
+            DomePosition = Settings.Default.DomePosition;
+            DomePositionLock = Settings.Default.DomePositionLock;
+            DomeSlitWidth = Settings.Default.DomeSlitWidth;
+            Exposures = Settings.Default.Exposures;
+            ExposureTime = Settings.Default.ExposureTime;
+            GalaxyTemplate = Settings.Default.GalaxyTemplate;
+            GetGalaxyFillins = Settings.Default.GetGalaxyFillins;
+            MaxGalaxyMag = Settings.Default.MaxGalaxyMag;
+            MaxMag = Settings.Default.MaxMag;
+            MaxReferenceMag = Settings.Default.MaxReferenceMag;
+            MaxSep = Settings.Default.MaxSep;
+            MDistance = Settings.Default.MDistance;
+            MinMag = Settings.Default.MinMag;
+            MinReferenceMag = Settings.Default.MinReferenceMag;
+            MinSep = Settings.Default.MinSep;
+            MoonDistance = Settings.Default.MoonDistance;
+            Nights = Settings.Default.Nights;
+            Priority = Settings.Default.Priority;
+            ReferenceExposures = Settings.Default.ReferenceExposures;
+            ShowEveryNthImage = Settings.Default.ShowEveryNthImage;
+            User = Settings.Default.User;
+            UseSimbadRefStars = Settings.Default.UseSimbadRefStars;
+            UseUSNOSingleStarList = Settings.Default.UseUSNOSingleStarList;
+
+            Barlow = JsonConvert.DeserializeObject<Barlow>(Settings.Default.Barlow);
+            Telescope = JsonConvert.DeserializeObject<Telescope>(Settings.Default.Telescope);
         }
     }
 }

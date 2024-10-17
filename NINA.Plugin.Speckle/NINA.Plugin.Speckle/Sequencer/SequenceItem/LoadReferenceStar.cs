@@ -31,7 +31,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
         public LoadReferenceStar(IProfileService profileService, IOptionsVM options) {
             this.profileService = profileService;
             this.options = options;
-            speckle = new Speckle();
+            speckle = new Speckle(profileService);
         }
 
         private LoadReferenceStar(LoadReferenceStar cloneMe) : this(cloneMe.profileService, cloneMe.options) {

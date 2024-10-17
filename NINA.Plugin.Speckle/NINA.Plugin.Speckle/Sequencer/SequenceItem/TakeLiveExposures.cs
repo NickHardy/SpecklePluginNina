@@ -111,7 +111,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             this.weatherDataMediator.RegisterConsumer(this);
 
             this.options = options;
-            speckle = new Speckle();
+            speckle = new Speckle(profileService);
         }
 
         private TakeLiveExposures(TakeLiveExposures cloneMe) : this(cloneMe.profileService, cloneMe.cameraMediator, cloneMe.imagingMediator, cloneMe.imageSaveMediator, cloneMe.imageHistoryVM, cloneMe.filterWheelMediator, cloneMe.options, cloneMe.telescopeMediator, cloneMe.focuserMediator, cloneMe.rotatorMediator, cloneMe.weatherDataMediator) {

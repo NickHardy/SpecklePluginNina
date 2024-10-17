@@ -75,6 +75,8 @@ namespace NINA.Plugin.Speckle.Model {
             ArrayTransmission = transmissionArray;
         }
     }
+
+    [JsonObject(MemberSerialization.OptIn)]
     public class Telescope : BaseINPC {
 
         private string _telescopeName;
@@ -84,7 +86,6 @@ namespace NINA.Plugin.Speckle.Model {
             set {
                 _telescopeName = value;
                 RaisePropertyChanged();
-                Update();
             }
         }
 
@@ -95,7 +96,6 @@ namespace NINA.Plugin.Speckle.Model {
             set {
                 _apertureD = value;
                 RaisePropertyChanged();
-                Update();
             }
         }
 
@@ -106,7 +106,6 @@ namespace NINA.Plugin.Speckle.Model {
             set {
                 _obstructionD = value;
                 RaisePropertyChanged();
-                Update();
             }
         }
 
@@ -117,7 +116,6 @@ namespace NINA.Plugin.Speckle.Model {
             set {
                 _focallength = value;
                 RaisePropertyChanged();
-                Update();
             }
         }
 
@@ -131,19 +129,15 @@ namespace NINA.Plugin.Speckle.Model {
         public static Telescope gsoRc10 = new Telescope("GSO-RC10", 254, 119.38, 2039);*/
 
         // Constructor for Telescope
-        public Telescope(string telescopeName, double apertureD, double obstructionD, double focalLength)
-        {
+        public Telescope(string telescopeName, double apertureD, double obstructionD, double focalLength) {
             TelescopeName = telescopeName;
             ApertureD = apertureD;
             ObstructionD = obstructionD;
             Focallength = focalLength;
         }
-
-        private void Update() {
-            Properties.Settings.Default.Telescope = JsonConvert.SerializeObject(this);
-            CoreUtil.SaveSettings(Properties.Settings.Default);
-        }
     }
+
+    [JsonObject(MemberSerialization.OptIn)]
     public class Barlow : BaseINPC {
 
         private string _barlowName;
@@ -153,7 +147,6 @@ namespace NINA.Plugin.Speckle.Model {
             set {
                 _barlowName = value;
                 RaisePropertyChanged();
-                Update();
             }
         }
 
@@ -164,7 +157,6 @@ namespace NINA.Plugin.Speckle.Model {
             set {
                 _barlowFactor = value;
                 RaisePropertyChanged();
-                Update();
             }
         }
 
@@ -177,15 +169,9 @@ namespace NINA.Plugin.Speckle.Model {
         public static Barlow threeonehalfx = new Barlow("3.5x Barlow", 3.5);*/
 
         // Constructor for Telescope
-        public Barlow(string barlowName, double barlowFactor)
-        {
+        public Barlow(string barlowName, double barlowFactor) {
             BarlowName = barlowName;
             BarlowFactor = barlowFactor;
-        }
-
-        private void Update() {
-            Properties.Settings.Default.Barlow = JsonConvert.SerializeObject(this);
-            CoreUtil.SaveSettings(Properties.Settings.Default);
         }
     }
 }

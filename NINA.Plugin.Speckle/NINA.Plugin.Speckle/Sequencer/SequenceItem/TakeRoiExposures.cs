@@ -81,7 +81,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             this.filterWheelMediator = filterWheelMediator;
             this.telescopeMediator = telescopeMediator;
             CameraInfo = this.cameraMediator.GetInfo();
-            speckle = new Speckle();
+            speckle = new Speckle(profileService);
         }
 
         private TakeRoiExposures(TakeRoiExposures cloneMe) : this(cloneMe.profileService, cloneMe.cameraMediator, cloneMe.imagingMediator, cloneMe.imageSaveMediator, cloneMe.applicationStatusMediator, cloneMe.imageControlVM, cloneMe.filterWheelMediator, cloneMe.telescopeMediator) {

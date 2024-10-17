@@ -101,7 +101,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
             this.applicationStatusMediator = applicationStatusMediator;
             this.profileService = profileService;
             this.filterWheelMediator = filterWheelMediator;
-            speckle = new Speckle();
+            speckle = new Speckle(profileService);
            
             elevation = this.profileService.ActiveProfile.AstrometrySettings.Elevation == 0d ? 1.0 : this.profileService.ActiveProfile.AstrometrySettings.Elevation; // If someone's at sealevel it breaks the calculation. Negative and positive is okay.
         }

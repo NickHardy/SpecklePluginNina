@@ -375,7 +375,7 @@
                             Grid.Column="1"
                             Orientation="Vertical">
                             <TextBlock Margin="5,0" Text="Name"/>
-                            <TextBox Margin="5,0,0,0" MinWidth="100" VerticalAlignment="Center" HorizontalAlignment="Left" Text="{Binding Telescope.TelescopeName}" />
+                            <TextBox Margin="5,0,0,0" MinWidth="100" VerticalAlignment="Center" HorizontalAlignment="Left" Text="{Binding TelescopeName}" />
                         </StackPanel>
                         <StackPanel
                             Grid.Row="0"
@@ -387,7 +387,7 @@
                             Margin="5,0,0,0"
                             HorizontalAlignment="Left"
                             VerticalAlignment="Center"
-                            Text="{Binding Telescope.ApertureD}"
+                            Text="{Binding ApertureD}"
                             Unit="mm" />
                         </StackPanel>
                         <StackPanel
@@ -400,7 +400,7 @@
                             Margin="5,0,0,0"
                             HorizontalAlignment="Left"
                             VerticalAlignment="Center"
-                            Text="{Binding Telescope.ObstructionD}"
+                            Text="{Binding ObstructionD}"
                             Unit="mm" />
                         </StackPanel>
                         <StackPanel
@@ -413,7 +413,7 @@
                             Margin="5,0,0,0"
                             HorizontalAlignment="Left"
                             VerticalAlignment="Center"
-                            Text="{Binding Telescope.Focallength}"
+                            Text="{Binding Focallength}"
                             Unit="mm" />
                         </StackPanel>
 
@@ -423,7 +423,7 @@
                             Grid.Column="1"
                             Orientation="Vertical">
                             <TextBlock Margin="5,0" Text="Name"/>
-                            <TextBox Margin="5,0,0,0" MinWidth="100" VerticalAlignment="Center" HorizontalAlignment="Left" Text="{Binding Barlow.BarlowName}" />
+                            <TextBox Margin="5,0,0,0" MinWidth="100" VerticalAlignment="Center" HorizontalAlignment="Left" Text="{Binding BarlowName}" />
                         </StackPanel>
                         <StackPanel
                             Grid.Row="1"
@@ -435,7 +435,7 @@
                                 Margin="5,0,0,0"
                                 HorizontalAlignment="Left"
                                 VerticalAlignment="Center"
-                                Text="{Binding Barlow.BarlowFactor}"
+                                Text="{Binding BarlowFactor}"
                                 Unit="X" />
                         </StackPanel>
 

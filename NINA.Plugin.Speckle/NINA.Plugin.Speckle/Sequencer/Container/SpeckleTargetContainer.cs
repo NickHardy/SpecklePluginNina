@@ -75,7 +75,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             this.framingAssistantVM = framingAssistantVM;
             this.planetariumFactory = planetariumFactory;
             cameraMediator.RegisterConsumer(this);
-            speckle = new Speckle();
+            speckle = new Speckle(profileService);
             SubSampleRectangle = new ObservableRectangle(0, 0, 320, 240);
             Task.Run(() => NighttimeData = nighttimeCalculator.Calculate());
             Target = new InputTarget(Angle.ByDegree(profileService.ActiveProfile.AstrometrySettings.Latitude), Angle.ByDegree(profileService.ActiveProfile.AstrometrySettings.Longitude), profileService.ActiveProfile.AstrometrySettings.Horizon);
