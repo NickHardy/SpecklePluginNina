@@ -26,22 +26,14 @@ using System.Runtime.ExceptionServices;
 namespace NINA.Plugin.Speckle.Model {
 
     [JsonObject(MemberSerialization.OptIn)]
-    public class SpeckleTarget : TargetBase {
+    public class SpeckleTarget : Star {
         public SpeckleTarget() {
         }
 
-        [JsonProperty]
-        public string User { get; set; }
-        [JsonProperty]
-        public string Target { get; set; }
-        [JsonProperty]
-        public string Ra { get; set; }
-        [JsonProperty]
-        public string Dec { get; set; }
-        [JsonProperty]
-        public string RA0 { get; set; }
-        [JsonProperty]
-        public string Decl0 { get; set; }
+        public string Name {
+            get => Name1 + "_" + (string.IsNullOrWhiteSpace(Name2) ? "Gaia-" + GaiaNum.ToString() : Name2);
+        }
+
         [JsonProperty]
         public double Orientation { get; set; }
         [JsonProperty]
@@ -51,67 +43,42 @@ namespace NINA.Plugin.Speckle.Model {
         [JsonProperty]
         public int Cycles { get; set; }
         [JsonProperty]
-        public int Priority { get; set; }
-        [JsonProperty]
-        public double ExposureTime { get; set; }
-        [JsonProperty]
-        public int Exposures { get; set; }
-        [JsonProperty]
-        public double PMag { get; set; }
-        [JsonProperty]
-        public double SMag { get; set; }
-        [JsonProperty]
-        public int NoCalculation { get; set; }
-        [JsonProperty]
-        public double Separation { get; set; }
-        [JsonProperty]
         public int Completed_nights { get; set; }
         [JsonProperty]
         public int Completed_cycles { get; set; }
         [JsonProperty]
         public int Completed_ref_cycles { get; set; }
         [JsonProperty]
-        public string Template { get; set; }
-        [JsonProperty]
         public string TemplateRef { get; set; }
-        [JsonProperty]
-        public string Filter { get; set; }
-        [JsonProperty]
-        public double Rotation { get; set; } = 0d;
         [JsonProperty]
         public double AirmassMin { get; set; } = 0d;
         [JsonProperty]
         public double AirmassMax { get; set; } = 4d;
-        [JsonProperty]
-        public int GetRef { get; set; }
         public bool RegisterTarget { get; set; } = true;
         [JsonProperty]
         public double MinAltitude { get; set; } = 0d;
 
         [JsonProperty]
         public bool ImageTarget { get; set; } = true;
-        [JsonProperty]
-        public string Note { get; set; }
 
-        public List<SimbadStar> ReferenceStarList { get; set; }
         [JsonProperty]
-        public SimbadStar ReferenceStar { get; set; } = new SimbadStar();
+        public long RefGaiaNum { get; set; } = 0;
+
+        public List<ReferenceStar> ReferenceStarList { get; set; }
+        [JsonProperty]
+        public ReferenceStar ReferenceStar { get; set; } = new ReferenceStar();
 
         public List<SimbadStarCluster> StarClusterList { get; set; }
         public SimbadStarCluster StarCluster { get; set; } = new SimbadStarCluster();
 
         public SpeckleTargetContainer SpeckleTemplate { get; set; }
 
+        public double Color {
+            get => Bp - Rp;
+        }
+
         public Coordinates Coordinates() {
-            double RaDeg;
-            double DecDeg;
-            if (!Double.TryParse(Ra, out RaDeg)) {
-                RaDeg = AstroUtil.HMSToDegrees(Ra);
-            }
-            if (!Double.TryParse(Dec, out DecDeg)) {
-                DecDeg = AstroUtil.DMSToDegrees(Dec);
-            }
-            return new Coordinates(Angle.ByDegree(RaDeg), Angle.ByDegree(DecDeg), Epoch.J2000);
+            return new Coordinates(Angle.ByDegree(RA2000), Angle.ByDegree(Dec2000), Epoch.J2000);
         }
 
         public DateTime ImageTime { get; set; }
@@ -122,32 +89,55 @@ namespace NINA.Plugin.Speckle.Model {
     public sealed class SpeckleTargetMap : ClassMap<SpeckleTarget> {
 
         public SpeckleTargetMap() {
-            Map(m => m.User).Name("User").Optional().Default("");
-            Map(m => m.Target).Name("Target").Optional().Default("");
-            Map(m => m.Ra).Name("Ra");
-            Map(m => m.Dec).Name("Dec");
-            Map(m => m.RA0).Name("RA0");
-            Map(m => m.Decl0).Name("Decl0");
+            // StarMap
+            Map(m => m.TargetRecno).Name("targetrecno").Optional().Default(0);
+            Map(m => m.Recno).Name("recno").Optional().Default(0);
+            Map(m => m.Proj).Name("Proj").Optional().Default("");
+            Map(m => m.Obs).Name("Obs").Optional().Default("");
+            Map(m => m.Type).Name("Type").Optional().Default("");
+            Map(m => m.Name1).Name("Name1").Optional().Default("");
+            Map(m => m.Name2).Name("Name2").Optional().Default("");
+            Map(m => m.Priority).Name("Priority").Optional().Default(1);
+            Map(m => m.Template).Name("Template").Optional().Default("");
+            Map(m => m.RA2000).Name("RA2000").Optional().Default(0);
+            Map(m => m.Dec2000).Name("Dec2000").Optional().Default(0);
+            Map(m => m.Bp).Name("Bp").Optional().Default(0);
+            Map(m => m.Rp).Name("Rp").Optional().Default(0);
+            Map(m => m.Gmag).Name("Gmag").Optional().Default(0);
+            Map(m => m.GaiaNum).Name("GaiaNum").Optional().Default(0);
+            Map(m => m.Sep).Name("Sep").Optional().Default(0);
+            Map(m => m.PA).Name("PA").Optional().Default(0);
+            Map(m => m.Parallax).Name("Parallax").Optional().Default(0);
+            Map(m => m.Spectrum).Name("Spectrum").Optional().Default("");
+            Map(m => m.Pmag).Name("Pmag").Optional().Default(0);
+            Map(m => m.Smag).Name("Smag").Optional().Default(0);
+            Map(m => m.Filter).Name("Filter").Optional().Default("");
+            Map(m => m.ExpTime).Name("ExpTime").Optional().Default(0);
+            Map(m => m.NumExp).Name("NumExp").Optional().Default(0);
+            Map(m => m.NoExpCalc).Name("NoExpCalc").Optional().Default(0);
+            Map(m => m.GetRef).Name("GetRef").Optional().Default(1);
+            Map(m => m.GPrime).Name("GPrime").Optional().Default(0);
+            Map(m => m.RPrime).Name("RPrime").Optional().Default(0);
+            Map(m => m.IPrime).Name("IPrime").Optional().Default(0);
+            Map(m => m.ZPrime).Name("ZPrime").Optional().Default(0);
+            Map(m => m.RUWE).Name("RUWE").Optional().Default(0);
+            Map(m => m.FDBL).Name("FDBL").Optional().Default(0);
+            Map(m => m.Note1).Name("Note1").Optional().Default("");
+            Map(m => m.Note2).Name("Note2").Optional().Default("");
+
+            // SpeckleTarget
             Map(m => m.Nights).Name("Nights").Optional().Default(1);
             Map(m => m.Cycles).Name("Cycles").Optional().Default(1);
-            Map(m => m.Priority).Name("Priority").Optional().Default(0);
-            Map(m => m.Rotation).Name("Rotation").Optional().Default(0);
             Map(m => m.AirmassMin).Name(["Airmass", "AirmassMin"]).Optional().Default(0);
             Map(m => m.AirmassMax).Name("AirmassMax").Optional().Default(4);
             Map(m => m.MinAltitude).Name("MinAltitude").Optional().Default(0);
             Map(m => m.GetRef).Name("GetRef").Optional().Default(1);
-            Map(m => m.ExposureTime).Name("ExposureTime").Optional().Default(0);
-            Map(m => m.Exposures).Name("Exposures").Optional().Default(0);
-            Map(m => m.PMag).Name("PMag").Optional().Default(0);
-            Map(m => m.SMag).Name("SMag").Optional().Default(0);
-            Map(m => m.NoCalculation).Name("NoCalculation").Optional().Default("0");
-            Map(m => m.Separation).Name("Separation").Optional().Default(0);
+            Map(m => m.RefGaiaNum).Name("RefGaiaNum").Optional().Default(0);
             Map(m => m.Template).Name("Template").Optional().Default("");
             Map(m => m.Filter).Name("Filter").Optional().Default("");
             Map(m => m.Completed_cycles).Name("Completed_cycles").Optional().Default(0);
             Map(m => m.Completed_ref_cycles).Name("Completed_ref_cycles").Optional().Default(0);
             Map(m => m.Completed_nights).Name("Completed_nights").Optional().Default(0);
-            Map(m => m.Note).Name("Note").Optional().Default("");
         }
     }
 }

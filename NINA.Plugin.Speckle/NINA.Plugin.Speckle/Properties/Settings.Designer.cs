@@ -430,5 +430,29 @@ namespace NINA.Plugin.Speckle.Properties {
                 this["UseUSNOSingleStarList"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string ReferenceStarListLocation {
+            get {
+                return ((string)(this["ReferenceStarListLocation"]));
+            }
+            set {
+                this["ReferenceStarListLocation"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool UseReferenceStarList {
+            get {
+                return ((bool)(this["UseReferenceStarList"]));
+            }
+            set {
+                this["UseReferenceStarList"] = value;
+            }
+        }
     }
 }

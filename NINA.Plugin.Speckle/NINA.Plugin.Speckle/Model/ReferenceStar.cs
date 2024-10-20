@@ -23,42 +23,35 @@ using NINA.Plugin.Speckle.Sequencer.SequenceItem;
 namespace NINA.Plugin.Speckle.Model {
 
     [JsonObject(MemberSerialization.OptIn)]
-    public class SimbadStar : TargetBase {
-        public SimbadStar(List<object> obj) {
-            main_id = (string)obj[0];
-            ra = Convert.ToDouble(obj[1]);
-            dec = Convert.ToDouble(obj[2]);
-            v_mag = Convert.ToDouble(obj[3]);
+    public class ReferenceStar : Star {
+        public ReferenceStar(List<object> obj) {
+            Name1 = "SSRef";
+            Name2 = (string)obj[0];
+            RA2000 = Convert.ToDouble(obj[1]);
+            Dec2000 = Convert.ToDouble(obj[2]);
+            Rp = Convert.ToDouble(obj[3]);
             distance = Convert.ToDouble(obj[4]);
         }
 
-        public SimbadStar() {
-            main_id = "";
+        public ReferenceStar() {
+            Name1 = "SSRef";
+        }
+        public string Name {
+            get => Name1 + "_" + (string.IsNullOrWhiteSpace(Name2) ? "Gaia-" + GaiaNum.ToString() : Name2);
         }
 
         [JsonProperty]
-        public string main_id { get; set; }
-        [JsonProperty]
-        public double ra { get; set; }
-        [JsonProperty]
-        public double dec { get; set; }
-        [JsonProperty]
-        public double v_mag { get; set; }
-        [JsonProperty]
         public double distance { get; set; }
+
         [JsonProperty]
         public double color { get; set; }
-        [JsonProperty]
-        public string otype_txt { get; set; }
-        [JsonProperty]
-        public double b_mag { get; set; }
 
         public string Title {
-            get => $"{main_id}, Distance: {Math.Round(distance, 3)}°, Color: {Math.Round(color, 2)} (B-V), VMag: {Math.Round(v_mag, 2)}";
+            get => $"{Name1}, Distance: {Math.Round(distance, 3)}°, Color: {Math.Round(color, 2)} (B-V), VMag: {Math.Round(Rp, 2)}";
         }
 
         public Coordinates Coordinates() {
-            return new Coordinates(Angle.ByDegree(ra), Angle.ByDegree(dec), Epoch.J2000);
+            return new Coordinates(Angle.ByDegree(RA2000), Angle.ByDegree(Dec2000), Epoch.J2000);
         }
 
     }

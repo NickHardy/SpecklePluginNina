@@ -151,7 +151,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
         public override async Task Execute(IProgress<ApplicationStatus> progress, CancellationToken token)
         {
             
-            if (Utility.ItemUtility.RetrieveSpeckleTarget(Parent).NoCalculation != 0)
+            if (Utility.ItemUtility.RetrieveSpeckleTarget(Parent).NoExpCalc != 0)
                 return; // Check if the calculation should be used for the target before calculating anything
 
             // Once a GUI is added, these would point towards what the user has selected. For now they are bound to this.
@@ -377,14 +377,14 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
             double imagescale = ((206.265 * camera.PixelSize) / (telescope.Focallength * barlow.BarlowFactor));
             double RNinPE = camera.ReadNoise * Math.Sqrt(Math.Pow(30.0, 2.0) * 0.785);
 
-            TruePMag = Math.Min(speckleTarget.PMag, speckleTarget.SMag);
+            TruePMag = Math.Min(speckleTarget.Pmag, speckleTarget.Smag);
             // use refMag if this is the reference star
-            TruePMag = speckleContainer.IsRef && speckleTarget.ReferenceStar.v_mag != 0.0 ? speckleTarget.ReferenceStar.v_mag : TruePMag;
+            TruePMag = speckleContainer.IsRef && speckleTarget.ReferenceStar.Rp != 0.0 ? speckleTarget.ReferenceStar.Rp : TruePMag;
             if (TruePMag < 7 || TruePMag > 15) 
-                throw new SequenceEntityFailedException("Calculation requested for "+speckleTarget.Target+", but primary mag is not in range of ASD simulations. Falling back to user's time in list."); 
+                throw new SequenceEntityFailedException("Calculation requested for "+speckleTarget.Name+", but primary mag is not in range of ASD simulations. Falling back to user's time in list."); 
             Logger.Debug("True Primary is "+TruePMag);
             
-            TrueSMag = Math.Max(speckleTarget.PMag, speckleTarget.SMag);
+            TrueSMag = Math.Max(speckleTarget.Pmag, speckleTarget.Smag);
             Logger.Debug("True Secondary is " + TrueSMag);
 
             FluxRatio = Math.Pow(100, (TruePMag - TrueSMag) / 5.0);
@@ -426,7 +426,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
                 // This "Debug iteration" fills up the logs if the target is faint. It should really be removed later, but is the most useful thing for when checking if it's working properly in the first ~1 week of live testing.(todo)
 
             } while (exposureTime < 5.0);
-            Notification.ShowInformation("Calculation failed for " + speckleTarget.Target + " as exposure time exceeded the maximum (5s).");
+            Notification.ShowInformation("Calculation failed for " + speckleTarget.Name + " as exposure time exceeded the maximum (5s).");
             return 0d;
         }
         // --- End of calculation methods

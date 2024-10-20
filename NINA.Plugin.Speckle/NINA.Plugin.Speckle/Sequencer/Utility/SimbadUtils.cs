@@ -69,8 +69,8 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
             return starClusters;
         }
 
-        public async Task<List<SimbadStar>> FindSimbadSaoStars(IProgress<ApplicationStatus> externalProgress, CancellationToken token, Coordinates coords, double maxDistance = 5d, double minMag = 0.0d, double maxMag = 10.0d) {
-            List<SimbadStar> stars = new List<SimbadStar>();
+        public async Task<List<ReferenceStar>> FindSimbadSaoStars(IProgress<ApplicationStatus> externalProgress, CancellationToken token, Coordinates coords, double maxDistance = 5d, double minMag = 0.0d, double maxMag = 10.0d) {
+            List<ReferenceStar> stars = new List<ReferenceStar>();
             try {
                 using (var localCTS = CancellationTokenSource.CreateLinkedTokenSource(token)) {
                     localCTS.CancelAfter(TimeSpan.FromSeconds(30));
@@ -103,11 +103,11 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
                     VoTable voTable = await PostForm(url, dictionary, localCTS.Token).ConfigureAwait(false);
                     if (voTable != null) {
                         foreach (List<object> obj in voTable.Data) {
-                            SimbadStar star = new SimbadStar {
-                                main_id = obj[0].ToString(),
-                                ra = Convert.ToDouble(obj[1]),
-                                dec = Convert.ToDouble(obj[2]),
-                                v_mag = Convert.ToDouble(obj[4]),
+                            ReferenceStar star = new ReferenceStar {
+                                Name2 = obj[0].ToString(),
+                                RA2000 = Convert.ToDouble(obj[1]),
+                                Dec2000 = Convert.ToDouble(obj[2]),
+                                Rp = Convert.ToDouble(obj[4]),
                                 color = Convert.ToDouble(obj[5]),
                                 distance = Convert.ToDouble(obj[6]) * (180 / Math.PI) // Convert radians to degrees
                             };
@@ -125,8 +125,8 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
             return stars;
         }
 
-        public async Task<List<SimbadStar>> FindSingleBrightStars(IProgress<ApplicationStatus> externalProgress, CancellationToken token, Coordinates coords, double maxDistance = 5d, double minMag = 0.0d, double maxMag = 10.0d) {
-            List<SimbadStar> stars = new List<SimbadStar>();
+        public async Task<List<ReferenceStar>> FindSingleBrightStars(IProgress<ApplicationStatus> externalProgress, CancellationToken token, Coordinates coords, double maxDistance = 5d, double minMag = 0.0d, double maxMag = 10.0d) {
+            List<ReferenceStar> stars = new List<ReferenceStar>();
             var assemblyFolder = new Uri(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)).LocalPath;
             var i = 1;
             try {
@@ -139,11 +139,11 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
                     while ((line = sr.ReadLine()) != null) {
                         i++;
                         token.ThrowIfCancellationRequested();
-                        SimbadStar record = new SimbadStar {
-                            main_id = $"{line.Substring(0, 7).Trim()} {line.Substring(32, 10).Trim()}",
-                            ra = AstroUtil.HMSToDegrees($"{line.Substring(47, 10).Trim()}"),
-                            dec = AstroUtil.DMSToDegrees($"{line.Substring(58, 10).Trim()}"),
-                            v_mag = double.Parse($"{line.Substring(73, 5).Trim()}", CultureInfo.InvariantCulture)
+                        ReferenceStar record = new ReferenceStar {
+                            Name2 = $"{line.Substring(0, 7).Trim()} {line.Substring(32, 10).Trim()}",
+                            RA2000 = AstroUtil.HMSToDegrees($"{line.Substring(47, 10).Trim()}"),
+                            Dec2000 = AstroUtil.DMSToDegrees($"{line.Substring(58, 10).Trim()}"),
+                            Rp = double.Parse($"{line.Substring(73, 5).Trim()}", CultureInfo.InvariantCulture)
                         };
                         var color = line.Length >= 84 ? line.Substring(79, line.Length - 79).Trim() + "0" : "0";
                         record.color = double.Parse(color, CultureInfo.InvariantCulture);
@@ -151,7 +151,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
                         record.distance = sep?.Distance?.Degree ?? double.NaN;
                         if (record.distance == double.NaN || record.distance > maxDistance)
                             continue;
-                        if (record.v_mag < minMag || record.v_mag > maxMag)
+                        if (record.Rp < minMag || record.Rp > maxMag)
                             continue;
                         stars.Add(record);
                     }
@@ -169,8 +169,8 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
             return stars;
         }
 
-        public async Task<SimbadStar> GetStarByPosition(IProgress<ApplicationStatus> externalProgress, CancellationToken token, double ra, double dec, double targetMag) {
-            SimbadStar starDetails = null;
+        public async Task<ReferenceStar> GetStarByPosition(IProgress<ApplicationStatus> externalProgress, CancellationToken token, double ra, double dec, double targetMag) {
+            ReferenceStar starDetails = null;
             try {
                 using (var localCTS = CancellationTokenSource.CreateLinkedTokenSource(token)) {
                     localCTS.CancelAfter(TimeSpan.FromSeconds(30));
@@ -191,15 +191,14 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
                     VoTable voTable = await PostForm(url, dictionary, localCTS.Token);
                     if (voTable != null && voTable.Data.Count > 0) {
                         var obj = voTable.Data.First();
-                        starDetails = new SimbadStar {
-                            main_id = obj[0].ToString(),
-                            ra = Convert.ToDouble(obj[1]),
-                            dec = Convert.ToDouble(obj[2]),
-                            otype_txt = obj[3].ToString(),
-                            b_mag = Convert.ToDouble(obj[4]),
-                            v_mag = Convert.ToDouble(obj[5]),
-                            color = Convert.ToDouble(obj[6]),
-                            //distance = Convert.ToDouble(obj[7])
+                        starDetails = new ReferenceStar {
+                            Name2 = obj[0].ToString(),
+                            RA2000 = Convert.ToDouble(obj[1]),
+                            Dec2000 = Convert.ToDouble(obj[2]),
+                            Note1 = obj[3].ToString(),
+                            Bp = Convert.ToDouble(obj[4]),
+                            Rp = Convert.ToDouble(obj[5]),
+                            color = Convert.ToDouble(obj[6])
                         };
                     }
                 }

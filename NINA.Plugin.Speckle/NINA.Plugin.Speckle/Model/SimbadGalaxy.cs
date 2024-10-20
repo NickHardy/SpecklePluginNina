@@ -22,36 +22,26 @@ using System.Collections.Generic;
 namespace NINA.Plugin.Speckle.Model {
 
     [JsonObject(MemberSerialization.OptIn)]
-    public class SimbadGalaxy {
+    public class SimbadGalaxy : Star {
         public SimbadGalaxy(List<object> obj) {
-            main_id = (string)obj[0];
-            ra = Convert.ToDouble(obj[1]);
-            dec = Convert.ToDouble(obj[2]);
-            v_mag = Convert.ToDouble(obj[3]);
+            Name1 = "GAL";
+            Name2 = (string)obj[0];
+            RA2000 = Convert.ToDouble(obj[1]);
+            Dec2000 = Convert.ToDouble(obj[2]);
+            Gmag = Convert.ToDouble(obj[3]);
             distance = Convert.ToDouble(obj[4]);
         }
 
         public SimbadGalaxy() {
-            main_id = "";
+            Name1 = "GAL";
+            Name2 = "";
         }
 
         [JsonProperty]
-        public string main_id { get; set; }
-        [JsonProperty]
-        public double ra { get; set; }
-        [JsonProperty]
-        public double dec { get; set; }
-        [JsonProperty]
-        public double v_mag { get; set; }
-        [JsonProperty]
         public double distance { get; set; }
-        [JsonProperty]
-        public double sizemax { get; set; }
-        [JsonProperty]
-        public double sizemin { get; set; }
 
         public Coordinates Coordinates() {
-            return new Coordinates(Angle.ByDegree(ra), Angle.ByDegree(dec), Epoch.J2000);
+            return new Coordinates(Angle.ByDegree(RA2000), Angle.ByDegree(Dec2000), Epoch.J2000);
         }
 
     }

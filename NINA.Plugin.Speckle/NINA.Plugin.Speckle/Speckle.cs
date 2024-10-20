@@ -17,6 +17,13 @@ using NINA.Image.ImageData;
 using NINA.Plugin.Speckle.Model;
 using Newtonsoft.Json;
 using NINA.Profile.Interfaces;
+using CsvHelper.Configuration;
+using CsvHelper;
+using System.Globalization;
+using System.IO;
+using System.Threading;
+using System.Windows.Input;
+using System.Windows.Forms;
 
 namespace NINA.Plugin.Speckle {
     /// <summary>
@@ -31,6 +38,7 @@ namespace NINA.Plugin.Speckle {
 
         private readonly IProfileService _profileService;
         public ImagePattern notePattern = new ImagePattern("$$NOTE$$", "Possible note about target", "Speckle");
+        private CancellationTokenSource executeCTS;
 
         [ImportingConstructor]
         public Speckle(IProfileService profileService, IOptionsVM options, IImageSaveMediator imageSaveMediator) {
@@ -43,24 +51,29 @@ namespace NINA.Plugin.Speckle {
             notePattern.Value = "";
             options.AddImagePattern(notePattern);
 
+            OpenFileCommand = new GalaSoft.MvvmLight.Command.RelayCommand<bool>((o) => { using (executeCTS = new CancellationTokenSource()) { OpenFile(); } });
+
             imageSaveMediator.BeforeFinalizeImageSaved += ImageSaveMediator_BeforeFinalizeImageSaved;
-            if (Settings.Default.Telescope == "") {
+            if (string.IsNullOrWhiteSpace(Settings.Default.Telescope)) {
                 Telescope = new Telescope("PW1000", 1000, 470, 6000);
             } else {
                 Telescope = JsonConvert.DeserializeObject<Telescope>(Settings.Default.Telescope);
             }
-            if (Settings.Default.Barlow == "") {
+            if (string.IsNullOrWhiteSpace(Settings.Default.Barlow)) {
                 Barlow = new Barlow("2x Barlow", 2);
             } else {
                 Barlow = JsonConvert.DeserializeObject<Barlow>(Settings.Default.Barlow);
             }
-            if (FilterTransmission == "") {
+            if (string.IsNullOrWhiteSpace(FilterTransmission)) {
                 FilterTransmissionList = new AsyncObservableCollection<Filter>();
                 var filters = _profileService.ActiveProfile.FilterWheelSettings.FilterWheelFilters;
                 foreach (var filter in filters) {
                     FilterTransmissionList.Add(new Filter(filter.Name, new double[] { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }));
                 }
             }
+
+            if (!string.IsNullOrWhiteSpace(ReferenceStarListLocation))
+                _ = LoadReferenceStarList();
         }
 
         public Speckle() {
@@ -69,18 +82,80 @@ namespace NINA.Plugin.Speckle {
                 Settings.Default.UpdateSettings = false;
                 CoreUtil.SaveSettings(Settings.Default);
             }
-            if (Settings.Default.Telescope == "") {
+            if (string.IsNullOrWhiteSpace(Settings.Default.Telescope)) {
                 Telescope = new Telescope("PW1000", 1000, 470, 6000);
             }
             else {
                 Telescope = JsonConvert.DeserializeObject<Telescope>(Settings.Default.Telescope);
             }
-            if (Settings.Default.Barlow == "") {
+            if (string.IsNullOrWhiteSpace(Settings.Default.Barlow)) {
                 Barlow = new Barlow("2x Barlow", 2);
             }
             else {
                 Barlow = JsonConvert.DeserializeObject<Barlow>(Settings.Default.Barlow);
             }
+        }
+
+        public ICommand OpenFileCommand { get; private set; }
+
+        public string ReferenceStarListLocation {
+            get => Settings.Default.ReferenceStarListLocation;
+            set {
+                Settings.Default.ReferenceStarListLocation = value;
+                CoreUtil.SaveSettings(Properties.Settings.Default);
+                RaisePropertyChanged();
+            }
+        }
+        private void OpenFile() {
+            OpenFileDialog fileDialog = new OpenFileDialog();
+            fileDialog.DefaultExt = ".csv"; // Required file extension 
+            fileDialog.Filter = "Csv documents (.csv)|*.csv"; // Optional file extensions
+
+            if (fileDialog.ShowDialog() == DialogResult.OK) {
+                ReferenceStarListLocation = fileDialog.FileName;
+                _ = LoadReferenceStarList();
+            }
+        }
+
+        private AsyncObservableCollection<ReferenceStar> _referenceStarList;
+
+        [JsonProperty]
+        public AsyncObservableCollection<ReferenceStar> ReferenceStarList {
+            get => _referenceStarList;
+            set {
+                _referenceStarList = value;
+                RaisePropertyChanged();
+            }
+        }
+
+        private bool _LoadingReferenceStars = false;
+
+        public bool LoadingReferenceStars {
+            get { return _LoadingReferenceStars; }
+            set {
+                _LoadingReferenceStars = value;
+                RaisePropertyChanged();
+            }
+        }
+
+        public async Task LoadReferenceStarList() {
+            if (string.IsNullOrWhiteSpace(ReferenceStarListLocation) || LoadingReferenceStars) {
+                Logger.Debug("No path to reference star list.");
+                return;
+            }
+            LoadingReferenceStars = true;
+            var config = new CsvConfiguration(CultureInfo.InvariantCulture);
+            config.MissingFieldFound = null;
+            using (var reader = new StreamReader(ReferenceStarListLocation))
+            using (var csv = new CsvReader(reader, config)) {
+                // Do any configuration to `CsvReader` before creating CsvDataReader.
+                using (var dr = new CsvDataReader(csv)) {
+                    csv.Context.RegisterClassMap<StarMap>();
+                    var records = csv.GetRecords<ReferenceStar>();
+                    ReferenceStarList = new AsyncObservableCollection<ReferenceStar>(records.ToList());
+                }
+            }
+            LoadingReferenceStars = false;
         }
 
         public double MDistance {
@@ -303,6 +378,15 @@ namespace NINA.Plugin.Speckle {
             get => Settings.Default.ReferenceExposures;
             set {
                 Settings.Default.ReferenceExposures = value;
+                CoreUtil.SaveSettings(Properties.Settings.Default);
+                RaisePropertyChanged();
+            }
+        }
+
+        public bool UseReferenceStarList {
+            get => Settings.Default.UseReferenceStarList;
+            set {
+                Settings.Default.UseReferenceStarList = value;
                 CoreUtil.SaveSettings(Properties.Settings.Default);
                 RaisePropertyChanged();
             }
