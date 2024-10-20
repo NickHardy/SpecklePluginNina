@@ -221,8 +221,8 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                 }
 
                 if (!plateSolveResult.Success && speckleTarget != null) {
-                    speckleTarget.Note = "platesolve-failed";
-                    imageData.MetaData.GenericHeaders.Add(new StringMetaDataHeader("NOTE", speckleTarget.Note, "Note"));
+                    speckleTarget.Note2 = "platesolve-failed";
+                    imageData.MetaData.GenericHeaders.Add(new StringMetaDataHeader("NOTE", speckleTarget.Note2, "Note"));
                 }
 
                 var target = speckleContainer.Target;
