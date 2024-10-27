@@ -94,7 +94,7 @@ namespace NINA.Plugin.Speckle.Model {
             Map(m => m.Recno).Name("recno").Optional().Default(0);
             Map(m => m.Proj).Name("Proj").Optional().Default("");
             Map(m => m.Obs).Name("Obs").Optional().Default("");
-            Map(m => m.Type).Name("Type").Optional().Default("");
+            Map(m => m.Type).Name("Type").Optional().Default("M");
             Map(m => m.Name1).Name("Name1").Optional().Default("");
             Map(m => m.Name2).Name("Name2").Optional().Default("");
             Map(m => m.Priority).Name("Priority").Optional().Default(1);

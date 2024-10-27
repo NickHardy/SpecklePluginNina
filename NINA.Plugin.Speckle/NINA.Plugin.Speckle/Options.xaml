@@ -473,40 +473,7 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
 
-                        <Grid Grid.Column="0">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-                            <Grid.RowDefinitions>
-                                <RowDefinition MinHeight="25" />
-                                <RowDefinition MinHeight="25" />
-                                <RowDefinition MinHeight="25" />
-                                <RowDefinition MinHeight="25" />
-                                <RowDefinition MinHeight="25" />
-                                <RowDefinition MinHeight="25" />
-                                <RowDefinition MinHeight="25" />
-                                <RowDefinition MinHeight="25" />
-                            </Grid.RowDefinitions>
-                            <TextBlock Grid.Row="6" Grid.Column="0" VerticalAlignment="Center" Text="Reference mag between:" />
-                            <TextBox
-                Grid.Row="6" Grid.Column="1"
-                MinWidth="100"
-                Margin="5,0,0,0"
-                HorizontalAlignment="Left"
-                VerticalAlignment="Center"
-                Text="{Binding MinReferenceMag}" />
-                            <TextBox
-                Grid.Row="6" Grid.Column="2" 
-                MinWidth="100"
-                Margin="5,0,0,0"
-                HorizontalAlignment="Left"
-                VerticalAlignment="Center"
-                Text="{Binding MaxReferenceMag}" />
-
-                        </Grid>
-                        <Grid Grid.Column="1" Margin="10,0">
+                        <Grid Grid.Column="0" Margin="10,0">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="Auto" />
@@ -525,7 +492,7 @@
                                 <RowDefinition MinHeight="25" />
                             </Grid.RowDefinitions>
                             
-                            <StackPanel Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="2" Margin="5" Orientation="Horizontal">
+                            <StackPanel Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="0" Margin="5" Orientation="Horizontal">
                                 <Button
                             Height="25"
                             Width="200"
@@ -533,7 +500,7 @@
                             HorizontalAlignment="Left"
                             VerticalAlignment="Center"
                             Command="{Binding OpenFileCommand}">
-                                    <TextBlock Padding="5,0" Foreground="{StaticResource ButtonForegroundBrush}" Text="{ns:Loc LblLoadTargetSet}" />
+                                    <TextBlock Padding="5,0" Foreground="{StaticResource ButtonForegroundBrush}" Text="Choose reference star list" />
                                 </Button>
 
                                 <StackPanel Margin="5,5,5,5" Visibility="{Binding LoadingReferenceStars, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}">
@@ -546,27 +513,27 @@
                                 </StackPanel>
 
                             </StackPanel> 
-                            <TextBlock Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" Text="ReferenceStarList" />
+                            <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Text="ReferenceStarList" />
                             <TextBox
-                Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2"
+                Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2"
                 MinWidth="100"
                 Margin="5,0,0,0"
                 HorizontalAlignment="Left"
                 VerticalAlignment="Center"
                 Text="{Binding ReferenceStarListLocation}" />
 
-                            <TextBlock Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" Text="Default Reference Template" />
+                            <TextBlock Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Text="Default Reference Template" />
                             <TextBox
-                Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="2"
+                Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2"
                 MinWidth="100"
                 Margin="5,0,0,0"
                 HorizontalAlignment="Left"
                 VerticalAlignment="Center"
                 Text="{Binding DefaultRefTemplate}" />
 
-                            <TextBlock Grid.Row="6" Grid.Column="0" VerticalAlignment="Center" Text="Number of images for reference star" />
+                            <TextBlock Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" Text="Number of images for reference star" />
                             <TextBox
-                Grid.Row="6"
+                Grid.Row="3"
                 Grid.Column="1"
                 MinWidth="100"
                 Margin="5,0,0,0"
@@ -574,9 +541,9 @@
                 VerticalAlignment="Center"
                 Text="{Binding ReferenceExposures}" />
 
-                            <TextBlock Grid.Row="7" Grid.Column="0" VerticalAlignment="Center" Text="Use referencestarlist" />
+                            <TextBlock Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" Text="Use referencestarlist" />
                             <CheckBox
-                                Grid.Row="7"
+                                Grid.Row="4"
                                 Grid.Column="1"
                                 MinWidth="80"
                                 Margin="5,0,0,0"
@@ -584,9 +551,9 @@
                                 VerticalAlignment="Center"
                                 IsChecked="{Binding UseReferenceStarList}" />
 
-                            <TextBlock Grid.Row="8" Grid.Column="0" VerticalAlignment="Center" Text="Use simbad reference stars" />
+                            <TextBlock Grid.Row="5" Grid.Column="0" VerticalAlignment="Center" Text="Use simbad reference stars" />
                             <CheckBox
-                                Grid.Row="8"
+                                Grid.Row="5"
                                 Grid.Column="1"
                                 MinWidth="80"
                                 Margin="5,0,0,0"
@@ -594,9 +561,9 @@
                                 VerticalAlignment="Center"
                                 IsChecked="{Binding UseSimbadRefStars}" />
 
-                            <TextBlock Grid.Row="9" Grid.Column="0" VerticalAlignment="Center" Text="Use USNO reference stars" />
+                            <TextBlock Grid.Row="6" Grid.Column="0" VerticalAlignment="Center" Text="Use USNO reference stars" />
                             <CheckBox
-                                Grid.Row="9"
+                                Grid.Row="6"
                                 Grid.Column="1"
                                 MinWidth="80"
                                 Margin="5,0,0,0"

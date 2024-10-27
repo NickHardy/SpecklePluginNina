@@ -594,6 +594,7 @@
                         <DataGrid.Columns>
                             <DataGridTextColumn Width="auto" Binding="{Binding Obs}" Header="User" IsReadOnly="True"/>
                             <DataGridTextColumn Width="*" Binding="{Binding Name}" Header="Target" IsReadOnly="True"/>
+                            <DataGridTextColumn Width="*" Binding="{Binding Type}" Header="Type" IsReadOnly="True"/>
                             <DataGridTemplateColumn Width="50">
                                 <DataGridTemplateColumn.Header>
                                     <StackPanel HorizontalAlignment="Center">

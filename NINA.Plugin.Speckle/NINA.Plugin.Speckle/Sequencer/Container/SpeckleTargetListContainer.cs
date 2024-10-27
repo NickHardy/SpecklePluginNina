@@ -473,7 +473,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             var slitAz2 = speckle.DomePosition + (speckle.DomeSlitWidth / 2);
 
             // First get the next target with an imageTime in the future
-            var targets = SpeckleTargets.Where(t => t.ImageTarget)
+            var targets = SpeckleTargets.Where(t => t.ImageTarget && t.Type == "M")
                 .Where(t => t.Nights > t.Completed_nights)
                 .Where(t => t.Cycles > t.Completed_cycles)
                 .Where(t => t.ImagedAt == null || t.ImagedAt < quarterAgo)
@@ -488,7 +488,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                 SpeckleTarget.ImageTime = altTime?.datetime ?? DateTime.Now;
             } else {
                 DateTime maxImageTime = DateTime.Now.AddMinutes(-5);
-                SpeckleTarget = SpeckleTargets.Where(t => t.ImageTarget)
+                SpeckleTarget = SpeckleTargets.Where(t => t.ImageTarget && t.Type == "M")
                     .Where(t => t.Nights > t.Completed_nights)
                     .Where(t => t.Cycles > t.Completed_cycles)
                     .Where(t => t.ImageTime > maxImageTime)
@@ -830,10 +830,8 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                                 speckleTarget.NoEC = 1;
                             }
 
-                            if (speckleTarget.Type == "M")
+                            if (speckleTarget.Type == "M" || speckleTarget.Type == "G")
                                 SpeckleTargets.Add(speckleTarget);
-                            if (speckleTarget.Type == "S")
-                                // Add to reference star list
 
                             RaisePropertyChanged("SpeckleTargetCount");
                             RaisePropertyChanged("SpeckleTargetsView");
