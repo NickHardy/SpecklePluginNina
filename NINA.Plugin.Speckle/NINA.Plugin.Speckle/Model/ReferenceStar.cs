@@ -37,7 +37,7 @@ namespace NINA.Plugin.Speckle.Model {
             Name1 = "SSRef";
         }
         public string Name {
-            get => Name1 + "_" + (string.IsNullOrWhiteSpace(Name2) ? "Gaia-" + GaiaNum.ToString() : Name2);
+            get => Name1 + "_" + (string.IsNullOrWhiteSpace(Name2) || "_".Equals(Name2) ? "Gaia-" + GaiaNum.ToString() : Name2);
         }
 
         [JsonProperty]
@@ -47,7 +47,7 @@ namespace NINA.Plugin.Speckle.Model {
         public double color { get; set; }
 
         public string Title {
-            get => $"{Name1}, Distance: {Math.Round(distance, 3)}°, Color: {Math.Round(color, 2)} (B-V), VMag: {Math.Round(Rp, 2)}";
+            get => $"{Name}, Distance: {Math.Round(distance, 3)}°, Color: {Math.Round(color, 2)} (B-V), VMag: {Math.Round(Rp, 2)}";
         }
 
         public Coordinates Coordinates() {

@@ -201,6 +201,52 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             }
         }
 
+
+        private AsyncObservableCollection<ReferenceStar> _referenceStarList;
+
+        [JsonProperty]
+        public AsyncObservableCollection<ReferenceStar> ReferenceStarList {
+            get => _referenceStarList;
+            set {
+                _referenceStarList = value;
+                RaisePropertyChanged();
+            }
+        }
+
+        private bool _LoadingReferenceStars = false;
+
+        public bool LoadingReferenceStars {
+            get { return _LoadingReferenceStars; }
+            set {
+                _LoadingReferenceStars = value;
+                RaisePropertyChanged();
+            }
+        }
+
+        public async Task LoadReferenceStarList() {
+            if (string.IsNullOrWhiteSpace(speckle.ReferenceStarListLocation)) {
+                Logger.Debug("No path to reference star list.");
+                return;
+            }
+            if (LoadingReferenceStars || (ReferenceStarList != null && ReferenceStarList.Count > 0))
+                return;
+            LoadingReferenceStars = true;
+            var config = new CsvConfiguration(CultureInfo.InvariantCulture);
+            config.MissingFieldFound = null;
+            using (var reader = new StreamReader(speckle.ReferenceStarListLocation))
+            using (var csv = new CsvReader(reader, config)) {
+                csv.Context.RegisterClassMap<StarMap>();
+                var records = csv.GetRecords<ReferenceStar>();
+                ReferenceStarList = new AsyncObservableCollection<ReferenceStar>(records.ToList());
+            }
+            foreach(var rstar in ReferenceStarList) {
+                if (rstar.color == 0) {
+                    rstar.color = rstar.Rp - rstar.Bp;
+                }
+            }
+            LoadingReferenceStars = false;
+        }
+
         private AsyncObservableCollection<SpeckleTarget> _speckleTargets;
 
         [JsonProperty]
@@ -338,12 +384,12 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                 speckleTargetContainer.Name = SpeckleTarget.Proj + "_" + SpeckleTarget.Obs + "_" + SpeckleTarget.Name + "_c" + (SpeckleTarget.Completed_cycles + 1);
                 speckleTargetContainer.Items.ToList().ForEach(x => {
                     if (x is TakeRoiExposures takeRoiExposures) {
-                        takeRoiExposures.ExposureTime = SpeckleTarget.ExpTime;
-                        takeRoiExposures.TotalExposureCount = SpeckleTarget.NumExp;
+                        takeRoiExposures.ExposureTime = SpeckleTarget.Exp;
+                        takeRoiExposures.TotalExposureCount = SpeckleTarget.NExp;
                     }
                     if (x is TakeLiveExposures takeLiveExposures) {
-                        takeLiveExposures.ExposureTime = SpeckleTarget.ExpTime;
-                        takeLiveExposures.TotalExposureCount = SpeckleTarget.NumExp;
+                        takeLiveExposures.ExposureTime = SpeckleTarget.Exp;
+                        takeLiveExposures.TotalExposureCount = SpeckleTarget.NExp;
                     }
                     if (x is WaitForTime waitForTime) {
                         waitForTime.Hours = SpeckleTarget.ImageTime.Hour;
@@ -388,15 +434,15 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                     speckleTargetContainerRef.Name = speckleTarget.Proj + "_" + speckleTarget.Name2 + "_" + (speckleTarget.Completed_cycles + 1) + "_ref_" + speckleTarget.ReferenceStar.Name;
                     speckleTargetContainerRef.Items.ToList().ForEach(x => {
                         if (x is CalculateExposure calculateExposure) {
-                            calculateExposure.ExposureTime = speckleTarget.ExpTime;
+                            calculateExposure.ExposureTime = speckleTarget.Exp;
                         }
                         if (x is TakeRoiExposures takeRoiExposures) {
-                            takeRoiExposures.ExposureTime = speckleTarget.ExpTime;
-                            takeRoiExposures.TotalExposureCount = Math.Min(speckle.ReferenceExposures, speckleTarget.NumExp);
+                            takeRoiExposures.ExposureTime = speckleTarget.Exp;
+                            takeRoiExposures.TotalExposureCount = Math.Min(speckle.ReferenceExposures, speckleTarget.NExp);
                         }
                         if (x is TakeLiveExposures takeLiveExposures) {
-                            takeLiveExposures.ExposureTime = speckleTarget.ExpTime;
-                            takeLiveExposures.TotalExposureCount = Math.Min(speckle.ReferenceExposures, speckleTarget.NumExp);
+                            takeLiveExposures.ExposureTime = speckleTarget.Exp;
+                            takeLiveExposures.TotalExposureCount = Math.Min(speckle.ReferenceExposures, speckleTarget.NExp);
                         }
                         if (x is WaitForTime waitForTime) {
                             waitForTime.Hours = speckleTarget.ImageTime.Hour;
@@ -582,19 +628,21 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
         private async Task RetrieveReferenceStars(IProgress<ApplicationStatus> externalProgress, CancellationToken token) {
             if (SpeckleTarget.GetRef > 0 && (SpeckleTarget.ReferenceStarList == null || !SpeckleTarget.ReferenceStarList.Any())) {
                 ReferenceStar targetStar = new ReferenceStar();
-                double targetColor = 0.65;
-                double minMagnitude = speckle.MinReferenceMag;
+                double targetColor = SpeckleTarget.Color != 0 ? SpeckleTarget.Color : 0.65;
+                double minMagnitude = SpeckleTarget.Rp != 0 ? SpeckleTarget.Rp - 1d : speckle.MinReferenceMag;
                 double maxMagnitude = speckle.MaxReferenceMag;
 
-                try {
-                    targetStar = await RetrieveTargetStar(externalProgress, token);
-                    if (targetStar == null) throw new Exception("Target star not found.");
-                    targetColor = targetStar.color;
-                    minMagnitude = speckle.MinReferenceMag > targetStar.Rp ? targetStar.Rp - 1d : speckle.MinReferenceMag;
-                    maxMagnitude = speckle.MaxReferenceMag; //Math.Min(targetStar.v_mag, speckle.MaxReferenceMag);
-                }
-                catch (Exception ex) {
-                    Logger.Debug("Couldn't find target star for SpeckleTarget. Assuming G-type star. Error: " + ex.Message);
+                if (SpeckleTarget.Color == 0) {
+                    try {
+                        targetStar = await RetrieveTargetStar(externalProgress, token);
+                        if (targetStar == null) throw new Exception("Target star not found.");
+                        targetColor = targetStar.color;
+                        minMagnitude = speckle.MinReferenceMag > targetStar.Rp ? targetStar.Rp - 1d : speckle.MinReferenceMag;
+                        maxMagnitude = speckle.MaxReferenceMag; //Math.Min(targetStar.v_mag, speckle.MaxReferenceMag);
+                    }
+                    catch (Exception ex) {
+                        Logger.Debug("Couldn't find target star for SpeckleTarget. Assuming G-type star. Error: " + ex.Message);
+                    }
                 }
 
                 SpeckleTarget.ReferenceStarList = new List<ReferenceStar>();
@@ -602,9 +650,9 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                     SpeckleTarget.ReferenceStarList.AddRange(await SimUtils.FindSimbadSaoStars(externalProgress, token, SpeckleTarget.Coordinates(), speckle.SearchRadius, minMagnitude, maxMagnitude).ConfigureAwait(false));
                 if (speckle.UseUSNOSingleStarList)
                     SpeckleTarget.ReferenceStarList.AddRange(await SimUtils.FindSingleBrightStars(externalProgress, token, SpeckleTarget.Coordinates(), speckle.SearchRadius, minMagnitude, maxMagnitude).ConfigureAwait(false));
-                if (speckle.UseReferenceStarList)
+                if (speckle.UseReferenceStarList && ReferenceStarList != null)
                     SpeckleTarget.ReferenceStarList.AddRange(
-                        speckle.ReferenceStarList.Where(x => x.RA2000 > SpeckleTarget.RA2000 - speckle.SearchRadius && x.RA2000 < SpeckleTarget.RA2000 + speckle.SearchRadius &&
+                        ReferenceStarList.Where(x => x.RA2000 > SpeckleTarget.RA2000 - speckle.SearchRadius && x.RA2000 < SpeckleTarget.RA2000 + speckle.SearchRadius &&
                                                         x.Dec2000 > SpeckleTarget.Dec2000 - speckle.SearchRadius && x.Dec2000 < SpeckleTarget.Dec2000));
 
                 if (speckle.DomePositionLock) {
@@ -613,6 +661,8 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                     foreach (var rstar in SpeckleTarget.ReferenceStarList) {
                         rstar.AltList = GetAltList(rstar.Coordinates());
                         rstar.setDomeSlitAltTimeList(speckle, slitAz1, slitAz2);
+                        Separation sep = SpeckleTarget.Coordinates() - rstar.Coordinates();
+                        rstar.distance = sep.Distance.Degree;
                     }
 
                     // Filter stars with non-null and non-empty DomeSlitAltTimeList
@@ -631,10 +681,15 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                     SpeckleTarget.ReferenceStar = SpeckleTarget.ReferenceStarList.FirstOrDefault();
 
                 } else {
+                    foreach (var rstar in SpeckleTarget.ReferenceStarList) {
+                        Separation sep = SpeckleTarget.Coordinates() - rstar.Coordinates();
+                        rstar.distance = sep.Distance.Degree;
+                    }
+
                     // color match first, then distance (the distance is already limited in the simbadutils)
                     SpeckleTarget.ReferenceStarList = SpeckleTarget.ReferenceStarList
                         .OrderBy(r => Math.Abs(r.color - targetColor))
-                        .ThenBy(r => r.distance)
+                        .ThenBy(r => r.distance).Take(50)
                         .ToList();
                     SpeckleTarget.ReferenceStar = SpeckleTarget.ReferenceStarList.FirstOrDefault();
                 }
@@ -681,13 +736,21 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             return altList;
         }
 
+        private Coordinates GetDomeSlitCoords() {
+            var observer = profileService.ActiveProfile.AstrometrySettings;
+            ICustomDateTime SystemDateTime = new SystemDateTime();
+            var domeSlitCoords = new TopocentricCoordinates(Angle.ByDegree(speckle.DomePosition), Angle.ByDegree(45), Angle.ByDegree(observer.Latitude), Angle.ByDegree(observer.Longitude), observer.Elevation, SystemDateTime);
+            return domeSlitCoords.Transform(Epoch.J2000);
+        }
+
         private void OpenFile() {
             OpenFileDialog fileDialog = new OpenFileDialog();
             fileDialog.DefaultExt = ".csv"; // Required file extension 
             fileDialog.Filter = "Csv documents (.csv)|*.csv"; // Optional file extensions
 
             if (fileDialog.ShowDialog() == DialogResult.OK) {
-                LoadTargets(fileDialog.FileName);
+                _ = LoadTargets(fileDialog.FileName);
+                _ = LoadReferenceStarList();
             }
         }
 
@@ -764,7 +827,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                             }
                             if (speckleTarget.Smag == 0) {
                                 Logger.Debug("Failed to get secondary magnitude for " + speckleTarget.Name);
-                                speckleTarget.NoExpCalc = 1;
+                                speckleTarget.NoEC = 1;
                             }
 
                             if (speckleTarget.Type == "M")

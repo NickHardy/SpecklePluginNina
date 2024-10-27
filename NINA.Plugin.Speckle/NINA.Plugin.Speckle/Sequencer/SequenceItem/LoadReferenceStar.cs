@@ -62,11 +62,11 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             }
         }
 
-        private string _SimbadStarName2 { get; set; }
-        public string SimbadStarName2 {
-            get => _SimbadStarName2;
+        private string _ReferenceStarName { get; set; }
+        public string ReferenceStarName {
+            get => _ReferenceStarName;
             set {
-                _SimbadStarName2 = value;
+                _ReferenceStarName = value;
                 RaisePropertyChanged();
             }
         }
@@ -108,7 +108,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                     ReferenceStarList = new AsyncObservableCollection<ReferenceStar>(speckleTargetContainer?.SpeckleTarget?.ReferenceStarList);
                 if (RefStar == null) {
                     RefStar = ReferenceStarList?.Count > 0 ? ReferenceStarList?.First() : null;
-                    SimbadStarName2 = RefStar?.Name2;
+                    ReferenceStarName = RefStar?.Name;
                 }
             }
 

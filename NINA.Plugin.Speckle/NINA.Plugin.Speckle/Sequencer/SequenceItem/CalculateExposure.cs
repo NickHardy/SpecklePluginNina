@@ -151,7 +151,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem
         public override async Task Execute(IProgress<ApplicationStatus> progress, CancellationToken token)
         {
             
-            if (Utility.ItemUtility.RetrieveSpeckleTarget(Parent).NoExpCalc != 0)
+            if (Utility.ItemUtility.RetrieveSpeckleTarget(Parent).NoEC != 0)
                 return; // Check if the calculation should be used for the target before calculating anything
 
             // Once a GUI is added, these would point towards what the user has selected. For now they are bound to this.

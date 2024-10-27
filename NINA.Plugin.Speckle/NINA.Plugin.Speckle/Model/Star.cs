@@ -51,7 +51,7 @@ public class Star : TargetBase {
     public double Gmag { get; set; }
 
     [JsonProperty]
-    public long GaiaNum { get; set; }
+    public string GaiaNum { get; set; }
 
     [JsonProperty]
     public double Sep { get; set; }
@@ -75,13 +75,13 @@ public class Star : TargetBase {
     public string Filter { get; set; }
 
     [JsonProperty]
-    public double ExpTime { get; set; }
+    public double Exp { get; set; }
 
     [JsonProperty]
-    public int NumExp { get; set; }
+    public int NExp { get; set; }
 
     [JsonProperty]
-    public int NoExpCalc { get; set; }
+    public int NoEC { get; set; }
 
     [JsonProperty]
     public int GetRef { get; set; }
@@ -127,7 +127,7 @@ public sealed class StarMap : ClassMap<Star> {
         Map(m => m.Bp).Name("Bp").Optional().Default(0);
         Map(m => m.Rp).Name("Rp").Optional().Default(0);
         Map(m => m.Gmag).Name("Gmag").Optional().Default(0);
-        Map(m => m.GaiaNum).Name("GaiaNum").Optional().Default(0);
+        Map(m => m.GaiaNum).Name("GaiaNum").Optional().Default("0");
         Map(m => m.Sep).Name("Sep").Optional().Default(0);
         Map(m => m.PA).Name("PA").Optional().Default(0);
         Map(m => m.Parallax).Name("Parallax").Optional().Default(0);
@@ -135,9 +135,9 @@ public sealed class StarMap : ClassMap<Star> {
         Map(m => m.Pmag).Name("Pmag").Optional().Default(0);
         Map(m => m.Smag).Name("Smag").Optional().Default(0);
         Map(m => m.Filter).Name("Filter").Optional().Default("");
-        Map(m => m.ExpTime).Name("ExpTime").Optional().Default(0);
-        Map(m => m.NumExp).Name("NumExp").Optional().Default(0);
-        Map(m => m.NoExpCalc).Name("NoExpCalc").Optional().Default(0);
+        Map(m => m.Exp).Name("Exp").Optional().Default(0);
+        Map(m => m.NExp).Name("NExp").Optional().Default(0);
+        Map(m => m.NoEC).Name("NoEC").Optional().Default(0);
         Map(m => m.GetRef).Name("GetRef").Optional().Default(1);
         Map(m => m.GPrime).Name("GPrime").Optional().Default(0);
         Map(m => m.RPrime).Name("RPrime").Optional().Default(0);

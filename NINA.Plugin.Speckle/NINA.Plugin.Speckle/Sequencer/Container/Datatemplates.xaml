@@ -592,8 +592,8 @@
                         DataGridRow.Selected="DataGridRow_Selected"
                         DataGridCell.Selected="DataGridCell_Selected">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Width="auto" Binding="{Binding User}" Header="User" />
-                            <DataGridTextColumn Width="*" Binding="{Binding Target}" Header="Target" />
+                            <DataGridTextColumn Width="auto" Binding="{Binding Obs}" Header="User" IsReadOnly="True"/>
+                            <DataGridTextColumn Width="*" Binding="{Binding Name}" Header="Target" IsReadOnly="True"/>
                             <DataGridTemplateColumn Width="50">
                                 <DataGridTemplateColumn.Header>
                                     <StackPanel HorizontalAlignment="Center">
@@ -615,14 +615,15 @@
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
-                            <DataGridTextColumn Width="80" Binding="{Binding ExposureTime}" Header="ExposureTime" />
-                            <DataGridTextColumn Width="70" Binding="{Binding Exposures}" Header="Exposures" />
+                            <DataGridTextColumn Width="80" Binding="{Binding Exp}" Header="ExpTime" />
+                            <DataGridTextColumn Width="70" Binding="{Binding NExp}" Header="Exposures" />
                             <DataGridTextColumn Width="40" Binding="{Binding Filter}" Header="Filter" />
-                            <DataGridTextColumn Width="80" Binding="{Binding Ra}" Header="Ra" />
-                            <DataGridTextColumn Width="80" Binding="{Binding Dec}" Header="Dec" />
-                            <DataGridTextColumn Width="50" Binding="{Binding PMag}" Header="PMag" />
-                            <DataGridTextColumn Width="50" Binding="{Binding SMag}" Header="SMag" />
-                            <DataGridTextColumn Width="50" Binding="{Binding Separation}" Header="Sep" />
+                            <DataGridTextColumn Width="80" Binding="{Binding RA2000}" Header="Ra" />
+                            <DataGridTextColumn Width="80" Binding="{Binding Dec2000}" Header="Dec" />
+                            <DataGridTextColumn Width="50" Binding="{Binding Pmag}" Header="PMag" />
+                            <DataGridTextColumn Width="50" Binding="{Binding Smag}" Header="SMag" />
+                            <DataGridTextColumn Width="50" Binding="{Binding Sep}" Header="Sep" />
+                            <DataGridTextColumn Width="50" Binding="{Binding Color}" Header="Color" />
                             <DataGridTextColumn Width="50" Binding="{Binding DomeSlitObservationTime}" Header="Time s" />
                             <DataGridTextColumn Width="100" Binding="{Binding ImageTime, StringFormat='{}{0:HH:mm:ss}'}" Header="Best image time" IsReadOnly="True" />
                             <DataGridTemplateColumn
@@ -747,9 +748,9 @@
                         <StackPanel Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="7" Margin="5" Orientation="Horizontal">
                             <TextBlock VerticalAlignment="Center" Text="Targets total/loaded" />
                             <TextBlock VerticalAlignment="Center" Text=": " />
-                            <TextBlock VerticalAlignment="Center" Text="{Binding GdsTargets.Count, Mode=OneWay}" />
+                            <TextBlock VerticalAlignment="Center" Text="{Binding SpeckleTargets.Count, Mode=OneWay}" />
                             <TextBlock VerticalAlignment="Center" Text="/" />
-                            <TextBlock VerticalAlignment="Center" Text="{Binding SpeckleTargetCount, Mode=OneWay}" />
+                            <TextBlock VerticalAlignment="Center" Text="{Binding SpeckleTargetCount}" />
                         </StackPanel>
                     </Grid>
                     <Grid Grid.ColumnSpan="2" Grid.Row="1">

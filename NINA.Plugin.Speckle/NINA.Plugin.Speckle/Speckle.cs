@@ -92,7 +92,6 @@ namespace NINA.Plugin.Speckle {
 
             if (fileDialog.ShowDialog() == DialogResult.OK) {
                 ReferenceStarListLocation = fileDialog.FileName;
-                _ = LoadReferenceStarList();
             }
         }
 
@@ -127,12 +126,8 @@ namespace NINA.Plugin.Speckle {
             config.MissingFieldFound = null;
             using (var reader = new StreamReader(ReferenceStarListLocation))
             using (var csv = new CsvReader(reader, config)) {
-                // Do any configuration to `CsvReader` before creating CsvDataReader.
-                using (var dr = new CsvDataReader(csv)) {
-                    csv.Context.RegisterClassMap<StarMap>();
-                    var records = csv.GetRecords<ReferenceStar>();
-                    ReferenceStarList = new AsyncObservableCollection<ReferenceStar>(records.ToList());
-                }
+                csv.Context.RegisterClassMap<StarMap>();
+                var records = csv.GetRecords<ReferenceStar>();
             }
             LoadingReferenceStars = false;
         }
