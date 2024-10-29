@@ -53,26 +53,26 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             }
         }
 
-        private SimbadStar _SimbadStar { get; set; }
-        public SimbadStar SimbadStar {
-            get => _SimbadStar;
+        private ReferenceStar _ReferenceStar { get; set; }
+        public ReferenceStar RefStar {
+            get => _ReferenceStar;
             set {
-                _SimbadStar = value;
+                _ReferenceStar = value;
                 RaisePropertyChanged();
             }
         }
 
-        private string _SimbadStarMainId { get; set; }
-        public string SimbadStarMainId {
-            get => _SimbadStarMainId;
+        private string _ReferenceStarName { get; set; }
+        public string ReferenceStarName {
+            get => _ReferenceStarName;
             set {
-                _SimbadStarMainId = value;
+                _ReferenceStarName = value;
                 RaisePropertyChanged();
             }
         }
 
-        private AsyncObservableCollection<SimbadStar> _referenceStarList { get; set; } = new AsyncObservableCollection<SimbadStar>();
-        public AsyncObservableCollection<SimbadStar> ReferenceStarList {
+        private AsyncObservableCollection<ReferenceStar> _referenceStarList { get; set; } = new AsyncObservableCollection<ReferenceStar>();
+        public AsyncObservableCollection<ReferenceStar> ReferenceStarList {
             get => _referenceStarList;
             set {
                 _referenceStarList = value;
@@ -84,8 +84,8 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
 
             var listContainer = ItemUtility.RetrieveSpeckleListContainer(Parent);
             var speckleTarget = ItemUtility.RetrieveSpeckleTarget(Parent);
-            if (SimbadStar != null) {
-                speckleTarget.ReferenceStar = SimbadStar;
+            if (RefStar != null) {
+                speckleTarget.ReferenceStar = RefStar;
 
                 var templateName = string.IsNullOrWhiteSpace(speckleTarget.Template) ? speckle.DefaultTemplate : speckleTarget.Template;
                 var refTemplateName = string.IsNullOrWhiteSpace(speckleTarget.TemplateRef) ? speckle.DefaultRefTemplate : speckleTarget.TemplateRef;
@@ -105,10 +105,10 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             } else {
                 var speckleTargetContainer = ItemUtility.RetrieveSpeckleContainer(Parent);
                 if (ReferenceStarList?.Count == 0 && speckleTargetContainer?.SpeckleTarget?.ReferenceStarList?.Count > 0)
-                    ReferenceStarList = new AsyncObservableCollection<SimbadStar>(speckleTargetContainer?.SpeckleTarget?.ReferenceStarList);
-                if (SimbadStar == null) {
-                    SimbadStar = ReferenceStarList?.Count > 0 ? ReferenceStarList?.First() : null;
-                    SimbadStarMainId = SimbadStar?.main_id;
+                    ReferenceStarList = new AsyncObservableCollection<ReferenceStar>(speckleTargetContainer?.SpeckleTarget?.ReferenceStarList);
+                if (RefStar == null) {
+                    RefStar = ReferenceStarList?.Count > 0 ? ReferenceStarList?.First() : null;
+                    ReferenceStarName = RefStar?.Name;
                 }
             }
 

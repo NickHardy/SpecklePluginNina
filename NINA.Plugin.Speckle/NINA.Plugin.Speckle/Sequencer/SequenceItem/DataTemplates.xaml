@@ -506,10 +506,10 @@
             <view:SequenceBlockView.SequenceItemContent>
                 <ComboBox
                 ItemsSource="{Binding ReferenceStarList, Mode=TwoWay}"
-                SelectedItem="{Binding SimbadStar, Mode=TwoWay}"
-                SelectedValue="{Binding SimbadStarMainId, Mode=TwoWay}"
+                SelectedItem="{Binding RefStar, Mode=TwoWay}"
+                SelectedValue="{Binding Title, Mode=TwoWay}"
                 HorizontalContentAlignment="Stretch"
-                SelectedValuePath="main_id">
+                SelectedValuePath="Name">
                     <ComboBox.ItemTemplate>
                         <DataTemplate>
                             <TextBlock 

@@ -15,6 +15,13 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Settings = NINA.Plugin.Speckle.Properties.Settings;
+using System.Threading;
+using System.Windows.Input;
+using CsvHelper.Configuration;
+using System.Windows.Forms;
+using System.Globalization;
+using CsvHelper;
+using System.IO;
 
 namespace NINA.Plugin.Speckle {
     /// <summary>
@@ -29,6 +36,7 @@ namespace NINA.Plugin.Speckle {
 
         private readonly IProfileService _profileService;
         private readonly PluginOptionsAccessor _pluginOptionsAccessor;
+        private CancellationTokenSource executeCTS;
 
         public ImagePattern notePattern = new("$$NOTE$$", "Possible note about target", "Speckle");
 
@@ -49,6 +57,8 @@ namespace NINA.Plugin.Speckle {
             notePattern.Value = string.Empty;
             options.AddImagePattern(notePattern);
 
+            OpenFileCommand = new GalaSoft.MvvmLight.Command.RelayCommand<bool>((o) => { using (executeCTS = new CancellationTokenSource()) { OpenFile(); } });
+
             imageSaveMediator.BeforeFinalizeImageSaved += ImageSaveMediator_BeforeFinalizeImageSaved;
         }
 
@@ -63,6 +73,63 @@ namespace NINA.Plugin.Speckle {
         public override Task Teardown() {
             _profileService.ProfileChanged -= ProfileService_ProfileChanged;
             return base.Teardown();
+        }
+
+        public ICommand OpenFileCommand { get; private set; }
+
+        public string ReferenceStarListLocation {
+            get => _pluginOptionsAccessor.GetValueString(nameof(ReferenceStarListLocation), "");
+            set {
+                _pluginOptionsAccessor.SetValueString(nameof(ReferenceStarListLocation), value);
+                RaisePropertyChanged();
+            }
+        }
+
+        private void OpenFile() {
+            OpenFileDialog fileDialog = new OpenFileDialog();
+            fileDialog.DefaultExt = ".csv"; // Required file extension 
+            fileDialog.Filter = "Csv documents (.csv)|*.csv"; // Optional file extensions
+
+            if (fileDialog.ShowDialog() == DialogResult.OK) {
+                ReferenceStarListLocation = fileDialog.FileName;
+            }
+        }
+
+        private AsyncObservableCollection<ReferenceStar> _referenceStarList;
+
+        [JsonProperty]
+        public AsyncObservableCollection<ReferenceStar> ReferenceStarList {
+            get => _referenceStarList;
+            set {
+                _referenceStarList = value;
+                RaisePropertyChanged();
+            }
+        }
+
+        private bool _LoadingReferenceStars = false;
+
+        public bool LoadingReferenceStars {
+            get { return _LoadingReferenceStars; }
+            set {
+                _LoadingReferenceStars = value;
+                RaisePropertyChanged();
+            }
+        }
+
+        public async Task LoadReferenceStarList() {
+            if (string.IsNullOrWhiteSpace(ReferenceStarListLocation) || LoadingReferenceStars) {
+                Logger.Debug("No path to reference star list.");
+                return;
+            }
+            LoadingReferenceStars = true;
+            var config = new CsvConfiguration(CultureInfo.InvariantCulture);
+            config.MissingFieldFound = null;
+            using (var reader = new StreamReader(ReferenceStarListLocation))
+            using (var csv = new CsvReader(reader, config)) {
+                csv.Context.RegisterClassMap<StarMap>();
+                var records = csv.GetRecords<ReferenceStar>();
+            }
+            LoadingReferenceStars = false;
         }
 
         public double MDistance {
@@ -261,6 +328,14 @@ namespace NINA.Plugin.Speckle {
             get => _pluginOptionsAccessor.GetValueInt32(nameof(ReferenceExposures), 300);
             set {
                 _pluginOptionsAccessor.SetValueInt32(nameof(ReferenceExposures), value);
+                RaisePropertyChanged();
+            }
+        }
+
+        public bool UseReferenceStarList {
+            get => _pluginOptionsAccessor.GetValueBoolean(nameof(UseReferenceStarList), true);
+            set {
+                _pluginOptionsAccessor.SetValueBoolean(nameof(UseReferenceStarList), value);
                 RaisePropertyChanged();
             }
         }
