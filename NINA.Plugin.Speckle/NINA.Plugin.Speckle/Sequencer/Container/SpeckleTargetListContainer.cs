@@ -655,14 +655,22 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                         ReferenceStarList.Where(x => x.RA2000 > SpeckleTarget.RA2000 - speckle.SearchRadius && x.RA2000 < SpeckleTarget.RA2000 + speckle.SearchRadius &&
                                                         x.Dec2000 > SpeckleTarget.Dec2000 - speckle.SearchRadius && x.Dec2000 < SpeckleTarget.Dec2000));
 
+                foreach (var rstar in SpeckleTarget.ReferenceStarList) {
+                    Separation sep = SpeckleTarget.Coordinates() - rstar.Coordinates();
+                    rstar.distance = sep.Distance.Degree;
+                }
+                // color match first, then distance (the distance is already limited in the simbadutils)
+                SpeckleTarget.ReferenceStarList = SpeckleTarget.ReferenceStarList
+                    .OrderBy(r => Math.Abs(r.color - targetColor))
+                    .ThenBy(r => r.distance).Take(30)
+                    .ToList();
+
                 if (speckle.DomePositionLock) {
                     var slitAz1 = speckle.DomePosition - (speckle.DomeSlitWidth / 2);
                     var slitAz2 = speckle.DomePosition + (speckle.DomeSlitWidth / 2);
                     foreach (var rstar in SpeckleTarget.ReferenceStarList) {
                         rstar.AltList = GetAltList(rstar.Coordinates());
                         rstar.setDomeSlitAltTimeList(speckle, slitAz1, slitAz2);
-                        Separation sep = SpeckleTarget.Coordinates() - rstar.Coordinates();
-                        rstar.distance = sep.Distance.Degree;
                     }
 
                     // Filter stars with non-null and non-empty DomeSlitAltTimeList
@@ -677,24 +685,10 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                         .OrderBy(r => Math.Abs(r.color - targetColor))
                         .ThenBy(r => r.DomeSlitAltTimeList.OrderBy(altTime => altTime.datetime).FirstOrDefault()?.datetime)
                         .ToList();
-
-                    SpeckleTarget.ReferenceStar = SpeckleTarget.ReferenceStarList.FirstOrDefault();
-
-                } else {
-                    foreach (var rstar in SpeckleTarget.ReferenceStarList) {
-                        Separation sep = SpeckleTarget.Coordinates() - rstar.Coordinates();
-                        rstar.distance = sep.Distance.Degree;
-                    }
-
-                    // color match first, then distance (the distance is already limited in the simbadutils)
-                    SpeckleTarget.ReferenceStarList = SpeckleTarget.ReferenceStarList
-                        .OrderBy(r => Math.Abs(r.color - targetColor))
-                        .ThenBy(r => r.distance).Take(50)
-                        .ToList();
-                    SpeckleTarget.ReferenceStar = SpeckleTarget.ReferenceStarList.FirstOrDefault();
                 }
+                SpeckleTarget.ReferenceStar = SpeckleTarget.ReferenceStarList.FirstOrDefault();
                 if (SpeckleTarget.ReferenceStar == null) {
-                    Logger.Debug("Couldn't find reference SAO star for SpeckleTarget within " + speckle.SearchRadius + " degrees and magnitudes: " + minMagnitude + " and " + maxMagnitude);
+                    Logger.Debug("Couldn't find reference star for SpeckleTarget within " + speckle.SearchRadius + " degrees and magnitudes: " + minMagnitude + " and " + maxMagnitude);
                 }
                 RaiseAllPropertiesChanged();
             }
