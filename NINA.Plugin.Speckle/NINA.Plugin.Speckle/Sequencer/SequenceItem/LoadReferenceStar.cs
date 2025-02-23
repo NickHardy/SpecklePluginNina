@@ -89,7 +89,8 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
 
                 var templateName = string.IsNullOrWhiteSpace(speckleTarget.Template) ? speckle.DefaultTemplate : speckleTarget.Template;
                 var refTemplateName = string.IsNullOrWhiteSpace(speckleTarget.TemplateRef) ? speckle.DefaultRefTemplate : speckleTarget.TemplateRef;
-                await listContainer.LoadReferenceTarget(speckleTarget, string.IsNullOrWhiteSpace(refTemplateName) ? templateName : refTemplateName);
+                var refStarTemplate = string.IsNullOrWhiteSpace(RefStar.Template) ? refTemplateName : RefStar.Template;
+                await listContainer.LoadReferenceTarget(speckleTarget, string.IsNullOrWhiteSpace(refStarTemplate) ? templateName : refStarTemplate);
             }
         }
 

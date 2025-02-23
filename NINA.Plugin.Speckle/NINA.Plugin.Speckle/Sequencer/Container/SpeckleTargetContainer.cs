@@ -76,7 +76,8 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             this.planetariumFactory = planetariumFactory;
             cameraMediator.RegisterConsumer(this);
             speckle = new Speckle(profileService);
-            SubSampleRectangle = new ObservableRectangle(0, 0, 320, 240);
+            EnableSubSample = true;
+            SubSampleRectangle = new ObservableRectangle(0, 0, 512, 512);
             Task.Run(() => NighttimeData = nighttimeCalculator.Calculate());
             Target = new InputTarget(Angle.ByDegree(profileService.ActiveProfile.AstrometrySettings.Latitude), Angle.ByDegree(profileService.ActiveProfile.AstrometrySettings.Longitude), profileService.ActiveProfile.AstrometrySettings.Horizon);
             CoordsToFramingCommand = new GalaSoft.MvvmLight.Command.RelayCommand(SendCoordinatesToFraming);
@@ -124,6 +125,16 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
         public ICommand CoordsToFramingCommand { get; set; }
         public ICommand CoordsFromPlanetariumCommand { get; set; }
         public ICommand DropTargetCommand { get; set; }
+
+        private int _SpeckleRun;
+        [JsonProperty]
+        public int SpeckleRun {
+            get => _SpeckleRun;
+            set {
+                _SpeckleRun = value;
+                RaisePropertyChanged();
+            }
+        }
 
         private string _title;
         [JsonProperty]
@@ -193,6 +204,11 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             cameraMediator.RemoveConsumer(this);
         }
 
+        private bool enableSubSample;
+
+        [JsonProperty]
+        public bool EnableSubSample { get => enableSubSample; set { enableSubSample = value; RaisePropertyChanged(); } }
+
         private ObservableRectangle subSampleRectangle;
 
         [JsonProperty]
@@ -253,6 +269,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             clone.Target.InputCoordinates.Coordinates = this.Target.InputCoordinates.Coordinates.Transform(Epoch.J2000);
             clone.Target.PositionAngle = this.Target.PositionAngle;
 
+            clone.EnableSubSample = EnableSubSample;
             clone.SubSampleRectangle.X = SubSampleRectangle.X;
             clone.SubSampleRectangle.Y = SubSampleRectangle.Y;
             clone.SubSampleRectangle.Width = SubSampleRectangle.Width;

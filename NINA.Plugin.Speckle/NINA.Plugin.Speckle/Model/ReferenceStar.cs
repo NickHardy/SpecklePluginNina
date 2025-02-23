@@ -19,6 +19,7 @@ using CsvHelper.Configuration;
 using System;
 using System.Collections.Generic;
 using NINA.Plugin.Speckle.Sequencer.SequenceItem;
+using System.Reflection;
 
 namespace NINA.Plugin.Speckle.Model {
 
@@ -36,6 +37,15 @@ namespace NINA.Plugin.Speckle.Model {
         public ReferenceStar() {
             Name1 = "SSRef";
         }
+
+        public ReferenceStar(Star star) {
+            foreach (PropertyInfo prop in typeof(Star).GetProperties()) {
+                if (prop.CanRead && prop.CanWrite) {
+                    prop.SetValue(this, prop.GetValue(star));
+                }
+            }
+        }
+
         public string Name {
             get => Name1 + "_" + (string.IsNullOrWhiteSpace(Name2) || "_".Equals(Name2) ? "Gaia-" + GaiaNum.ToString() : Name2);
         }
@@ -46,6 +56,7 @@ namespace NINA.Plugin.Speckle.Model {
         [JsonProperty]
         public double color { get; set; }
 
+        [JsonProperty]
         public string Title {
             get => $"{Name}, Distance: {Math.Round(distance, 3)}°, Color: {Math.Round(color, 2)} (B-V), VMag: {Math.Round(Rp, 2)}";
         }

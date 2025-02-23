@@ -44,33 +44,33 @@ using NINA.Image.Interfaces;
 using NINA.Image.FileFormat;
 using NINA.Core.Utility.Notification;
 using System.Diagnostics;
-using NINA.Image.ImageData;
-using NINA.Equipment.Equipment.MyTelescope;
+using Accord.Statistics.Models.Regression.Linear;
+using NINA.Image.ImageAnalysis;
 
 namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
 
-    [ExportMetadata("Name", "Take Roi Exposures")]
+    [ExportMetadata("Name", "Calculate exposure time")]
     [ExportMetadata("Description", "Lbl_SequenceItem_Imaging_TakeExposure_Description")]
     [ExportMetadata("Icon", "CameraSVG")]
     [ExportMetadata("Category", "Speckle Interferometry")]
     [Export(typeof(ISequenceItem))]
     [JsonObject(MemberSerialization.OptIn)]
-    public class TakeRoiExposures : NINA.Sequencer.SequenceItem.SequenceItem, IExposureItem, IValidatable {
+    public class CalculateRoiExposureTime : NINA.Sequencer.SequenceItem.SequenceItem, IExposureItem, IValidatable {
         private ICameraMediator cameraMediator;
         private IImagingMediator imagingMediator;
         private IImageSaveMediator imageSaveMediator;
         private IProfileService profileService;
         private IApplicationStatusMediator applicationStatusMediator;
         private IImageControlVM imageControlVM;
-        private IFilterWheelMediator filterWheelMediator;
-        private ITelescopeMediator telescopeMediator;
         private Speckle speckle;
+        private Task<IRenderedImage> _imageProcessingTask;
 
         [ImportingConstructor]
-        public TakeRoiExposures(IProfileService profileService, ICameraMediator cameraMediator, IImagingMediator imagingMediator, IImageSaveMediator imageSaveMediator, IApplicationStatusMediator applicationStatusMediator, IImageControlVM imageControlVM, IFilterWheelMediator filterWheelMediator, ITelescopeMediator telescopeMediator) {
+        public CalculateRoiExposureTime(IProfileService profileService, ICameraMediator cameraMediator, IImagingMediator imagingMediator, IImageSaveMediator imageSaveMediator, IApplicationStatusMediator applicationStatusMediator, IImageControlVM imageControlVM) {
             Gain = -1;
             Offset = -1;
-            ExposureTimeMultiplier = 1;
+            TargetADU = 0.20d;
+            ExposureStepTime = 0.01d;
             ImageType = CaptureSequence.ImageTypes.LIGHT;
             this.cameraMediator = cameraMediator;
             this.imagingMediator = imagingMediator;
@@ -78,18 +78,16 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             this.applicationStatusMediator = applicationStatusMediator;
             this.profileService = profileService;
             this.imageControlVM = imageControlVM;
-            this.filterWheelMediator = filterWheelMediator;
-            this.telescopeMediator = telescopeMediator;
             CameraInfo = this.cameraMediator.GetInfo();
             speckle = new Speckle(profileService);
         }
 
-        private TakeRoiExposures(TakeRoiExposures cloneMe) : this(cloneMe.profileService, cloneMe.cameraMediator, cloneMe.imagingMediator, cloneMe.imageSaveMediator, cloneMe.applicationStatusMediator, cloneMe.imageControlVM, cloneMe.filterWheelMediator, cloneMe.telescopeMediator) {
+        private CalculateRoiExposureTime(CalculateRoiExposureTime cloneMe) : this(cloneMe.profileService, cloneMe.cameraMediator, cloneMe.imagingMediator, cloneMe.imageSaveMediator, cloneMe.applicationStatusMediator, cloneMe.imageControlVM) {
             CopyMetaData(cloneMe);
         }
 
         public override object Clone() {
-            var clone = new TakeRoiExposures(this) {
+            var clone = new CalculateRoiExposureTime(this) {
                 ExposureTime = ExposureTime,
                 ExposureCount = 0,
                 TotalExposureCount = TotalExposureCount,
@@ -97,7 +95,9 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                 Gain = Gain,
                 Offset = Offset,
                 ImageType = ImageType,
-                ExposureTimeMultiplier = ExposureTimeMultiplier,
+                TargetADU = TargetADU,
+                ExposureTimeMax = ExposureTimeMax,
+                ExposureStepTime = ExposureStepTime
             };
 
             if (clone.Binning == null) {
@@ -120,24 +120,22 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
         private double exposureTime;
 
         [JsonProperty]
-        public double ExposureTime {
-            get => exposureTime;
-            set {
-                exposureTime = value;
-                RaisePropertyChanged();
-            }
-        }
+        public double ExposureTime { get => exposureTime; set { exposureTime = value; RaisePropertyChanged(); } }
 
-        private double exposureTimeMultiplier;
+        private double exposureTimeMax;
 
         [JsonProperty]
-        public double ExposureTimeMultiplier {
-            get => exposureTimeMultiplier;
-            set {
-                exposureTimeMultiplier = value;
-                RaisePropertyChanged();
-            }
-        }
+        public double ExposureTimeMax { get => exposureTimeMax; set { exposureTimeMax = value; RaisePropertyChanged(); } }
+
+        private double exposureStepTime;
+
+        [JsonProperty]
+        public double ExposureStepTime { get => exposureStepTime; set { exposureStepTime = value; RaisePropertyChanged(); } }
+
+        public double targetADU;
+
+        [JsonProperty]
+        public double TargetADU { get => targetADU; set { targetADU = Math.Round(value, 2); RaisePropertyChanged(); } }
 
         private int gain;
 
@@ -179,16 +177,6 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             }
         }
 
-        private TelescopeInfo telescopeInfo;
-
-        public TelescopeInfo TelescopeInfo {
-            get => telescopeInfo;
-            private set {
-                telescopeInfo = value;
-                RaisePropertyChanged();
-            }
-        }
-
         private ObservableCollection<string> _imageTypes;
 
         public ObservableCollection<string> ImageTypes {
@@ -210,111 +198,92 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             }
         }
 
+        public double CameraMaxAdu { get; private set; }
+
         public override async Task Execute(IProgress<ApplicationStatus> progress, CancellationToken token) {
-            var targetContainer = ItemUtility.RetrieveSpeckleContainer(Parent);
-            targetContainer.SpeckleRun++;
             ExposureCount = 1;
+            ExposureTime = ExposureStepTime;
+            CameraMaxAdu = HistogramMath.CameraBitDepthToAdu(CameraInfo.BitDepth);
             var capture = new CaptureSequence() {
-                ExposureTime = ExposureTime * ExposureTimeMultiplier,
+                ExposureTime = ExposureTime,
                 Binning = Binning,
                 Gain = Gain,
                 Offset = Offset,
                 ImageType = ImageType,
                 ProgressExposureCount = ExposureCount,
-                TotalExposureCount = TotalExposureCount,
-                EnableSubSample = targetContainer.EnableSubSample,
+                EnableSubSample = true,
                 SubSambleRectangle = ItemUtility.RetrieveSpeckleTargetRoi(Parent)
             };
 
             var imageParams = new PrepareImageParameters(true, false);
-
-            List<ImagePattern> customPatterns = new List<ImagePattern>();
-            customPatterns.Add(new ImagePattern(speckle.notePattern.Key, speckle.notePattern.Description, speckle.notePattern.Category) {
-                Value = string.Empty
-            });
-            customPatterns.Add(new ImagePattern(speckle.speckleRunPattern.Key, speckle.speckleRunPattern.Description, speckle.speckleRunPattern.Category) {
-                Value = $"{targetContainer.SpeckleRun}"
-            });
-
-            var target = targetContainer.Target;
-            var title = targetContainer.Title;
-            TelescopeInfo = this.telescopeMediator.GetInfo();
-
             try {
-                Stopwatch seqDuration = Stopwatch.StartNew();
-                while (ExposureCount <= TotalExposureCount) {
-                    Stopwatch roiDuration = Stopwatch.StartNew();
-                    var exposureStart = DateTime.Now;
-                    await cameraMediator.Capture(capture, token, progress);
-                    Logger.Debug("Capture: " + roiDuration.ElapsedMilliseconds);
-                    progress.Report(new ApplicationStatus() { Status = "Taking Roi image: " + ExposureCount });
-                    token.ThrowIfCancellationRequested();
-                    IExposureData exposureData = await cameraMediator.Download(token);
-                    Logger.Debug("Download: " + roiDuration.ElapsedMilliseconds);
-                    token.ThrowIfCancellationRequested();
+                while (ExposureTime <= ExposureTimeMax) {
+                    while (ExposureTime <= ExposureTimeMax) {
+                        capture.ExposureTime = ExposureTime;
+                        await cameraMediator.Capture(capture, token, progress);
+                        progress.Report(new ApplicationStatus() { Status = "Calculating Roi exposureTime: " + ExposureTime });
+                        token.ThrowIfCancellationRequested();
+                        IExposureData exposureData = await cameraMediator.Download(token);
+                        token.ThrowIfCancellationRequested();
 
-                    var imageData = await exposureData.ToImageData(progress, token);
-                    Logger.Debug("ImageData: " + roiDuration.ElapsedMilliseconds);
+                        var imageData = await exposureData.ToImageData(progress, token);
+                        /*                        imageData.MetaData.Sequence.Title = "Calculations";
+                                                IRenderedImage renderedImage = await imagingMediator.PrepareImage(imageData, imageParams, token);
 
-                    imageData.MetaData.Sequence.Title = title;
-                    imageData.MetaData.Image.ExposureStart = exposureStart;
-                    imageData.MetaData.Image.ExposureNumber = ExposureCount;
-                    imageData.MetaData.Image.ExposureTime = ExposureTime * ExposureTimeMultiplier;
+                                                _ = imageData.SaveToDisk(new FileSaveInfo(profileService), token);*/
 
-                    imageData.MetaData.GenericHeaders.Add(new DoubleMetaDataHeader("JD-END", AstroUtil.GetJulianDate(DateTime.Now), "Julian exposure end date"));
-                    imageData.MetaData.GenericHeaders.Add(new DoubleMetaDataHeader("JD-BEG", AstroUtil.GetJulianDate(imageData.MetaData.Image.ExposureStart), "Julian exposure start date"));
-                    imageData.MetaData.GenericHeaders.Add(new DoubleMetaDataHeader("JD-OBS", AstroUtil.GetJulianDate(imageData.MetaData.Image.ExposureStart.AddSeconds(ExposureTime * ExposureTimeMultiplier / 2)), "Julian exposure mid date"));
+                        var stats = imageData.Statistics.Task.Result;
 
-                    ItemUtility.FromTelescopeInfo(imageData.MetaData, TelescopeInfo);
-
-                    imageData.MetaData.GenericHeaders.Add(new DoubleMetaDataHeader("ROIX", capture.SubSambleRectangle.X, "X-position of the ROI"));
-                    imageData.MetaData.GenericHeaders.Add(new DoubleMetaDataHeader("ROIY", capture.SubSambleRectangle.Y, "Y-position of the ROI"));
-                    imageData.MetaData.GenericHeaders.Add(new DoubleMetaDataHeader("XORGSUBF", capture.SubSambleRectangle.X, "X-position of the ROI"));
-                    imageData.MetaData.GenericHeaders.Add(new DoubleMetaDataHeader("YORGSUBF", capture.SubSambleRectangle.Y, "Y-position of the ROI"));
-
-                    if (target != null) {
-                        imageData.MetaData.Target.Name = target.DeepSkyObject.NameAsAscii;
-                        imageData.MetaData.Target.Coordinates = target.InputCoordinates.Coordinates;
-                        imageData.MetaData.Target.PositionAngle = target.PositionAngle;
+                        capture.ProgressExposureCount = ExposureCount;
+                        var statsPerc = (stats.Max - stats.Mean) / stats.Max;
+                        Logger.Debug("ExposureTime " + ExposureTime + " Stats: Max " + stats.Max + " Mean " + stats.Mean + " CameraMaxAdu " + CameraMaxAdu + " Percentage " + statsPerc * 100);
+                        if (stats.Max > CameraMaxAdu / 100 && statsPerc >= TargetADU) break;
+                        ExposureCount++;
+                        ExposureTime = Math.Round(ExposureTime + ExposureStepTime, 3);
                     }
+                    List<IImageStatistics> statsArray = new List<IImageStatistics>();
+                    for (int i = 1; i < 10; i++) {
+                        await cameraMediator.Capture(capture, token, progress);
+                        progress.Report(new ApplicationStatus() { Status = "Calculating Roi exposureTime: " + ExposureTime });
+                        token.ThrowIfCancellationRequested();
+                        IExposureData exposureData = await cameraMediator.Download(token);
+                        token.ThrowIfCancellationRequested();
 
-                    // Only show first and last image in Imaging window
-                    if (ExposureCount == 1 || ExposureCount % speckle.ShowEveryNthImage == 0 || ExposureCount == TotalExposureCount) {
-                        _ = Task.Run(async () => {
-                            var renderedImage = await imagingMediator.PrepareImage(imageData, imageParams, token);
-                            //imagingMediator.SetImage(ItemUtility.GetDFTImage(renderedImage.Image));
-                        });
+                        var imageData = await exposureData.ToImageData(progress, token);
+
+                        IRenderedImage renderedImage = await imagingMediator.PrepareImage(imageData, imageParams, token);
+
+                        statsArray.Add(imageData.Statistics.Task.Result);
                     }
-
-                    if (filterWheelMediator.GetInfo().Connected)
-                        imageData.MetaData.FilterWheel.Filter = filterWheelMediator.GetInfo().SelectedFilter.Name;
-
-                    //_ = imageData.SaveToDisk(new FileSaveInfo(profileService), token);
-                    Logger.Debug("Metadata: " + roiDuration.ElapsedMilliseconds);
-                    _ = Task.Run(async () => {
-                        FileSaveInfo fileSaveInfo = new FileSaveInfo(profileService);
-                        string tempPath = await imageData.PrepareSave(fileSaveInfo);
-                        _ = imageData.FinalizeSave(tempPath, fileSaveInfo.FilePattern, customPatterns);
-
-                        Logger.Debug("SaveToDisk: " + roiDuration.ElapsedMilliseconds);
-                    });
-                    Logger.Debug("Task save: " + roiDuration.ElapsedMilliseconds);
-
-                    capture.ProgressExposureCount = ExposureCount;
+                    var avgMax = statsArray.Average(x => x.Max);
+                    var avgMean = statsArray.Average(x => x.Mean);
+                    Logger.Debug("Calulated averages: Max " + avgMax + " Mean " + avgMean);
+                    if ((avgMax - avgMean) / avgMax >= TargetADU) break;
                     ExposureCount++;
+                    ExposureTime = Math.Round(ExposureTime + ExposureStepTime, 3);
                 }
-                ExposureCount--;
-                double fps = ExposureCount / (((double)seqDuration.ElapsedMilliseconds) / 1000);
-                Logger.Info("Captured " + ExposureCount + " times " + ExposureTime * ExposureTimeMultiplier + "s images in " + seqDuration.ElapsedMilliseconds + " ms. : " + Math.Round(fps, 2) + " fps");
-            } catch (OperationCanceledException) {
+                if (ExposureTime > ExposureTimeMax) ExposureTime = ExposureTimeMax;
+                ItemUtility.RetrieveSpeckleContainer(Parent).Items.ToList().ForEach(x => {
+                    if (x is TakeRoiExposures takeRoiExposures) {
+                        takeRoiExposures.ExposureTime = ExposureTime;
+                    }
+                    if (x is TakeLiveExposures takeLiveExposures) {
+                        takeLiveExposures.ExposureTime = ExposureTime;
+                    }
+                });
+
+            }
+            catch (OperationCanceledException) {
                 cameraMediator.AbortExposure();
                 throw;
-            } catch (Exception ex) {
+            }
+            catch (Exception ex) {
                 Notification.ShowError(Loc.Instance["LblUnexpectedError"] + Environment.NewLine + ex.Message);
                 Logger.Error(ex);
                 cameraMediator.AbortExposure();
                 throw;
-            } finally {
+            }
+            finally {
                 progress.Report(new ApplicationStatus() { Status = "" });
             }
         }
@@ -328,10 +297,12 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                 var container = parent as IDeepSkyObjectContainer;
                 if (container != null) {
                     return container.Target;
-                } else {
+                }
+                else {
                     return RetrieveTarget(parent.Parent);
                 }
-            } else {
+            }
+            else {
                 return null;
             }
         }
@@ -341,7 +312,8 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             CameraInfo = this.cameraMediator.GetInfo();
             if (!CameraInfo.Connected) {
                 i.Add(Loc.Instance["LblCameraNotConnected"]);
-            } else {
+            }
+            else {
                 if (CameraInfo.CanSetGain && Gain > -1 && (Gain < CameraInfo.GainMin || Gain > CameraInfo.GainMax)) {
                     i.Add(string.Format(Loc.Instance["Lbl_SequenceItem_Imaging_TakeExposure_Validation_Gain"], CameraInfo.GainMin, CameraInfo.GainMax, Gain));
                 }
@@ -358,7 +330,8 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
 
             if (string.IsNullOrWhiteSpace(fileSettings.FilePath)) {
                 i.Add(Loc.Instance["Lbl_SequenceItem_Imaging_TakeExposure_Validation_FilePathEmpty"]);
-            } else if (!Directory.Exists(fileSettings.FilePath)) {
+            }
+            else if (!Directory.Exists(fileSettings.FilePath)) {
                 i.Add(Loc.Instance["Lbl_SequenceItem_Imaging_TakeExposure_Validation_FilePathInvalid"]);
             }
 
@@ -367,11 +340,11 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
         }
 
         public override TimeSpan GetEstimatedDuration() {
-            return TimeSpan.FromSeconds(this.ExposureTime * ExposureTimeMultiplier * this.totalExposureCount);
+            return TimeSpan.FromSeconds(this.ExposureTime * this.totalExposureCount);
         }
 
         public override string ToString() {
-            return $"Category: {Category}, Item: {nameof(TakeRoiExposures)}, ExposureTime {ExposureTime * ExposureTimeMultiplier}, Gain {Gain}, Offset {Offset}, ImageType {ImageType}, Binning {Binning?.Name}";
+            return $"Category: {Category}, Item: {nameof(CalculateRoiExposureTime)}, ExposureTime {ExposureTime}, Gain {Gain}, Offset {Offset}, ImageType {ImageType}, Binning {Binning?.Name}";
         }
 
     }

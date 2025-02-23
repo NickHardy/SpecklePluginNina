@@ -53,6 +53,7 @@ using NINA.Equipment.Utility;
 using System.Reflection;
 using NINA.Image.Interfaces;
 using System.Text.RegularExpressions;
+using System.Reflection.Metadata.Ecma335;
 
 namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
 
@@ -86,7 +87,6 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             Offset = -1;
             ExposureTimeMultiplier = 1;
             ImageType = CaptureSequence.ImageTypes.LIGHT;
-            this.cameraMediator = cameraMediator;
             this.imagingMediator = imagingMediator;
             this.imageSaveMediator = imageSaveMediator;
             this.imageHistoryVM = imageHistoryVM;
@@ -241,6 +241,8 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
         }
 
         public override async Task Execute(IProgress<ApplicationStatus> progress, CancellationToken token) {
+            var targetContainer = ItemUtility.RetrieveSpeckleContainer(Parent);
+            targetContainer.SpeckleRun++;
             ExposureCount = 1;
             var capture = new CaptureSequence() {
                 ExposureTime = ExposureTime * ExposureTimeMultiplier,
@@ -250,7 +252,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                 ImageType = ImageType,
                 ProgressExposureCount = ExposureCount,
                 TotalExposureCount = TotalExposureCount,
-                EnableSubSample = true,
+                EnableSubSample = targetContainer.EnableSubSample,
                 SubSambleRectangle = ItemUtility.RetrieveSpeckleTargetRoi(Parent),
             };
 
@@ -259,8 +261,19 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                 imageParams = new PrepareImageParameters(true, false);
             }
 
-            var target = RetrieveTarget(Parent);
-            var title = ItemUtility.RetrieveSpeckleTitle(Parent);
+            List<ImagePattern> customPatterns = new List<ImagePattern>();
+            customPatterns.Add(new ImagePattern(speckle.notePattern.Key, speckle.notePattern.Description, speckle.notePattern.Category) {
+                Value = string.Empty
+            });
+            customPatterns.Add(new ImagePattern(speckle.speckleRunPattern.Key, speckle.speckleRunPattern.Description, speckle.speckleRunPattern.Category) {
+                Value = $"{targetContainer.SpeckleRun}"
+            });
+
+            var target = targetContainer.Target;
+            var title = targetContainer.Title;
+            var speckleTarget = ItemUtility.RetrieveSpeckleTarget(Parent);
+            var genericHeaders = speckleTarget?.GenericHeaders();
+            bool _firstImage = true;
 
             var localCTS = CancellationTokenSource.CreateLinkedTokenSource(token);
 
@@ -269,23 +282,27 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             await liveViewEnumerable.ForEachAsync(async exposureData => {
                 token.ThrowIfCancellationRequested();
                 if (exposureData != null) {
-                    if (ExposureCount == 1) { seqDuration = Stopwatch.StartNew(); }
+                    if (_firstImage) { 
+                        _firstImage = false;
+                        seqDuration = Stopwatch.StartNew();
+                        return; 
+                    }
                     var imageData = await exposureData.ToImageData(progress, localCTS.Token);
 
                     imageData.MetaData.Sequence.Title = title;
                     AddMetaData(imageData.MetaData, target, ItemUtility.RetrieveSpeckleTargetRoi(Parent));
+                    if (genericHeaders != null)
+                        imageData.MetaData.GenericHeaders.AddRange(genericHeaders);
 
                     // Only show first and last image in Imaging window and every nth image
                     if (ExposureCount == 1 || ExposureCount % speckle.ShowEveryNthImage == 0 || ExposureCount == TotalExposureCount) {
-                        _ = imagingMediator.PrepareImage(imageData, imageParams, token);
+                        _ = Task.Run(async () => {
+                            _ = imagingMediator.PrepareImage(imageData, imageParams, token);
+                        });
                     }
 
                     _ = Task.Run(async () => {
                         //var result = imageData.SaveToDisk(new FileSaveInfo(profileService), token);
-                        List<ImagePattern> customPatterns = new List<ImagePattern>();
-                        customPatterns.Add(new ImagePattern(speckle.notePattern.Key, speckle.notePattern.Description, speckle.notePattern.Category) {
-                            Value = string.Empty
-                        });
                         FileSaveInfo fileSaveInfo = new FileSaveInfo(profileService);
                         string tempPath = await imageData.PrepareSave(fileSaveInfo);
                         _ = imageData.FinalizeSave(tempPath, fileSaveInfo.FilePattern, customPatterns);

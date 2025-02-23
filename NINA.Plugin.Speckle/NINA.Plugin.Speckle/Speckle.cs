@@ -39,6 +39,8 @@ namespace NINA.Plugin.Speckle {
         private CancellationTokenSource executeCTS;
 
         public ImagePattern notePattern = new("$$NOTE$$", "Possible note about target", "Speckle");
+        public ImagePattern speckleRunPattern = new ImagePattern("$$SPECKLERUN$$", "Current speckle imaging run for the target", "Speckle");
+
 
         [ImportingConstructor]
         public Speckle(IProfileService profileService, IOptionsVM options, IImageSaveMediator imageSaveMediator) {
@@ -56,6 +58,8 @@ namespace NINA.Plugin.Speckle {
 
             notePattern.Value = string.Empty;
             options.AddImagePattern(notePattern);
+            speckleRunPattern.Value = string.Empty;
+            options.AddImagePattern(speckleRunPattern);
 
             OpenFileCommand = new GalaSoft.MvvmLight.Command.RelayCommand<bool>((o) => { using (executeCTS = new CancellationTokenSource()) { OpenFile(); } });
 

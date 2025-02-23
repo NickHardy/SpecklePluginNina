@@ -22,6 +22,8 @@ using NINA.Plugin.Speckle.Sequencer.Container;
 using System.Linq;
 using System.Threading;
 using System.Runtime.ExceptionServices;
+using NINA.Image.ImageData;
+using NINA.Equipment.Equipment.MyCamera;
 
 namespace NINA.Plugin.Speckle.Model {
 
@@ -62,8 +64,9 @@ namespace NINA.Plugin.Speckle.Model {
         public bool ImageTarget { get; set; } = true;
 
         [JsonProperty]
-        public long RefGaiaNum { get; set; } = 0;
+        public string RefGaiaNum { get; set; } = "";
 
+        [JsonProperty]
         public List<ReferenceStar> ReferenceStarList { get; set; }
         [JsonProperty]
         public ReferenceStar ReferenceStar { get; set; } = new ReferenceStar();
@@ -74,7 +77,7 @@ namespace NINA.Plugin.Speckle.Model {
         public SpeckleTargetContainer SpeckleTemplate { get; set; }
 
         public double Color {
-            get => Bp - Rp;
+            get => Bp != 0 && Rp != 0 ? Bp - Rp : 0;
         }
 
         public Coordinates Coordinates() {
@@ -84,6 +87,43 @@ namespace NINA.Plugin.Speckle.Model {
         public DateTime ImageTime { get; set; }
         public DateTime? ImagedAt { get; set; }
         public double ImageTimeAlt { get; set; }
+        public List<IGenericMetaDataHeader> GenericHeaders() {
+            var headerList = new List<IGenericMetaDataHeader>();
+            headerList.Add(new StringMetaDataHeader("Proj~", Proj));
+            headerList.Add(new StringMetaDataHeader("Obs~", Obs));
+            headerList.Add(new StringMetaDataHeader("Type~", Type));
+            headerList.Add(new StringMetaDataHeader("Name1*", Name1));
+            headerList.Add(new StringMetaDataHeader("Name2*", Name2));
+            headerList.Add(new IntMetaDataHeader("Priority~", Priority));
+            headerList.Add(new StringMetaDataHeader("Temp", Template));
+            headerList.Add(new DoubleMetaDataHeader("RA2000*", RA2000));
+            headerList.Add(new DoubleMetaDataHeader("D2000*", Dec2000));
+            headerList.Add(new DoubleMetaDataHeader("Bp~", Bp));
+            headerList.Add(new DoubleMetaDataHeader("Rp~", Rp));
+            headerList.Add(new DoubleMetaDataHeader("Gmag~", Gmag));
+            headerList.Add(new StringMetaDataHeader("GaiaNum~", GaiaNum));
+            headerList.Add(new StringMetaDataHeader("RefGaiaNum~", RefGaiaNum));
+            headerList.Add(new DoubleMetaDataHeader("Sep~", Sep));
+            headerList.Add(new DoubleMetaDataHeader("PA", PA));
+            headerList.Add(new DoubleMetaDataHeader("Parallax", Parallax));
+            headerList.Add(new StringMetaDataHeader("Spectrum", Spectrum));
+            headerList.Add(new DoubleMetaDataHeader("Pmag~", Pmag));
+            headerList.Add(new DoubleMetaDataHeader("Smag~", Smag));
+            headerList.Add(new StringMetaDataHeader("Filter~", Filter));
+            headerList.Add(new DoubleMetaDataHeader("Exp~", Exp));
+            headerList.Add(new IntMetaDataHeader("NExp~", NExp));
+            headerList.Add(new IntMetaDataHeader("NoEC", NoEC));
+            headerList.Add(new IntMetaDataHeader("GetRef", GetRef));
+            headerList.Add(new DoubleMetaDataHeader("GPrime", GPrime));
+            headerList.Add(new DoubleMetaDataHeader("RPrime", RPrime));
+            headerList.Add(new DoubleMetaDataHeader("IPrime", IPrime));
+            headerList.Add(new DoubleMetaDataHeader("ZPrime", ZPrime));
+            headerList.Add(new DoubleMetaDataHeader("RUWE", RUWE));
+            headerList.Add(new DoubleMetaDataHeader("FDBL", FDBL));
+            headerList.Add(new StringMetaDataHeader("Note1", Note1));
+            headerList.Add(new StringMetaDataHeader("Note2", Note2));
+            return headerList;
+        }
     }
 
     public sealed class SpeckleTargetMap : ClassMap<SpeckleTarget> {
@@ -92,28 +132,28 @@ namespace NINA.Plugin.Speckle.Model {
             // StarMap
             Map(m => m.TargetRecno).Name("targetrecno").Optional().Default(0);
             Map(m => m.Recno).Name("recno").Optional().Default(0);
-            Map(m => m.Proj).Name("Proj").Optional().Default("");
-            Map(m => m.Obs).Name("Obs").Optional().Default("");
-            Map(m => m.Type).Name("Type").Optional().Default("M");
-            Map(m => m.Name1).Name("Name1").Optional().Default("");
-            Map(m => m.Name2).Name("Name2").Optional().Default("");
-            Map(m => m.Priority).Name("Priority").Optional().Default(1);
-            Map(m => m.Template).Name("Template").Optional().Default("");
-            Map(m => m.RA2000).Name("RA2000").Optional().Default(0);
-            Map(m => m.Dec2000).Name("Dec2000").Optional().Default(0);
-            Map(m => m.Bp).Name("Bp").Optional().Default(0);
-            Map(m => m.Rp).Name("Rp").Optional().Default(0);
-            Map(m => m.Gmag).Name("Gmag").Optional().Default(0);
-            Map(m => m.GaiaNum).Name("GaiaNum").Optional().Default("0");
-            Map(m => m.Sep).Name("Sep").Optional().Default(0);
+            Map(m => m.Proj).Name("Proj~").Optional().Default("");
+            Map(m => m.Obs).Name("Obs~").Optional().Default("");
+            Map(m => m.Type).Name("Type~").Optional().Default("M");
+            Map(m => m.Name1).Name("Name1*").Optional().Default("");
+            Map(m => m.Name2).Name("Name2*").Optional().Default("");
+            Map(m => m.Priority).Name("Priority~").Optional().Default(1);
+            Map(m => m.Template).Name("Temp").Optional().Default("");
+            Map(m => m.RA2000).Name("RA2000*").Optional().Default(0);
+            Map(m => m.Dec2000).Name("D2000*").Optional().Default(0);
+            Map(m => m.Bp).Name("Bp~").Optional().Default(0);
+            Map(m => m.Rp).Name("Rp~").Optional().Default(0);
+            Map(m => m.Gmag).Name("Gmag~").Optional().Default(0);
+            Map(m => m.GaiaNum).Name("GaiaNum~").Optional().Default("0");
+            Map(m => m.Sep).Name("Sep~").Optional().Default(0);
             Map(m => m.PA).Name("PA").Optional().Default(0);
             Map(m => m.Parallax).Name("Parallax").Optional().Default(0);
             Map(m => m.Spectrum).Name("Spectrum").Optional().Default("");
-            Map(m => m.Pmag).Name("Pmag").Optional().Default(0);
-            Map(m => m.Smag).Name("Smag").Optional().Default(0);
-            Map(m => m.Filter).Name("Filter").Optional().Default("");
-            Map(m => m.Exp).Name("Exp").Optional().Default(0);
-            Map(m => m.NExp).Name("NExp").Optional().Default(0);
+            Map(m => m.Pmag).Name("Pmag~").Optional().Default(0);
+            Map(m => m.Smag).Name("Smag~").Optional().Default(0);
+            Map(m => m.Filter).Name("Filter~").Optional().Default("");
+            Map(m => m.Exp).Name("Exp~").Optional().Default(0);
+            Map(m => m.NExp).Name("NExp~").Optional().Default(0);
             Map(m => m.NoEC).Name("NoEC").Optional().Default(0);
             Map(m => m.GetRef).Name("GetRef").Optional().Default(1);
             Map(m => m.GPrime).Name("GPrime").Optional().Default(0);
@@ -132,9 +172,7 @@ namespace NINA.Plugin.Speckle.Model {
             Map(m => m.AirmassMax).Name("AirmassMax").Optional().Default(4);
             Map(m => m.MinAltitude).Name("MinAltitude").Optional().Default(0);
             Map(m => m.GetRef).Name("GetRef").Optional().Default(1);
-            Map(m => m.RefGaiaNum).Name("RefGaiaNum").Optional().Default(0);
-            Map(m => m.Template).Name("Template").Optional().Default("");
-            Map(m => m.Filter).Name("Filter").Optional().Default("");
+            Map(m => m.RefGaiaNum).Name("RefGaiaNum~").Optional().Default("");
             Map(m => m.Completed_cycles).Name("Completed_cycles").Optional().Default(0);
             Map(m => m.Completed_ref_cycles).Name("Completed_ref_cycles").Optional().Default(0);
             Map(m => m.Completed_nights).Name("Completed_nights").Optional().Default(0);
