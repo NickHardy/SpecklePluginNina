@@ -13,39 +13,35 @@
 #endregion "copyright"
 
 using Newtonsoft.Json;
+using NINA.Astrometry;
+using NINA.Core.Locale;
 using NINA.Core.Model;
+using NINA.Core.Model.Equipment;
+using NINA.Core.Utility;
+using NINA.Core.Utility.Notification;
+using NINA.Equipment.Equipment.MyCamera;
+using NINA.Equipment.Equipment.MyTelescope;
+using NINA.Equipment.Interfaces.Mediator;
+using NINA.Equipment.Interfaces.ViewModel;
+using NINA.Equipment.Model;
+using NINA.Image.FileFormat;
+using NINA.Image.ImageData;
+using NINA.Image.Interfaces;
+using NINA.Plugin.Speckle.Sequencer.Utility;
 using NINA.Profile.Interfaces;
 using NINA.Sequencer.Container;
+using NINA.Sequencer.Interfaces;
+using NINA.Sequencer.SequenceItem;
 using NINA.Sequencer.Validations;
-using NINA.Core.Utility;
-using NINA.Equipment.Interfaces.Mediator;
+using NINA.WPF.Base.Interfaces.Mediator;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel.Composition;
+using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Runtime.Serialization;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using NINA.WPF.Base.Interfaces.Mediator;
-using NINA.Core.Model.Equipment;
-using NINA.Core.Locale;
-using NINA.Equipment.Model;
-using NINA.Astrometry;
-using NINA.Equipment.Equipment.MyCamera;
-using NINA.WPF.Base.Interfaces.ViewModel;
-using NINA.Sequencer.Interfaces;
-using NINA.Sequencer.SequenceItem;
-using NINA.Equipment.Interfaces.ViewModel;
-using NINA.Plugin.Speckle.Sequencer.Utility;
-using NINA.Image.Interfaces;
-using NINA.Image.FileFormat;
-using NINA.Core.Utility.Notification;
-using System.Diagnostics;
-using NINA.Image.ImageData;
-using NINA.Equipment.Equipment.MyTelescope;
 
 namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
 
@@ -212,7 +208,6 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
 
         public override async Task Execute(IProgress<ApplicationStatus> progress, CancellationToken token) {
             var targetContainer = ItemUtility.RetrieveSpeckleContainer(Parent);
-            targetContainer.SpeckleRun++;
             ExposureCount = 1;
             var capture = new CaptureSequence() {
                 ExposureTime = ExposureTime * ExposureTimeMultiplier,
@@ -236,6 +231,9 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                 Value = $"{targetContainer.SpeckleRun}"
             });
 
+            var speckleTarget = ItemUtility.RetrieveSpeckleTarget(Parent);
+            var genericHeaders = speckleTarget?.GenericHeaders();
+            ItemUtility.AddImagePatterns(customPatterns, speckle, genericHeaders);
             var target = targetContainer.Target;
             var title = targetContainer.Title;
             TelescopeInfo = this.telescopeMediator.GetInfo();
@@ -261,6 +259,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                     imageData.MetaData.Image.ExposureNumber = ExposureCount;
                     imageData.MetaData.Image.ExposureTime = ExposureTime * ExposureTimeMultiplier;
 
+                    imageData.MetaData.GenericHeaders.Add(new StringMetaDataHeader("SPECRUN", $"{targetContainer.SpeckleRun}", "Speckle run"));
                     imageData.MetaData.GenericHeaders.Add(new DoubleMetaDataHeader("JD-END", AstroUtil.GetJulianDate(DateTime.Now), "Julian exposure end date"));
                     imageData.MetaData.GenericHeaders.Add(new DoubleMetaDataHeader("JD-BEG", AstroUtil.GetJulianDate(imageData.MetaData.Image.ExposureStart), "Julian exposure start date"));
                     imageData.MetaData.GenericHeaders.Add(new DoubleMetaDataHeader("JD-OBS", AstroUtil.GetJulianDate(imageData.MetaData.Image.ExposureStart.AddSeconds(ExposureTime * ExposureTimeMultiplier / 2)), "Julian exposure mid date"));

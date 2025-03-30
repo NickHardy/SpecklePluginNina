@@ -68,7 +68,7 @@ namespace NINA.Plugin.Speckle.Model {
 
         [JsonProperty]
         public List<ReferenceStar> ReferenceStarList { get; set; }
-        [JsonProperty]
+
         public ReferenceStar ReferenceStar { get; set; } = new ReferenceStar();
 
         public List<SimbadStarCluster> StarClusterList { get; set; }
@@ -132,28 +132,28 @@ namespace NINA.Plugin.Speckle.Model {
             // StarMap
             Map(m => m.TargetRecno).Name("targetrecno").Optional().Default(0);
             Map(m => m.Recno).Name("recno").Optional().Default(0);
-            Map(m => m.Proj).Name("Proj~").Optional().Default("");
-            Map(m => m.Obs).Name("Obs~").Optional().Default("");
-            Map(m => m.Type).Name("Type~").Optional().Default("M");
-            Map(m => m.Name1).Name("Name1*").Optional().Default("");
-            Map(m => m.Name2).Name("Name2*").Optional().Default("");
-            Map(m => m.Priority).Name("Priority~").Optional().Default(1);
-            Map(m => m.Template).Name("Temp").Optional().Default("");
-            Map(m => m.RA2000).Name("RA2000*").Optional().Default(0);
-            Map(m => m.Dec2000).Name("D2000*").Optional().Default(0);
-            Map(m => m.Bp).Name("Bp~").Optional().Default(0);
-            Map(m => m.Rp).Name("Rp~").Optional().Default(0);
-            Map(m => m.Gmag).Name("Gmag~").Optional().Default(0);
-            Map(m => m.GaiaNum).Name("GaiaNum~").Optional().Default("0");
-            Map(m => m.Sep).Name("Sep~").Optional().Default(0);
-            Map(m => m.PA).Name("PA").Optional().Default(0);
+            Map(m => m.Proj).Name(["Proj~", "Proj"]).Optional().Default("");
+            Map(m => m.Obs).Name(["Obs~", "Obs"]).Optional().Default("");
+            Map(m => m.Type).Name(["Type~", "Type"]).Optional().Default("M");
+            Map(m => m.Name1).Name(["Name1*", "Name1"]).Optional().Default("");
+            Map(m => m.Name2).Name(["Name2*", "Name2"]).Optional().Default("");
+            Map(m => m.Priority).Name(["Priority~", "Priority"]).Optional().Default(1);
+            Map(m => m.Template).Name(["Temp","Template"]).Optional().Default("");
+            Map(m => m.RA2000).Name(["RA2000*", "RA2000"]).Optional().Default(0);
+            Map(m => m.Dec2000).Name(["D2000*", "Dec2000"]).Optional().Default(0);
+            Map(m => m.Bp).Name(["Bp~", "Bp"]).Optional().Default(0);
+            Map(m => m.Rp).Name(["Rp~", "Rp"]).Optional().Default(0);
+            Map(m => m.Gmag).Name(["Gmag~", "Gmag"]).Optional().Default(0);
+            Map(m => m.GaiaNum).Name(["GaiaNum~", "GaiaNum"]).Optional().Default("0");
+            Map(m => m.Sep).Name(["Sep~", "Sep"]).Optional().Default(0);
+            Map(m => m.PA).Name(["PA", "Pa"]).Optional().Default(0);
             Map(m => m.Parallax).Name("Parallax").Optional().Default(0);
             Map(m => m.Spectrum).Name("Spectrum").Optional().Default("");
-            Map(m => m.Pmag).Name("Pmag~").Optional().Default(0);
-            Map(m => m.Smag).Name("Smag~").Optional().Default(0);
-            Map(m => m.Filter).Name("Filter~").Optional().Default("");
-            Map(m => m.Exp).Name("Exp~").Optional().Default(0);
-            Map(m => m.NExp).Name("NExp~").Optional().Default(0);
+            Map(m => m.Pmag).Name(["Pmag~", "Pmag"]).Optional().Default(0);
+            Map(m => m.Smag).Name(["Smag~", "Smag"]).Optional().Default(0);
+            Map(m => m.Filter).Name("DoNotUseFilterAnymore").Optional().Default("-"); // ["Filter~", "Filter"] Turned this off. use templates instead.
+            Map(m => m.Exp).Name(["Exp~", "Exp"]).Optional().Default(0);
+            Map(m => m.NExp).Name(["NExp~", "Nexp~", "NExp", "Nexp"]).Optional().Default(0);
             Map(m => m.NoEC).Name("NoEC").Optional().Default(0);
             Map(m => m.GetRef).Name("GetRef").Optional().Default(1);
             Map(m => m.GPrime).Name("GPrime").Optional().Default(0);

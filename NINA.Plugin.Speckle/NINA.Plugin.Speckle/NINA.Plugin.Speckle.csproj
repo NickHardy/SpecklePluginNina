@@ -10,7 +10,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="CsvHelper" Version="31.0.2" />
-    <PackageReference Include="NINA.Plugin" Version="3.0.0.3005-rc" />
+    <PackageReference Include="NINA.Plugin" Version="3.0.0.9001" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="ReachFramework" />

@@ -13,39 +13,33 @@
 #endregion "copyright"
 
 using Newtonsoft.Json;
+using NINA.Astrometry;
+using NINA.Core.Locale;
 using NINA.Core.Model;
+using NINA.Core.Model.Equipment;
+using NINA.Core.Utility;
+using NINA.Core.Utility.Notification;
+using NINA.Equipment.Equipment.MyCamera;
+using NINA.Equipment.Interfaces.Mediator;
+using NINA.Equipment.Interfaces.ViewModel;
+using NINA.Equipment.Model;
+using NINA.Image.ImageAnalysis;
+using NINA.Image.Interfaces;
+using NINA.Plugin.Speckle.Sequencer.Utility;
 using NINA.Profile.Interfaces;
 using NINA.Sequencer.Container;
+using NINA.Sequencer.Interfaces;
+using NINA.Sequencer.SequenceItem;
 using NINA.Sequencer.Validations;
-using NINA.Core.Utility;
-using NINA.Equipment.Interfaces.Mediator;
+using NINA.WPF.Base.Interfaces.Mediator;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel.Composition;
 using System.IO;
 using System.Linq;
-using System.Runtime.Serialization;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using NINA.WPF.Base.Interfaces.Mediator;
-using NINA.Core.Model.Equipment;
-using NINA.Core.Locale;
-using NINA.Equipment.Model;
-using NINA.Astrometry;
-using NINA.Equipment.Equipment.MyCamera;
-using NINA.WPF.Base.Interfaces.ViewModel;
-using NINA.Sequencer.Interfaces;
-using NINA.Sequencer.SequenceItem;
-using NINA.Equipment.Interfaces.ViewModel;
-using NINA.Plugin.Speckle.Sequencer.Utility;
-using NINA.Image.Interfaces;
-using NINA.Image.FileFormat;
-using NINA.Core.Utility.Notification;
-using System.Diagnostics;
-using Accord.Statistics.Models.Regression.Linear;
-using NINA.Image.ImageAnalysis;
 
 namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
 
@@ -227,10 +221,6 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                         token.ThrowIfCancellationRequested();
 
                         var imageData = await exposureData.ToImageData(progress, token);
-                        /*                        imageData.MetaData.Sequence.Title = "Calculations";
-                                                IRenderedImage renderedImage = await imagingMediator.PrepareImage(imageData, imageParams, token);
-
-                                                _ = imageData.SaveToDisk(new FileSaveInfo(profileService), token);*/
 
                         var stats = imageData.Statistics.Task.Result;
 

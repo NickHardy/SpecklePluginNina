@@ -256,9 +256,13 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                 var biggestStar = await starDetection.GetBiggestStar(image2, image2.Image.Format, starDetectionParams, progress, token);
 
                 // Place the Roi around the star but within the image.
-                speckleContainer.X = Math.Min(Math.Max(Math.Round(biggestStar.Position.X - (speckleContainer.Width / 2), 0), 0), image2.Image.PixelWidth - (speckleContainer.Width / 2));
-                speckleContainer.Y = Math.Min(Math.Max(Math.Round(biggestStar.Position.Y - (speckleContainer.Height / 2), 0), 0), image2.Image.PixelHeight - (speckleContainer.Height / 2));
-                Logger.Debug("Setting roi position to biggest star position " + speckleContainer.X + "x" + speckleContainer.Y);
+                if (biggestStar != null) {
+                    speckleContainer.X = Math.Min(Math.Max(Math.Round(biggestStar.Position.X - (speckleContainer.Width / 2), 0), 0), image2.Image.PixelWidth - (speckleContainer.Width / 2));
+                    speckleContainer.Y = Math.Min(Math.Max(Math.Round(biggestStar.Position.Y - (speckleContainer.Height / 2), 0), 0), image2.Image.PixelHeight - (speckleContainer.Height / 2));
+                    Logger.Debug("Setting roi position to biggest star position " + speckleContainer.X + "x" + speckleContainer.Y);
+                } else {
+                    Logger.Warning("Could not find a star in the image");
+                }
             }
 
             // Switch filter back to the saved position

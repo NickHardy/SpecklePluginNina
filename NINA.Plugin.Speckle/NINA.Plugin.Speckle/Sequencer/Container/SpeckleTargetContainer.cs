@@ -40,6 +40,8 @@ using NINA.Sequencer;
 using NINA.Equipment.Interfaces.Mediator;
 using NINA.Equipment.Equipment.MyCamera;
 using NINA.Plugin.Speckle.Model;
+using NINA.Core.Model;
+using System.Threading;
 
 namespace NINA.Plugin.Speckle.Sequencer.Container {
 
@@ -250,6 +252,10 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                 SubSampleRectangle.Height = value;
                 RaiseAllPropertiesChanged();
             }
+        }
+        public override Task Execute(IProgress<ApplicationStatus> progress, CancellationToken token) {
+            SpeckleRun++;
+            return base.Execute(progress, token);
         }
 
         public override object Clone() {

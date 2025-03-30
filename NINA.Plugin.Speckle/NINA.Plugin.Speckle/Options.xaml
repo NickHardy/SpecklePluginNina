@@ -474,15 +474,6 @@
                                     <TextBlock Padding="5,0" Foreground="{StaticResource ButtonForegroundBrush}" Text="Choose reference star list" />
                                 </Button>
 
-                                <StackPanel Margin="5,5,5,5" Visibility="{Binding LoadingReferenceStars, Converter={StaticResource BooleanToVisibilityCollapsedConverter}}">
-                                    <ninactrl:LoadingControl
-                                        Width="15"
-                                        Height="15"
-                                        HorizontalAlignment="Center"
-                                        VerticalAlignment="Center"
-                                        LoadingImageBrush="{StaticResource ButtonForegroundBrush}" />
-                                </StackPanel>
-
                             </StackPanel> 
                             <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Text="ReferenceStarList" />
                             <TextBox

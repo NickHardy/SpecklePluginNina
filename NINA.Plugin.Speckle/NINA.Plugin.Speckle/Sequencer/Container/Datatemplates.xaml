@@ -662,7 +662,6 @@
                             </DataGridTemplateColumn>
                             <DataGridTextColumn Width="80" Binding="{Binding Exp}" Header="ExpTime" />
                             <DataGridTextColumn Width="70" Binding="{Binding NExp}" Header="Exposures" />
-                            <DataGridTextColumn Width="40" Binding="{Binding Filter}" Header="Filter" />
                             <DataGridTextColumn Width="80" Binding="{Binding RA2000}" Header="Ra" />
                             <DataGridTextColumn Width="80" Binding="{Binding Dec2000}" Header="Dec" />
                             <DataGridTextColumn Width="50" Binding="{Binding Pmag}" Header="PMag" />

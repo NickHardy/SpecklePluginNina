@@ -21,19 +21,12 @@ using System.Collections.Generic;
 
 namespace NINA.Plugin.Speckle.Model {
 
-    [JsonObject(MemberSerialization.OptIn)]
     public class AltTime {
-        [JsonProperty]
         public DateTime datetime { get; set; }
-        [JsonProperty]
         public double alt { get; set; }
-        [JsonProperty]
         public double az { get; set; }
-        [JsonProperty]
         public double deg { get; set; }
-        [JsonProperty]
         public double airmass { get; set; }
-        [JsonProperty]
         public double distanceToMoon { get; set; }
 
         public AltTime(double alt, double az, double deg, DateTime datetime, double airmass, double distanceToMoon) {

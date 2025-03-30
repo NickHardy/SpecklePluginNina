@@ -465,5 +465,29 @@ namespace NINA.Plugin.Speckle.Properties {
                 this["SpeckleSettingsMigratedProfiles"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string GaiaReferenceStarListLocation {
+            get {
+                return ((string)(this["GaiaReferenceStarListLocation"]));
+            }
+            set {
+                this["GaiaReferenceStarListLocation"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool UseGaiaReferenceStarList {
+            get {
+                return ((bool)(this["UseGaiaReferenceStarList"]));
+            }
+            set {
+                this["UseGaiaReferenceStarList"] = value;
+            }
+        }
     }
 }

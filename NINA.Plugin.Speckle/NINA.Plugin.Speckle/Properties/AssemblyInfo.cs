@@ -7,8 +7,8 @@ using System.Runtime.InteropServices;
 
 // [MANDATORY] The assembly versioning
 //Should be incremented for each new release build of a plugin
-[assembly: AssemblyVersion("2.1.3.1")]
-[assembly: AssemblyFileVersion("2.1.3.1")]
+[assembly: AssemblyVersion("2.2.1.0")]
+[assembly: AssemblyFileVersion("2.2.1.0")]
 
 // [MANDATORY] The name of your plugin
 [assembly: AssemblyTitle("Speckle Interferometry")]
@@ -59,6 +59,9 @@ This plugin automates the acquisition of speckle interferometry data for closely
 Speckle Imaging, which is similar to Lucky Imaging, can be performed even on nights with a full moon, making it an excellent alternative when deep-sky object (DSO) imaging is less ideal.
 Speckle interferometry can be achieved with almost any telescope, though a large aperture and long focal length will help resolve fainter targets with smaller separations.
 
+This plugin is mainly created and used by the [Stelar group](https://stelar.groups.io/g/main).
+Feel free to join and meet us in weekly meetings, where we discuss targets, papers, hardware and aything else that comes up.
+
 The key is to capture as many images as possible in a short timeframe with a cropped region of interest (ROI) on the sensor. 
 Typically, the cropped ROI will be 256x256 or 512x512 pixels, depending on the focal length and pixel size. There's no need for guiding or dithering, similar to Lucky Imaging.
 
@@ -66,7 +69,7 @@ Detailed information on double star observing and speckle interferometry can be 
 [https://boyce-astro.org/videos/astrometry/](https://boyce-astro.org/videos/astrometry/)
 
 You can create a separate folder for speckle images and set the filepattern to something like this:
-$$DATEMINUS12$$\$$SEQUENCETITLE$$\$$TARGETNAME$$\$$FILTER$$\$$EXPOSURETIME$$\$$FRAMENR$$_$$TARGETNAME$$_$$NOTE$$
+$$DATEMINUS12$$\$$PROJECT$$_$$OBSERVER$$\$$NAME1$$_$$NAME2$$\$$FILTER$$\$$EXPOSURETIME$$\$$FRAMENR$$_$$TARGETNAME$$_$$NOTE$$
 and optionally create a separate profile for speckle targets for this unique file path.
 
 ## Plugin Instructions ##
@@ -125,9 +128,7 @@ and optionally create a separate profile for speckle targets for this unique fil
   Afterwards, you can slew to the target and it should be in the field of view. If platesolving works using a full image on the target, you don't need this instruction.
 
 ## Target lists ##
-  Here are a few example lists for different telescope apertures:
-  + [6-inch telescopes and larger](https://bitbucket.org/NickHardy/nina.plugin.speckle/downloads/GdsSpeckleTargetList6inch.csv)
-  + [10-inch telescopes and larger](https://bitbucket.org/NickHardy/nina.plugin.speckle/downloads/GdsSpeckleTargetList10inch.csv)
+  There is a target list guide available in the [Stelar documentation](https://stelar.groups.io/g/main/files/Useful_Guides_Documents)
 
 For finding targets and processing data, the following programs can be used, courtesy of Dave Rowe:
 * [GDS](https://drive.google.com/file/d/1e72E2sfvVnsYTZp0kiZyVdDZNkeV2BLB/view?usp=sharing)  

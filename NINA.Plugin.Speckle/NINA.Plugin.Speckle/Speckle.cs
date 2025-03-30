@@ -40,7 +40,11 @@ namespace NINA.Plugin.Speckle {
 
         public ImagePattern notePattern = new("$$NOTE$$", "Possible note about target", "Speckle");
         public ImagePattern speckleRunPattern = new ImagePattern("$$SPECKLERUN$$", "Current speckle imaging run for the target", "Speckle");
-
+        public ImagePattern name1Pattern = new("$$NAME1$$", "Target name 1", "Speckle");
+        public ImagePattern name2Pattern = new("$$NAME2$$", "Target name 2", "Speckle");
+        public ImagePattern projectPattern = new("$$PROJECT$$", "Project for given target", "Speckle");
+        public ImagePattern observerPattern = new("$$OBSERVER$$", "Observer for given target", "Speckle");
+        public ImagePattern gaiaNumberPattern = new("$$GAIANR$$", "Target Gaia number", "Speckle");
 
         [ImportingConstructor]
         public Speckle(IProfileService profileService, IOptionsVM options, IImageSaveMediator imageSaveMediator) {
@@ -60,8 +64,19 @@ namespace NINA.Plugin.Speckle {
             options.AddImagePattern(notePattern);
             speckleRunPattern.Value = string.Empty;
             options.AddImagePattern(speckleRunPattern);
+            name1Pattern.Value = string.Empty;
+            options.AddImagePattern(name1Pattern);
+            name2Pattern.Value = string.Empty;
+            options.AddImagePattern(name2Pattern);
+            projectPattern.Value = string.Empty;
+            options.AddImagePattern(projectPattern);
+            observerPattern.Value = string.Empty;
+            options.AddImagePattern(observerPattern);
+            gaiaNumberPattern.Value = string.Empty;
+            options.AddImagePattern(gaiaNumberPattern);
 
-            OpenFileCommand = new GalaSoft.MvvmLight.Command.RelayCommand<bool>((o) => { using (executeCTS = new CancellationTokenSource()) { OpenFile(); } });
+            OpenFileCommand = new GalaSoft.MvvmLight.Command.RelayCommand<bool>((o) => { using (executeCTS = new CancellationTokenSource()) { OpenFile(false); } });
+            OpenGaiaFileCommand = new GalaSoft.MvvmLight.Command.RelayCommand<bool>((o) => { using (executeCTS = new CancellationTokenSource()) { OpenFile(true); } });
 
             imageSaveMediator.BeforeFinalizeImageSaved += ImageSaveMediator_BeforeFinalizeImageSaved;
         }
@@ -80,6 +95,7 @@ namespace NINA.Plugin.Speckle {
         }
 
         public ICommand OpenFileCommand { get; private set; }
+        public ICommand OpenGaiaFileCommand { get; private set; }
 
         public string ReferenceStarListLocation {
             get => _pluginOptionsAccessor.GetValueString(nameof(ReferenceStarListLocation), "");
@@ -89,51 +105,27 @@ namespace NINA.Plugin.Speckle {
             }
         }
 
-        private void OpenFile() {
+        public string GaiaReferenceStarListLocation {
+            get => _pluginOptionsAccessor.GetValueString(nameof(GaiaReferenceStarListLocation), "");
+            set {
+                _pluginOptionsAccessor.SetValueString(nameof(GaiaReferenceStarListLocation), value);
+                RaisePropertyChanged();
+            }
+        }
+
+        private void OpenFile(bool gaia) {
             OpenFileDialog fileDialog = new OpenFileDialog();
             fileDialog.DefaultExt = ".csv"; // Required file extension 
             fileDialog.Filter = "Csv documents (.csv)|*.csv"; // Optional file extensions
 
             if (fileDialog.ShowDialog() == DialogResult.OK) {
-                ReferenceStarListLocation = fileDialog.FileName;
+                if (gaia) {
+                    GaiaReferenceStarListLocation = fileDialog.FileName;
+                }
+                else {
+                    ReferenceStarListLocation = fileDialog.FileName;
+                }
             }
-        }
-
-        private AsyncObservableCollection<ReferenceStar> _referenceStarList;
-
-        [JsonProperty]
-        public AsyncObservableCollection<ReferenceStar> ReferenceStarList {
-            get => _referenceStarList;
-            set {
-                _referenceStarList = value;
-                RaisePropertyChanged();
-            }
-        }
-
-        private bool _LoadingReferenceStars = false;
-
-        public bool LoadingReferenceStars {
-            get { return _LoadingReferenceStars; }
-            set {
-                _LoadingReferenceStars = value;
-                RaisePropertyChanged();
-            }
-        }
-
-        public async Task LoadReferenceStarList() {
-            if (string.IsNullOrWhiteSpace(ReferenceStarListLocation) || LoadingReferenceStars) {
-                Logger.Debug("No path to reference star list.");
-                return;
-            }
-            LoadingReferenceStars = true;
-            var config = new CsvConfiguration(CultureInfo.InvariantCulture);
-            config.MissingFieldFound = null;
-            using (var reader = new StreamReader(ReferenceStarListLocation))
-            using (var csv = new CsvReader(reader, config)) {
-                csv.Context.RegisterClassMap<StarMap>();
-                var records = csv.GetRecords<ReferenceStar>();
-            }
-            LoadingReferenceStars = false;
         }
 
         public double MDistance {
@@ -344,6 +336,14 @@ namespace NINA.Plugin.Speckle {
             }
         }
 
+        public bool UseGaiaReferenceStarList {
+            get => _pluginOptionsAccessor.GetValueBoolean(nameof(UseGaiaReferenceStarList), true);
+            set {
+                _pluginOptionsAccessor.SetValueBoolean(nameof(UseGaiaReferenceStarList), value);
+                RaisePropertyChanged();
+            }
+        }
+
         public bool UseSimbadRefStars {
             get => _pluginOptionsAccessor.GetValueBoolean(nameof(UseSimbadRefStars), true);
             set {
@@ -461,9 +461,33 @@ namespace NINA.Plugin.Speckle {
 
         private Task ImageSaveMediator_BeforeFinalizeImageSaved(object sender, BeforeFinalizeImageSavedEventArgs e) {
             var headers = e.Image.RawImageData.MetaData.GenericHeaders;
-            var noteHeader = (StringMetaDataHeader) headers.Where(h => h.Key == "NOTE").FirstOrDefault();
+            var noteHeader = (StringMetaDataHeader)headers.Where(h => h.Key == "NOTE").FirstOrDefault();
             e.AddImagePattern(new ImagePattern(notePattern.Key, notePattern.Description, notePattern.Category) {
                 Value = noteHeader?.Value ?? string.Empty
+            });
+            var runHeader = (StringMetaDataHeader)headers.Where(h => h.Key == "SPECRUN").FirstOrDefault();
+            e.AddImagePattern(new ImagePattern(speckleRunPattern.Key, speckleRunPattern.Description, speckleRunPattern.Category) {
+                Value = runHeader?.Value ?? string.Empty
+            });
+            var name1Header = (StringMetaDataHeader)headers.Where(h => h.Key == "Name1*").FirstOrDefault();
+            e.AddImagePattern(new ImagePattern(name1Pattern.Key, name1Pattern.Description, name1Pattern.Category) {
+                Value = name1Header?.Value ?? string.Empty
+            });
+            var name2Header = (StringMetaDataHeader)headers.Where(h => h.Key == "Name2*").FirstOrDefault();
+            e.AddImagePattern(new ImagePattern(name2Pattern.Key, name2Pattern.Description, name2Pattern.Category) {
+                Value = name2Header?.Value ?? string.Empty
+            });
+            var projectHeader = (StringMetaDataHeader)headers.Where(h => h.Key == "Proj~").FirstOrDefault();
+            e.AddImagePattern(new ImagePattern(projectPattern.Key, projectPattern.Description, projectPattern.Category) {
+                Value = projectHeader?.Value ?? string.Empty
+            });
+            var observerHeader = (StringMetaDataHeader)headers.Where(h => h.Key == "Obs~").FirstOrDefault();
+            e.AddImagePattern(new ImagePattern(observerPattern.Key, observerPattern.Description, observerPattern.Category) {
+                Value = observerHeader?.Value ?? string.Empty
+            });
+            var gaiaNumberHeader = (StringMetaDataHeader)headers.Where(h => h.Key == "GaiaNum~").FirstOrDefault();
+            e.AddImagePattern(new ImagePattern(gaiaNumberPattern.Key, gaiaNumberPattern.Description, gaiaNumberPattern.Category) {
+                Value = gaiaNumberHeader?.Value ?? string.Empty
             });
             return Task.CompletedTask;
         }

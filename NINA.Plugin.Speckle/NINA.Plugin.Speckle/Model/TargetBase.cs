@@ -34,7 +34,7 @@ namespace NINA.Plugin.Speckle.Model {
         }
 
         public List<AltTime> AltList { get; set; } = new List<AltTime>();
-        [JsonProperty]
+        
         public List<AltTime> DomeSlitAltTimeList { get; set; } = new List<AltTime>();
         [JsonProperty]
         public double DomeSlitObservationTime { get; set; }

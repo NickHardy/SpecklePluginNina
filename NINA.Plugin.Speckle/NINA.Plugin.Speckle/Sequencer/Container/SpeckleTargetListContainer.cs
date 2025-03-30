@@ -220,6 +220,17 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             }
         }
 
+        private AsyncObservableCollection<GaiaReferenceStar> _gaiaReferenceStarList;
+
+        [JsonProperty]
+        public AsyncObservableCollection<GaiaReferenceStar> GaiaReferenceStarList {
+            get => _gaiaReferenceStarList;
+            set {
+                _gaiaReferenceStarList = value;
+                RaisePropertyChanged();
+            }
+        }
+
         private bool _LoadingReferenceStars = false;
 
         public bool LoadingReferenceStars {
@@ -235,21 +246,27 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                 Logger.Debug("No path to reference star list.");
                 return;
             }
-            if (LoadingReferenceStars || (ReferenceStarList != null && ReferenceStarList.Count > 0))
+            if (LoadingReferenceStars)
                 return;
             LoadingReferenceStars = true;
+            if (!speckle.UseReferenceStarList || (ReferenceStarList != null && ReferenceStarList.Count > 0))
+                return;
             var config = new CsvConfiguration(CultureInfo.InvariantCulture);
             config.MissingFieldFound = null;
             using (var reader = new StreamReader(speckle.ReferenceStarListLocation))
             using (var csv = new CsvReader(reader, config)) {
-                csv.Context.RegisterClassMap<StarMap>();
+                csv.Context.RegisterClassMap<ReferenceStarMap>();
                 var records = csv.GetRecords<ReferenceStar>();
                 ReferenceStarList = new AsyncObservableCollection<ReferenceStar>(records.ToList());
             }
-            foreach(var rstar in ReferenceStarList) {
-                if (rstar.color == 0) {
-                    rstar.color = rstar.Rp - rstar.Bp;
-                }
+            if (!speckle.UseGaiaReferenceStarList || (GaiaReferenceStarList != null && GaiaReferenceStarList.Count > 0))
+                return;
+            LoadingReferenceStars = true;
+            using (var reader = new StreamReader(speckle.GaiaReferenceStarListLocation))
+            using (var csv = new CsvReader(reader, config)) {
+                csv.Context.RegisterClassMap<GaiaReferenceStarMap>();
+                var records = csv.GetRecords<GaiaReferenceStar>();
+                GaiaReferenceStarList = new AsyncObservableCollection<GaiaReferenceStar>(records.ToList());
             }
             LoadingReferenceStars = false;
         }
@@ -462,9 +479,9 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                             Coordinates = speckleTarget.ReferenceStar.Coordinates()
                         }
                     };
-                    speckleTargetContainerRef.Title = speckleTarget.Proj;
+                    speckleTargetContainerRef.Title = speckleTarget.Obs;
                     speckleTargetContainerRef.IsRef = true;
-                    speckleTargetContainerRef.Name = speckleTarget.Proj + "_" + speckleTarget.Name2 + "_" + (speckleTarget.Completed_cycles + 1) + "_ref_" + speckleTarget.ReferenceStar.Name;
+                    speckleTargetContainerRef.Name = speckleTarget.Proj + "_" + speckleTarget.Obs + "_" + speckleTarget.Name2 + "_" + (speckleTarget.Completed_cycles + 1) + "_ref_" + speckleTarget.ReferenceStar.Name;
                     speckleTargetContainerRef.Items.ToList().ForEach(x => {
                         if (x is CalculateExposure calculateExposure) {
                             calculateExposure.ExposureTime = speckleTarget.Exp;
@@ -679,33 +696,51 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                 }
 
                 SpeckleTarget.ReferenceStarList = new List<ReferenceStar>();
+                var refStarList = new List<ReferenceStar>();
+                ReferenceStar refTarget = null;
                 if (!string.IsNullOrWhiteSpace(SpeckleTarget.RefGaiaNum)) {
                     var speckleRefTarget = SpeckleTargets.FirstOrDefault(x => x.GaiaNum == SpeckleTarget?.RefGaiaNum);
-                    var refTarget = speckleRefTarget != null ? new ReferenceStar(speckleRefTarget) : null;
+                    refTarget = speckleRefTarget != null ? new ReferenceStar(speckleRefTarget) : null;
                     if (refTarget == null)
                         refTarget = ReferenceStarList.FirstOrDefault(x => x.GaiaNum == SpeckleTarget?.RefGaiaNum);
                     if (refTarget != null)
                         SpeckleTarget.ReferenceStarList.Add(refTarget);
                 }
                 if (speckle.UseSimbadRefStars)
-                    SpeckleTarget.ReferenceStarList.AddRange(await SimUtils.FindSimbadSaoStars(externalProgress, token, SpeckleTarget.Coordinates(), speckle.SearchRadius, minMagnitude, maxMagnitude).ConfigureAwait(false));
+                    refStarList.AddRange(await SimUtils.FindSimbadSaoStars(externalProgress, token, SpeckleTarget.Coordinates(), speckle.SearchRadius, minMagnitude, maxMagnitude).ConfigureAwait(false));
                 if (speckle.UseUSNOSingleStarList)
-                    SpeckleTarget.ReferenceStarList.AddRange(await SimUtils.FindSingleBrightStars(externalProgress, token, SpeckleTarget.Coordinates(), speckle.SearchRadius, minMagnitude, maxMagnitude).ConfigureAwait(false));
+                    refStarList.AddRange(await SimUtils.FindSingleBrightStars(externalProgress, token, SpeckleTarget.Coordinates(), speckle.SearchRadius, minMagnitude, maxMagnitude).ConfigureAwait(false));
                 if (speckle.UseReferenceStarList && ReferenceStarList != null)
-                    SpeckleTarget.ReferenceStarList.AddRange(
+                    refStarList.AddRange(
                         ReferenceStarList.Where(x => x.RA2000 > SpeckleTarget.RA2000 - speckle.SearchRadius && x.RA2000 < SpeckleTarget.RA2000 + speckle.SearchRadius &&
                                                         x.Dec2000 > SpeckleTarget.Dec2000 - speckle.SearchRadius && x.Dec2000 < SpeckleTarget.Dec2000));
+                
+                if (speckle.UseGaiaReferenceStarList && GaiaReferenceStarList != null) {
+                    var gaiaRefStarsFiltered = GaiaReferenceStarList.Where(x => x.Raj2000 > SpeckleTarget.RA2000 - speckle.SearchRadius && x.Raj2000 < SpeckleTarget.RA2000 + speckle.SearchRadius &&
+                                                        x.Dej2000 > SpeckleTarget.Dec2000 - speckle.SearchRadius && x.Dej2000 < SpeckleTarget.Dec2000);
+                    // TODO implement Mark's check
+                }
 
-                foreach (var rstar in SpeckleTarget.ReferenceStarList) {
+                foreach (var rstar in refStarList) {
                     Separation sep = SpeckleTarget.Coordinates() - rstar.Coordinates();
                     rstar.distance = sep.Distance.Degree;
                 }
                 // RefGaiaNum first, then color match, then distance (the distance is already limited in the simbadutils)
-                SpeckleTarget.ReferenceStarList = SpeckleTarget.ReferenceStarList
-                    .OrderBy(r => r.GaiaNum == SpeckleTarget.RefGaiaNum ? 0 : 1) // start with selected reference star
-                    .ThenBy(r => Math.Round(Math.Abs(r.color - targetColor), 1))
-                    .ThenBy(r => r.distance).Take(30)
-                    .ToList();
+                SpeckleTarget.ReferenceStarList.AddRange(refStarList
+                    .Where(x => x.GaiaNum != SpeckleTarget?.RefGaiaNum)
+                    .Where(r => r.Gmag > 7 && r.Gmag < 10 && r.Rp > 7 && r.Rp < 10 && r.Gmag - SpeckleTarget.Gmag > r.color - targetColor)
+                    .OrderBy(r => Math.Round(Math.Abs(r.Dec2000 - SpeckleTarget.Dec2000), 1))
+                    .ThenBy(r => r.distance).Take(10)
+                    .ToList());
+
+                if (SpeckleTarget.ReferenceStarList.Count == 0) { // relax parameters
+                    SpeckleTarget.ReferenceStarList = refStarList
+                        .Where(r => r.Gmag > 7 && r.Gmag < 10 && r.Rp > 7 && r.Rp < 10)
+                        .OrderBy(r => Math.Round(Math.Abs(r.color - targetColor), 1))
+                        .ThenBy(r => Math.Round(Math.Abs(r.Dec2000 - SpeckleTarget.Dec2000), 1))
+                        .ThenBy(r => r.distance).Take(10)
+                        .ToList();
+                }
 
                 if (speckle.DomePositionLock) {
                     var slitAz1 = speckle.DomePosition - (speckle.DomeSlitWidth / 2);
@@ -724,7 +759,9 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                     var topObservationTime = SpeckleTarget.ReferenceStarList.Max(s => s.DomeSlitObservationTime) * 0.7;
                     SpeckleTarget.ReferenceStarList = SpeckleTarget.ReferenceStarList
                         .Where(r => r.DomeSlitObservationTime >= topObservationTime)
-                        .OrderBy(r => Math.Round(Math.Abs(r.color - targetColor), 1))
+                        .OrderBy(r => r.GaiaNum == SpeckleTarget.RefGaiaNum ? 0 : 1) // start with selected reference star
+                        .ThenBy(r => Math.Round(Math.Abs(r.Dec2000 - SpeckleTarget.Dec2000), 1))
+                        .ThenBy(r => r.distance)
                         .ThenBy(r => r.DomeSlitAltTimeList.OrderBy(altTime => altTime.datetime).FirstOrDefault()?.datetime)
                         .ToList();
                 }
@@ -766,7 +803,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                 }
                 // Run the whole thing and get the top value
                 if (altitude > horizonAltitude)
-                    altList.Add(new AltTime(altitude, azimuth, degAngle, start, AstroUtil.Airmass(altitude), CalculateSeparation(start, coords)));
+                    altList.Add(new AltTime(altitude, azimuth, degAngle, start, AstroUtil.Airmass(altitude), CalculateMoonSeparation(start, coords)));
                 start = start.AddHours(speckle.DomePositionLock ? 0.01 : 0.05);
             }
             return altList;
@@ -892,7 +929,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             return new DateTime((dt.Ticks + d.Ticks - 1) / d.Ticks * d.Ticks, dt.Kind);
         }
 
-        private double CalculateSeparation(DateTime time, Coordinates coords) {
+        private double CalculateMoonSeparation(DateTime time, Coordinates coords) {
             NOVAS.SkyPosition pos = AstroUtil.GetMoonPosition(time, AstroUtil.GetJulianDate(time), new ObserverInfo { Latitude = profileService.ActiveProfile.AstrometrySettings.Latitude, Longitude = profileService.ActiveProfile.AstrometrySettings.Longitude, Elevation = profileService.ActiveProfile.AstrometrySettings.Elevation });
             var moonRaRadians = AstroUtil.ToRadians(AstroUtil.HoursToDegrees(pos.RA));
             var moonDecRadians = AstroUtil.ToRadians(pos.Dec);

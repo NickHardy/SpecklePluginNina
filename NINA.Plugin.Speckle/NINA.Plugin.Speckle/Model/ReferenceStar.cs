@@ -47,7 +47,7 @@ namespace NINA.Plugin.Speckle.Model {
         }
 
         public string Name {
-            get => Name1 + "_" + (string.IsNullOrWhiteSpace(Name2) || "_".Equals(Name2) ? "Gaia-" + GaiaNum.ToString() : Name2);
+            get => Name1 + "_" + (string.IsNullOrWhiteSpace(Name2) || "_".Equals(Name2) ? "Gaia-" + GaiaNum?.ToString() ?? "" : Name2);
         }
 
         [JsonProperty]
@@ -66,4 +66,46 @@ namespace NINA.Plugin.Speckle.Model {
         }
 
     }
+
+    public sealed class ReferenceStarMap : ClassMap<ReferenceStar> {
+
+        public ReferenceStarMap() {
+            // StarMap
+            Map(m => m.TargetRecno).Name("targetrecno").Optional().Default(0);
+            Map(m => m.Recno).Name("recno").Optional().Default(0);
+            Map(m => m.Proj).Name(["Proj~", "Proj"]).Optional().Default("");
+            Map(m => m.Obs).Name(["Obs~","Obs"]).Optional().Default("");
+            Map(m => m.Type).Name(["Type~", "Type"]).Optional().Default("M");
+            Map(m => m.Name1).Name(["Name1*", "Name1"]).Optional().Default("");
+            Map(m => m.Name2).Name(["Name2*", "Name2"]).Optional().Default("");
+            Map(m => m.Priority).Name(["Priority~", "Priority"]).Optional().Default(1);
+            Map(m => m.Template).Name(["Temp","Template"]).Optional().Default("");
+            Map(m => m.RA2000).Name(["RA2000*", "RA2000"]).Optional().Default(0);
+            Map(m => m.Dec2000).Name(["D2000*", "Dec2000"]).Optional().Default(0);
+            Map(m => m.Bp).Name(["Bp~", "Bp"]).Optional().Default(0);
+            Map(m => m.Rp).Name(["Rp~", "Rp"]).Optional().Default(0);
+            Map(m => m.Gmag).Name(["Gmag~", "Gmag"]).Optional().Default(0);
+            Map(m => m.GaiaNum).Name(["GaiaNum~", "GaiaNum"]).Optional().Default("0");
+            Map(m => m.Sep).Name(["Sep~", "Sep"]).Optional().Default(0);
+            Map(m => m.PA).Name(["PA", "Pa"]).Optional().Default(0);
+            Map(m => m.Parallax).Name("Parallax").Optional().Default(0);
+            Map(m => m.Spectrum).Name("Spectrum").Optional().Default("");
+            Map(m => m.Pmag).Name(["Pmag~", "Pmag"]).Optional().Default(0);
+            Map(m => m.Smag).Name(["Smag~", "Smag"]).Optional().Default(0);
+            Map(m => m.Filter).Name(["Filter~", "Filter"]).Optional().Default("");
+            Map(m => m.Exp).Name(["Exp~", "Exp"]).Optional().Default(0);
+            Map(m => m.NExp).Name(["NExp~", "NExp", "Nexp"]).Optional().Default(0);
+            Map(m => m.NoEC).Name("NoEC").Optional().Default(0);
+            Map(m => m.GetRef).Name("GetRef").Optional().Default(1);
+            Map(m => m.GPrime).Name("GPrime").Optional().Default(0);
+            Map(m => m.RPrime).Name("RPrime").Optional().Default(0);
+            Map(m => m.IPrime).Name("IPrime").Optional().Default(0);
+            Map(m => m.ZPrime).Name("ZPrime").Optional().Default(0);
+            Map(m => m.RUWE).Name("RUWE").Optional().Default(0);
+            Map(m => m.FDBL).Name("FDBL").Optional().Default(0);
+            Map(m => m.Note1).Name("Note1").Optional().Default("");
+            Map(m => m.Note2).Name("Note2").Optional().Default("");
+        }
+    }
+
 }

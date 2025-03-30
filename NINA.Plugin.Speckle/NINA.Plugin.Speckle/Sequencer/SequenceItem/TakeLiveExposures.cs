@@ -12,48 +12,41 @@
 
 #endregion "copyright"
 
+using Dasync.Collections;
 using Newtonsoft.Json;
+using NINA.Astrometry;
+using NINA.Core.Locale;
 using NINA.Core.Model;
+using NINA.Core.Model.Equipment;
+using NINA.Core.Utility;
+using NINA.Equipment.Equipment.MyCamera;
+using NINA.Equipment.Equipment.MyFilterWheel;
+using NINA.Equipment.Equipment.MyFocuser;
+using NINA.Equipment.Equipment.MyRotator;
+using NINA.Equipment.Equipment.MyTelescope;
+using NINA.Equipment.Equipment.MyWeatherData;
+using NINA.Equipment.Interfaces.Mediator;
+using NINA.Equipment.Model;
+using NINA.Equipment.Utility;
+using NINA.Image.FileFormat;
+using NINA.Image.ImageData;
+using NINA.Plugin.Speckle.Sequencer.Utility;
 using NINA.Profile.Interfaces;
 using NINA.Sequencer.Container;
+using NINA.Sequencer.Interfaces;
+using NINA.Sequencer.SequenceItem;
 using NINA.Sequencer.Validations;
-using NINA.Core.Utility;
-using NINA.Equipment.Interfaces.Mediator;
-using NINA.ViewModel.Interfaces;
+using NINA.WPF.Base.Interfaces.Mediator;
+using NINA.WPF.Base.Interfaces.ViewModel;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel.Composition;
+using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Runtime.Serialization;
-using System.Text;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
-using NINA.WPF.Base.Interfaces.Mediator;
-using NINA.Core.Model.Equipment;
-using NINA.Core.Locale;
-using NINA.Equipment.Model;
-using NINA.Astrometry;
-using NINA.Equipment.Equipment.MyCamera;
-using NINA.WPF.Base.Interfaces.ViewModel;
-using NINA.Sequencer.Interfaces;
-using Dasync.Collections;
-using System.Diagnostics;
-using NINA.Image.FileFormat;
-using NINA.Sequencer.SequenceItem;
-using NINA.Plugin.Speckle.Sequencer.Utility;
-using NINA.Image.ImageData;
-using NINA.Equipment.Equipment.MyTelescope;
-using NINA.Equipment.Equipment.MyFocuser;
-using NINA.Equipment.Equipment.MyRotator;
-using NINA.Equipment.Equipment.MyWeatherData;
-using NINA.Equipment.Equipment.MyFilterWheel;
-using NINA.Equipment.Utility;
-using System.Reflection;
-using NINA.Image.Interfaces;
-using System.Text.RegularExpressions;
-using System.Reflection.Metadata.Ecma335;
 
 namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
 
@@ -242,7 +235,6 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
 
         public override async Task Execute(IProgress<ApplicationStatus> progress, CancellationToken token) {
             var targetContainer = ItemUtility.RetrieveSpeckleContainer(Parent);
-            targetContainer.SpeckleRun++;
             ExposureCount = 1;
             var capture = new CaptureSequence() {
                 ExposureTime = ExposureTime * ExposureTimeMultiplier,
@@ -273,6 +265,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             var title = targetContainer.Title;
             var speckleTarget = ItemUtility.RetrieveSpeckleTarget(Parent);
             var genericHeaders = speckleTarget?.GenericHeaders();
+            ItemUtility.AddImagePatterns(customPatterns, speckle, genericHeaders);
             bool _firstImage = true;
 
             var localCTS = CancellationTokenSource.CreateLinkedTokenSource(token);
@@ -290,6 +283,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                     var imageData = await exposureData.ToImageData(progress, localCTS.Token);
 
                     imageData.MetaData.Sequence.Title = title;
+                    imageData.MetaData.GenericHeaders.Add(new StringMetaDataHeader("SPECRUN", $"{targetContainer.SpeckleRun}", "Speckle run"));
                     AddMetaData(imageData.MetaData, target, ItemUtility.RetrieveSpeckleTargetRoi(Parent));
                     if (genericHeaders != null)
                         imageData.MetaData.GenericHeaders.AddRange(genericHeaders);

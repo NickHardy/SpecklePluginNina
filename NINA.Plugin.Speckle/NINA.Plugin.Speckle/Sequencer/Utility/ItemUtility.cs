@@ -29,6 +29,7 @@ using System.IO;
 using NINA.Image.ImageAnalysis;
 using NINA.Image.ImageData;
 using NINA.Equipment.Equipment.MyTelescope;
+using NINA.Core.Model;
 
 namespace NINA.Plugin.Speckle.Sequencer.Utility {
 
@@ -162,6 +163,33 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
             return s;
         }
 
+        public static void AddImagePatterns(List<ImagePattern> customPatterns, Speckle speckle, List<IGenericMetaDataHeader> genericHeaders) {
+            if (genericHeaders == null)
+                return;
+
+            var name1Header = (StringMetaDataHeader)genericHeaders.Where(h => h.Key == "Name1*").FirstOrDefault();
+            customPatterns.Add(new ImagePattern(speckle.name1Pattern.Key, speckle.name1Pattern.Description, speckle.name1Pattern.Category) {
+                Value = name1Header?.Value ?? string.Empty
+            });
+            var name2Header = (StringMetaDataHeader)genericHeaders.Where(h => h.Key == "Name2*").FirstOrDefault();
+            customPatterns.Add(new ImagePattern(speckle.name2Pattern.Key, speckle.name2Pattern.Description, speckle.name2Pattern.Category) {
+                Value = name2Header?.Value ?? string.Empty
+            });
+            var projectHeader = (StringMetaDataHeader)genericHeaders.Where(h => h.Key == "Proj~").FirstOrDefault();
+            customPatterns.Add(new ImagePattern(speckle.projectPattern.Key, speckle.projectPattern.Description, speckle.projectPattern.Category) {
+                Value = projectHeader?.Value ?? string.Empty
+            });
+            var observerHeader = (StringMetaDataHeader)genericHeaders.Where(h => h.Key == "Obs~").FirstOrDefault();
+            customPatterns.Add(new ImagePattern(speckle.observerPattern.Key, speckle.observerPattern.Description, speckle.observerPattern.Category) {
+                Value = observerHeader?.Value ?? string.Empty
+            });
+            var gaiaNumberHeader = (StringMetaDataHeader)genericHeaders.Where(h => h.Key == "GaiaNum~").FirstOrDefault();
+            customPatterns.Add(new ImagePattern(speckle.gaiaNumberPattern.Key, speckle.gaiaNumberPattern.Description, speckle.gaiaNumberPattern.Category) {
+                Value = gaiaNumberHeader?.Value ?? string.Empty
+            });
+
+        }
+
         //public static BitmapSource GetDFTImage(BitmapSource image) {
         //    //var grayImage = ConvertTo16BppSource(image);
         //    var img = Mat.ImDecode(BitmapSourceToByte(image), ImreadModes.Grayscale); //Cv2.ImRead(ImagePath.Lenna, ImreadModes.Grayscale);
@@ -223,7 +251,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
         //    spectrum.ConvertTo(spectrum, MatType.CV_8U);
 
         //    //var point = Cv2.PhaseCorrelate(spectrum, previousSpectrum);
-            
+
         //    // calculating the idft
         //    /*            var inverseTransform = new Mat();
         //                Cv2.Dft(dft, inverseTransform, DftFlags.Inverse | DftFlags.RealOutput);
