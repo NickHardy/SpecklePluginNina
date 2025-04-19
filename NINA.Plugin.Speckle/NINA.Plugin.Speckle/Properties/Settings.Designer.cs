@@ -489,5 +489,17 @@ namespace NINA.Plugin.Speckle.Properties {
                 this["UseGaiaReferenceStarList"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool SaveCsvToFitsHeader {
+            get {
+                return ((bool)(this["SaveCsvToFitsHeader"]));
+            }
+            set {
+                this["SaveCsvToFitsHeader"] = value;
+            }
+        }
     }
 }

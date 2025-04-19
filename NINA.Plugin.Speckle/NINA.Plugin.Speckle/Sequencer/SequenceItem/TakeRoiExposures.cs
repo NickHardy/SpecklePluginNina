@@ -233,7 +233,9 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
 
             var speckleTarget = ItemUtility.RetrieveSpeckleTarget(Parent);
             var genericHeaders = speckleTarget?.GenericHeaders();
-            ItemUtility.AddImagePatterns(customPatterns, speckle, genericHeaders);
+            if (speckle.SaveCsvToFitsHeader) {
+                ItemUtility.AddImagePatterns(customPatterns, speckle, genericHeaders);
+            }
             var target = targetContainer.Target;
             var title = targetContainer.Title;
             TelescopeInfo = this.telescopeMediator.GetInfo();
@@ -253,6 +255,8 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
 
                     var imageData = await exposureData.ToImageData(progress, token);
                     Logger.Debug("ImageData: " + roiDuration.ElapsedMilliseconds);
+                    if (genericHeaders != null && speckle.SaveCsvToFitsHeader)
+                        imageData.MetaData.GenericHeaders.AddRange(genericHeaders);
 
                     imageData.MetaData.Sequence.Title = title;
                     imageData.MetaData.Image.ExposureStart = exposureStart;

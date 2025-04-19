@@ -7,8 +7,8 @@ using System.Runtime.InteropServices;
 
 // [MANDATORY] The assembly versioning
 //Should be incremented for each new release build of a plugin
-[assembly: AssemblyVersion("2.2.1.0")]
-[assembly: AssemblyFileVersion("2.2.1.0")]
+[assembly: AssemblyVersion("2.2.1.2")]
+[assembly: AssemblyFileVersion("2.2.1.2")]
 
 // [MANDATORY] The name of your plugin
 [assembly: AssemblyTitle("Speckle Interferometry")]
@@ -32,7 +32,7 @@ using System.Runtime.InteropServices;
 // The url to the license
 [assembly: AssemblyMetadata("LicenseURL", "https://www.mozilla.org/en-US/MPL/2.0/")]
 // The repository where your pluggin is hosted
-[assembly: AssemblyMetadata("Repository", "https://bitbucket.org/NickHardy/nina.plugin.speckle/src/main/")]
+[assembly: AssemblyMetadata("Repository", "https://github.com/NickHardy/SpecklePluginNina")]
 
 
 // The following attributes are optional for the official manifest meta data
@@ -44,7 +44,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyMetadata("Tags", "Speckle,Interferometry,Acquisition")]
 
 //[Optional] A link that will show a log of all changes in between your plugin's versions
-[assembly: AssemblyMetadata("ChangelogURL", "https://bitbucket.org/NickHardy/nina.plugin.speckle/commits/branch/main")]
+[assembly: AssemblyMetadata("ChangelogURL", "https://github.com/NickHardy/SpecklePluginNina/commits/net8version/")]
 
 //[Optional] The url to a featured logo that will be displayed in the plugin list next to the name
 [assembly: AssemblyMetadata("FeaturedImageURL", "https://bitbucket.org/NickHardy/nina.plugin.speckle/downloads/SpeckleThumb.png")]

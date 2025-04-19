@@ -128,6 +128,14 @@ namespace NINA.Plugin.Speckle {
             }
         }
 
+        public bool SaveCsvToFitsHeader {
+            get => _pluginOptionsAccessor.GetValueBoolean(nameof(SaveCsvToFitsHeader), false);
+            set {
+                _pluginOptionsAccessor.SetValueBoolean(nameof(SaveCsvToFitsHeader), value);
+                RaisePropertyChanged();
+            }
+        }
+
         public double MDistance {
             get => _pluginOptionsAccessor.GetValueDouble(nameof(MDistance), 5d);
             set {

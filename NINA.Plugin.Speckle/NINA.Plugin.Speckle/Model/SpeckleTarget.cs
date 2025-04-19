@@ -24,12 +24,20 @@ using System.Threading;
 using System.Runtime.ExceptionServices;
 using NINA.Image.ImageData;
 using NINA.Equipment.Equipment.MyCamera;
+using System.Reflection;
 
 namespace NINA.Plugin.Speckle.Model {
 
     [JsonObject(MemberSerialization.OptIn)]
     public class SpeckleTarget : Star {
         public SpeckleTarget() {
+        }
+        public SpeckleTarget(Star star) {
+            foreach (PropertyInfo prop in typeof(Star).GetProperties()) {
+                if (prop.CanRead && prop.CanWrite) {
+                    prop.SetValue(this, prop.GetValue(star));
+                }
+            }
         }
 
         public string Name {
@@ -130,8 +138,6 @@ namespace NINA.Plugin.Speckle.Model {
 
         public SpeckleTargetMap() {
             // StarMap
-            Map(m => m.TargetRecno).Name("targetrecno").Optional().Default(0);
-            Map(m => m.Recno).Name("recno").Optional().Default(0);
             Map(m => m.Proj).Name(["Proj~", "Proj"]).Optional().Default("");
             Map(m => m.Obs).Name(["Obs~", "Obs"]).Optional().Default("");
             Map(m => m.Type).Name(["Type~", "Type"]).Optional().Default("M");
@@ -140,7 +146,7 @@ namespace NINA.Plugin.Speckle.Model {
             Map(m => m.Priority).Name(["Priority~", "Priority"]).Optional().Default(1);
             Map(m => m.Template).Name(["Temp","Template"]).Optional().Default("");
             Map(m => m.RA2000).Name(["RA2000*", "RA2000"]).Optional().Default(0);
-            Map(m => m.Dec2000).Name(["D2000*", "Dec2000"]).Optional().Default(0);
+            Map(m => m.Dec2000).Name(["D2000*", "D2000", "Dec2000"]).Optional().Default(0);
             Map(m => m.Bp).Name(["Bp~", "Bp"]).Optional().Default(0);
             Map(m => m.Rp).Name(["Rp~", "Rp"]).Optional().Default(0);
             Map(m => m.Gmag).Name(["Gmag~", "Gmag"]).Optional().Default(0);

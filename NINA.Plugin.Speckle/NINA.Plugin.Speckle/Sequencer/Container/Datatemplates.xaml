@@ -626,7 +626,7 @@
 
                     <DataGrid 
                         Margin="5,10,5,5"
-                        Height="150"
+                        Height="200"
                         AutoGenerateColumns="False"
                         IsReadOnly="False" 
                         ItemsSource="{Binding SpeckleTargetsView}"
@@ -797,6 +797,25 @@
                                     Command="{Binding ExportTargetsCommand}">
                                 <TextBlock Padding="5,0" Foreground="{StaticResource ButtonForegroundBrush}" Text="E" ToolTip="Export all targets with reference stars" />
                             </Button>
+                            <Button
+                                    Height="25"
+                                    Width="15"
+                                    Margin="0,0,5,0"
+                                    HorizontalAlignment="Left"
+                                    VerticalAlignment="Center"
+                                    Command="{Binding ExportTargetsCsvCommand}">
+                                <TextBlock Padding="5,0" Foreground="{StaticResource ButtonForegroundBrush}" Text="C" ToolTip="Export all targets with reference stars to Csv" />
+                            </Button>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="7" Margin="5" Orientation="Horizontal">
+                            <TextBlock Padding="5,5" Foreground="{StaticResource ButtonForegroundBrush}" Text="Ignore limits" />
+                            <CheckBox
+                                MinWidth="80"
+                                Margin="5,0,0,0"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Center"
+                                IsChecked="{Binding IgnoreLimits}" />
                         </StackPanel>
 
                         <StackPanel Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="8" Margin="5" Orientation="Horizontal">
@@ -842,6 +861,7 @@
                                 HorizontalAlignment="Left"
                                 VerticalAlignment="Center"
                                 IsChecked="{Binding AutoLoadReferenceStar}" />
+
                         </StackPanel>
                     </Grid>
                 </Grid>

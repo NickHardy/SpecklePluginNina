@@ -302,6 +302,16 @@
                                 Text="{Binding DomeSlitWidth}"
                                 Unit="°" />
 
+
+                            <TextBlock Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" Text="Save csv to fitsheader" />
+                            <CheckBox
+                                Grid.Row="3"
+                                Grid.Column="1"
+                                MinWidth="80"
+                                Margin="5,0,0,0"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Center"
+                                IsChecked="{Binding SaveCsvToFitsHeader}" />
                         </Grid>
                     </Grid>
                 </TabItem.Content>
