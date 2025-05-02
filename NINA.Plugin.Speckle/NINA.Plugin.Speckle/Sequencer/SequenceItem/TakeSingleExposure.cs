@@ -215,7 +215,18 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             var targetContainer = ItemUtility.RetrieveSpeckleContainer(Parent);
             var target = RetrieveTarget(this.Parent);
             var speckleTarget = ItemUtility.RetrieveSpeckleTarget(Parent);
-            var genericHeaders = speckleTarget?.GenericHeaders();
+
+            List<ImagePattern> customPatterns = new List<ImagePattern>();
+            customPatterns.Add(new ImagePattern(speckle.notePattern.Key, speckle.notePattern.Description, speckle.notePattern.Category) {
+                Value = string.Empty
+            });
+            customPatterns.Add(new ImagePattern(speckle.speckleRunPattern.Key, speckle.speckleRunPattern.Description, speckle.speckleRunPattern.Category) {
+                Value = $"{targetContainer.SpeckleRun}"
+            });
+
+            var genericHeaders = speckleTarget?.GenericHeaders(speckle.SaveCsvToFitsHeader);
+            if (genericHeaders != null)
+                ItemUtility.AddImagePatterns(customPatterns, speckle, genericHeaders);
 
             var exposureData = await imagingMediator.CaptureImage(capture, token, progress);
 
@@ -224,7 +235,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             imageData.MetaData.GenericHeaders.Add(new DoubleMetaDataHeader("JD-END", AstroUtil.GetJulianDate(DateTime.Now), "Julian exposure end date"));
             imageData.MetaData.GenericHeaders.Add(new DoubleMetaDataHeader("JD-BEG", AstroUtil.GetJulianDate(imageData.MetaData.Image.ExposureStart), "Julian exposure start date"));
             imageData.MetaData.GenericHeaders.Add(new DoubleMetaDataHeader("JD-OBS", AstroUtil.GetJulianDate(imageData.MetaData.Image.ExposureStart.AddSeconds(ExposureTime * ExposureTimeMultiplier / 2)), "Julian exposure mid date"));
-            if (genericHeaders != null && speckle.SaveCsvToFitsHeader)
+            if (genericHeaders != null)
                 imageData.MetaData.GenericHeaders.AddRange(genericHeaders);
 
             var prepareTask = imagingMediator.PrepareImage(imageData, imageParams, token);

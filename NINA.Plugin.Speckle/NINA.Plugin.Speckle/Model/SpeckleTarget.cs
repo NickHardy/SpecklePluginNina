@@ -95,13 +95,16 @@ namespace NINA.Plugin.Speckle.Model {
         public DateTime ImageTime { get; set; }
         public DateTime? ImagedAt { get; set; }
         public double ImageTimeAlt { get; set; }
-        public List<IGenericMetaDataHeader> GenericHeaders() {
+        public List<IGenericMetaDataHeader> GenericHeaders(bool all) {
             var headerList = new List<IGenericMetaDataHeader>();
             headerList.Add(new StringMetaDataHeader("Proj~", Proj));
             headerList.Add(new StringMetaDataHeader("Obs~", Obs));
             headerList.Add(new StringMetaDataHeader("Type~", Type));
             headerList.Add(new StringMetaDataHeader("Name1*", Name1));
             headerList.Add(new StringMetaDataHeader("Name2*", Name2));
+            headerList.Add(new StringMetaDataHeader("GaiaNum~", GaiaNum));
+            if (!all) 
+                return headerList;
             headerList.Add(new IntMetaDataHeader("Priority~", Priority));
             headerList.Add(new StringMetaDataHeader("Temp", Template));
             headerList.Add(new DoubleMetaDataHeader("RA2000*", RA2000));
@@ -109,7 +112,6 @@ namespace NINA.Plugin.Speckle.Model {
             headerList.Add(new DoubleMetaDataHeader("Bp~", Bp));
             headerList.Add(new DoubleMetaDataHeader("Rp~", Rp));
             headerList.Add(new DoubleMetaDataHeader("Gmag~", Gmag));
-            headerList.Add(new StringMetaDataHeader("GaiaNum~", GaiaNum));
             headerList.Add(new StringMetaDataHeader("RefGaiaNum~", RefGaiaNum));
             headerList.Add(new DoubleMetaDataHeader("Sep~", Sep));
             headerList.Add(new DoubleMetaDataHeader("PA", PA));

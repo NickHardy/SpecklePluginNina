@@ -50,6 +50,21 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
             }
         }
 
+        public static AsyncObservableCollection<SpeckleTargetContainer> RetrieveSpeckleTemplates(ISequenceContainer parent) {
+            if (parent != null) {
+                var container = parent as SpeckleTargetListContainer;
+                if (container != null) {
+                    return container.SpeckleTemplates;
+                }
+                else {
+                    return RetrieveSpeckleTemplates(parent.Parent);
+                }
+            }
+            else {
+                return null;
+            }
+        }
+
         public static SpeckleTargetListContainer RetrieveSpeckleListContainer(ISequenceContainer parent) {
             if (parent != null) {
                 var container = parent as SpeckleTargetListContainer;

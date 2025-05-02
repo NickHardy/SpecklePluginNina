@@ -576,21 +576,32 @@
     <DataTemplate DataType="{x:Type local:LoadReferenceStar}">
         <view:SequenceBlockView>
             <view:SequenceBlockView.SequenceItemContent>
-                <ComboBox
-                ItemsSource="{Binding ReferenceStarList, Mode=TwoWay}"
-                SelectedItem="{Binding RefStar, Mode=TwoWay}"
-                SelectedValue="{Binding Title, Mode=TwoWay}"
-                HorizontalContentAlignment="Stretch"
-                SelectedValuePath="Name">
-                    <ComboBox.ItemTemplate>
-                        <DataTemplate>
-                            <TextBlock 
+                <StackPanel Orientation="Horizontal">
+                    <ComboBox
+                        ItemsSource="{Binding ReferenceStarList, Mode=TwoWay}"
+                        SelectedItem="{Binding RefStar, Mode=TwoWay}"
+                        SelectedValue="{Binding Title, Mode=TwoWay}"
+                        HorizontalContentAlignment="Stretch"
+                        SelectedValuePath="Name">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock 
                             Text="{Binding Title}" 
                             TextAlignment="Right" 
                             HorizontalAlignment="Stretch" />
-                        </DataTemplate>
-                    </ComboBox.ItemTemplate>
-                </ComboBox>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                    <TextBlock Grid.Column="0" Grid.Row="0" Margin="5,0,0,0" VerticalAlignment="Center" Text="Use template" />
+                    <ComboBox 
+                            Grid.Column="1"
+                            Grid.Row="0"
+                            Margin="5,0,0,0"
+                            ItemsSource="{Binding SpeckleTemplates}"
+                            SelectedValue="{Binding TemplateRef, Mode=TwoWay}"
+                            SelectedValuePath="Name"
+                            DisplayMemberPath="Name"/>
+                </StackPanel>
             </view:SequenceBlockView.SequenceItemContent>
         </view:SequenceBlockView>
     </DataTemplate>

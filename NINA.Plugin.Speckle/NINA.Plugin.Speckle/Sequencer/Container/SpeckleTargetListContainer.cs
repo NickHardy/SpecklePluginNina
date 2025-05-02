@@ -12,52 +12,43 @@
 
 #endregion "copyright"
 
+using CsvHelper;
+using CsvHelper.Configuration;
 using Newtonsoft.Json;
-using NINA.Core.Enum;
-using NINA.Profile.Interfaces;
-using NINA.Sequencer.Conditions;
-using NINA.Sequencer.SequenceItem;
-using NINA.Sequencer.Trigger;
-using NINA.Core.Utility;
 using NINA.Astrometry;
+using NINA.Astrometry.Interfaces;
+using NINA.Core.Model;
+using NINA.Core.Model.Equipment;
+using NINA.Core.Utility;
+using NINA.Core.Utility.Notification;
+using NINA.Equipment.Interfaces.Mediator;
+using NINA.Plugin.Speckle.Model;
+using NINA.Plugin.Speckle.Sequencer.Container.ExecutionStrategy;
+using NINA.Plugin.Speckle.Sequencer.SequenceItem;
+using NINA.Plugin.Speckle.Sequencer.Utility;
+using NINA.Profile.Interfaces;
+using NINA.Sequencer;
+using NINA.Sequencer.Conditions;
+using NINA.Sequencer.Container;
+using NINA.Sequencer.Interfaces.Mediator;
+using NINA.Sequencer.SequenceItem;
+using NINA.Sequencer.SequenceItem.FilterWheel;
+using NINA.Sequencer.SequenceItem.Utility;
+using NINA.Sequencer.Trigger;
+using NINA.WPF.Base.Interfaces.Mediator;
+using NINA.WPF.Base.Interfaces.ViewModel;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel.Composition;
-using System.Linq;
-using System.Threading.Tasks;
-using System.Windows.Input;
-using NINA.WPF.Base.Interfaces.Mediator;
-using NINA.Equipment.Exceptions;
-using NINA.Core.Utility.Notification;
-using NINA.Core.Locale;
-using NINA.Astrometry.Interfaces;
-using NINA.Equipment.Interfaces;
-using NINA.WPF.Base.Interfaces.ViewModel;
-using System.Windows;
-using NINA.Sequencer.Container;
-using NINA.Sequencer;
-using NINA.Equipment.Interfaces.Mediator;
-using NINA.Equipment.Equipment.MyCamera;
-using NINA.Plugin.Speckle.Model;
-using System.Collections.Generic;
-using NINA.Sequencer.Interfaces.Mediator;
-using NINA.Plugin.Speckle.Sequencer.SequenceItem;
-using NINA.Core.Model;
-using System.Threading;
-using NINA.Plugin.Speckle.Sequencer.Utility;
-using System.Windows.Threading;
-using System.Windows.Forms;
-using System.IO;
-using CsvHelper;
 using System.Globalization;
-using CsvHelper.Configuration;
-using NINA.Plugin.Speckle.Sequencer.Container.ExecutionStrategy;
-using NINA.Sequencer.SequenceItem.Utility;
-using NINA.Sequencer.SequenceItem.FilterWheel;
-using NINA.Core.Model.Equipment;
-using NINA.Image.ImageData;
-using System.Text.RegularExpressions;
-using NINA.Sequencer.SequenceItem.Rotator;
+using System.IO;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using System.Windows.Input;
+using System.Windows.Threading;
 
 namespace NINA.Plugin.Speckle.Sequencer.Container {
 
@@ -332,8 +323,10 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             if (SpeckleTargets.Count == 0) return;
             if (ReferenceStarList.Count == 0) return;
             LoadingTargets = true;
-            var targets = SpeckleTargets.Where(x => x.Type == "M" || x.Type == "G").ToList();
+            var targets = SpeckleTargets.Where(x => x.Type == "M" || x.Type == "C" || x.Type == "G").OrderBy(x => x.RA2000).ToList();
             foreach (var target in targets) {
+                if (target.Type == "G")
+                    continue;
                 SpeckleTarget = target;
                 using (executeCTS = new CancellationTokenSource()) {
                     if (SpeckleTarget.ReferenceStarList == null || SpeckleTarget.ReferenceStarList.Count == 0)
@@ -355,9 +348,13 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             if (SpeckleTargets.Count == 0) return;
             if (ReferenceStarList.Count == 0) return;
             LoadingTargets = true;
-            var targets = SpeckleTargets.Where(x => x.Type == "M" || x.Type == "G").ToList();
+            var targets = SpeckleTargets.Where(x => x.Type == "M" || x.Type == "C" || x.Type == "G").OrderBy(x => x.RA2000).ToList();
             var targetsWithReferenceStars = new List<SpeckleTarget>();
             foreach (var target in targets) {
+                if (target.Type == "G") {
+                    targetsWithReferenceStars.Add(target);
+                    continue;
+                }
                 SpeckleTarget = target;
                 using (executeCTS = new CancellationTokenSource()) {
                     if (SpeckleTarget.ReferenceStarList == null || SpeckleTarget.ReferenceStarList.Count == 0)
@@ -369,6 +366,8 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                 refStar.Obs = target.Obs;
                 refStar.Exp = target.Exp;
                 refStar.NExp = target.NExp;
+                refStar.Name2 = refStar.Name1;
+                refStar.Name1 = target.Name1 + "_ref";
                 refStar.GetRef = 0;
                 refStar.Template = "";
                 target.RefGaiaNum = refStar.GaiaNum;
@@ -431,11 +430,11 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                 await LoadSpeckleTarget(templateName).ConfigureAwait(false);
             }
             using (executeCTS = new CancellationTokenSource()) {
-                if (SpeckleTarget.ReferenceStarList == null || SpeckleTarget.ReferenceStarList.Count == 0)
+                if ((SpeckleTarget.Type == "M" || SpeckleTarget.Type == "C") && SpeckleTarget.ReferenceStarList == null || SpeckleTarget.ReferenceStarList.Count == 0)
                     await RetrieveReferenceStarsForSpeckleTarget(new Progress<ApplicationStatus>(p => AppStatus = p), executeCTS.Token).ConfigureAwait(false);
             }
 
-            if (AutoLoadReferenceStar) {
+            if ((SpeckleTarget.Type == "M" || SpeckleTarget.Type == "C") && AutoLoadReferenceStar) {
                 var refTemplateName = string.IsNullOrWhiteSpace(SpeckleTarget.TemplateRef) ? speckle.DefaultRefTemplate : SpeckleTarget.TemplateRef;
                 var refStarTemplate = string.IsNullOrWhiteSpace(SpeckleTarget.ReferenceStar?.Template) ? refTemplateName : SpeckleTarget.ReferenceStar?.Template;
                 await LoadReferenceTarget(SpeckleTarget, string.IsNullOrWhiteSpace(refStarTemplate) ? templateName : refStarTemplate).ConfigureAwait(false);
@@ -560,7 +559,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
 
             // First get the next target with an imageTime in the future
             if (speckle.DomePositionLock) {
-                var targets = SpeckleTargets.Where(t => t.ImageTarget && t.Type == "M")
+                var targets = SpeckleTargets.Where(t => t.ImageTarget && (t.Type == "M" || t.Type == "C" || t.Type == "G"))
                     .Where(t => t.Nights > t.Completed_nights)
                     .Where(t => t.Cycles > t.Completed_cycles)
                     .Where(t => t.ImagedAt == null || t.ImagedAt < quarterAgo)
@@ -578,7 +577,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                 }
             } else {
                 DateTime maxImageTime = DateTime.Now.AddMinutes(-5);
-                SpeckleTarget = SpeckleTargets.Where(t => t.ImageTarget && t.Type == "M")
+                SpeckleTarget = SpeckleTargets.Where(t => t.ImageTarget && (t.Type == "M" || t.Type == "C" || t.Type == "G"))
                     .Where(t => t.Nights > t.Completed_nights)
                     .Where(t => t.Cycles > t.Completed_cycles)
                     .Where(t => t.ImageTime > maxImageTime)
@@ -761,6 +760,8 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                         refTarget = ReferenceStarList.FirstOrDefault(x => x.GaiaNum == SpeckleTarget?.RefGaiaNum);
                     if (refTarget != null)
                         SpeckleTarget.ReferenceStarList.Add(refTarget);
+                    else
+                        Logger.Debug($"Failed to find referenceStar: {SpeckleTarget?.RefGaiaNum} for target: {SpeckleTarget?.GaiaNum}");
                 }
                 if (speckle.UseSimbadRefStars)
                     refStarList.AddRange(await SimUtils.FindSimbadSaoStars(externalProgress, token, SpeckleTarget.Coordinates(), speckle.SearchRadius, minMagnitude, maxMagnitude).ConfigureAwait(false));

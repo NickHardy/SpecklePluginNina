@@ -264,10 +264,10 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             var target = targetContainer.Target;
             var title = targetContainer.Title;
             var speckleTarget = ItemUtility.RetrieveSpeckleTarget(Parent);
-            var genericHeaders = speckleTarget?.GenericHeaders();
-            if (speckle.SaveCsvToFitsHeader) {
+            var genericHeaders = speckleTarget?.GenericHeaders(speckle.SaveCsvToFitsHeader);
+            if (genericHeaders != null)
                 ItemUtility.AddImagePatterns(customPatterns, speckle, genericHeaders);
-            }
+
             bool _firstImage = true;
 
             var localCTS = CancellationTokenSource.CreateLinkedTokenSource(token);
@@ -287,7 +287,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                     imageData.MetaData.Sequence.Title = title;
                     imageData.MetaData.GenericHeaders.Add(new StringMetaDataHeader("SPECRUN", $"{targetContainer.SpeckleRun}", "Speckle run"));
                     AddMetaData(imageData.MetaData, target, ItemUtility.RetrieveSpeckleTargetRoi(Parent));
-                    if (genericHeaders != null && speckle.SaveCsvToFitsHeader)
+                    if (genericHeaders != null)
                         imageData.MetaData.GenericHeaders.AddRange(genericHeaders);
 
                     // Only show first and last image in Imaging window and every nth image

@@ -13,6 +13,10 @@ using NINA.Plugin.Speckle.Sequencer.Utility;
 using NINA.Plugin.Speckle.Model;
 using System.Linq;
 using NINA.Core.Utility;
+using NINA.Plugin.Speckle.Sequencer.Container;
+using NINA.Sequencer.Mediator;
+using NINA.Sequencer.Interfaces.Mediator;
+using System.Diagnostics.Eventing.Reader;
 
 namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
 
@@ -25,21 +29,27 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
     public class LoadReferenceStar : NINA.Sequencer.SequenceItem.SequenceItem, IValidatable {
         private IProfileService profileService;
         private IOptionsVM options;
+        private ISequenceMediator sequenceMediator;
         private Speckle speckle;
 
         [ImportingConstructor]
-        public LoadReferenceStar(IProfileService profileService, IOptionsVM options) {
+        public LoadReferenceStar(IProfileService profileService, IOptionsVM options, ISequenceMediator sequenceMediator) {
             this.profileService = profileService;
             this.options = options;
+            this.sequenceMediator = sequenceMediator;
             speckle = new Speckle(profileService);
+
+            RetrieveTemplates();
         }
 
-        private LoadReferenceStar(LoadReferenceStar cloneMe) : this(cloneMe.profileService, cloneMe.options) {
+        private LoadReferenceStar(LoadReferenceStar cloneMe) : this(cloneMe.profileService, cloneMe.options, cloneMe.sequenceMediator) {
             CopyMetaData(cloneMe);
         }
 
         public override object Clone() {
-            var clone = new LoadReferenceStar(this) {};
+            var clone = new LoadReferenceStar(this) {
+                TemplateRef = this.TemplateRef
+            };
             return clone;
         }
 
@@ -80,17 +90,40 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             }
         }
 
+        private AsyncObservableCollection<SpeckleTargetContainer> _speckleTemplates = new AsyncObservableCollection<SpeckleTargetContainer>();
+
+        public AsyncObservableCollection<SpeckleTargetContainer> SpeckleTemplates {
+            get => _speckleTemplates;
+            set {
+                _speckleTemplates = value;
+                RaisePropertyChanged();
+            }
+        }
+
+        public void RetrieveTemplates() {
+            if (sequenceMediator.Initialized) {
+                SpeckleTemplates.Clear();
+                var templates = sequenceMediator.GetDeepSkyObjectContainerTemplates();
+                foreach (var template in templates) {
+                    var speckleTemplate = template as SpeckleTargetContainer;
+                    if (speckleTemplate != null)
+                        SpeckleTemplates.Add(speckleTemplate);
+                }
+            }
+        }
+
+        private string _TemplateRef;
+
+        [JsonProperty]
+        public string TemplateRef { get => _TemplateRef; set { _TemplateRef = value; RaisePropertyChanged(); } }
+
         public override async Task Execute(IProgress<ApplicationStatus> progress, CancellationToken token) {
 
             var listContainer = ItemUtility.RetrieveSpeckleListContainer(Parent);
             var speckleTarget = ItemUtility.RetrieveSpeckleTarget(Parent);
             if (RefStar != null) {
                 speckleTarget.ReferenceStar = RefStar;
-
-                var templateName = string.IsNullOrWhiteSpace(speckleTarget.Template) ? speckle.DefaultTemplate : speckleTarget.Template;
-                var refTemplateName = string.IsNullOrWhiteSpace(speckleTarget.TemplateRef) ? speckle.DefaultRefTemplate : speckleTarget.TemplateRef;
-                var refStarTemplate = string.IsNullOrWhiteSpace(RefStar.Template) ? refTemplateName : RefStar.Template;
-                await listContainer.LoadReferenceTarget(speckleTarget, string.IsNullOrWhiteSpace(refStarTemplate) ? templateName : refStarTemplate);
+                await listContainer.LoadReferenceTarget(speckleTarget, TemplateRef);
             }
         }
 
@@ -105,12 +138,17 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                 i.Add("This instruction only works within a SpeckleTargetContainer.");
             } else {
                 var speckleTargetContainer = ItemUtility.RetrieveSpeckleContainer(Parent);
-                if (ReferenceStarList?.Count == 0 && speckleTargetContainer?.SpeckleTarget?.ReferenceStarList?.Count > 0)
-                    ReferenceStarList = new AsyncObservableCollection<ReferenceStar>(speckleTargetContainer?.SpeckleTarget?.ReferenceStarList);
+                var speckleTarget = ItemUtility.RetrieveSpeckleTarget(Parent);
+                if (ReferenceStarList?.Count == 0 && speckleTarget?.ReferenceStarList?.Count > 0)
+                    ReferenceStarList = new AsyncObservableCollection<ReferenceStar>(speckleTarget?.ReferenceStarList);
                 if (RefStar == null) {
                     RefStar = ReferenceStarList?.Count > 0 ? ReferenceStarList?.First() : null;
                     ReferenceStarName = RefStar?.Name;
                 }
+                if (!string.IsNullOrWhiteSpace(speckleTarget?.TemplateRef))
+                    TemplateRef = speckleTarget.TemplateRef;
+                else if (!string.IsNullOrWhiteSpace(RefStar?.Template) && RefStar?.Template != "_")
+                    TemplateRef = RefStar.Template;
             }
 
             Issues = i;
