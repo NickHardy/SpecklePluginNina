@@ -16,7 +16,7 @@ permissions:
 env:
   # Adjust this to your plugin title
   PLUGIN_NAME: "Speckle Interferometry"
-  PLUGIN_SLN_NAME: "NINA.Plugin.Speckle.sln"
+  PLUGIN_SLN_NAME: "NINA.Plugin.Speckle"
   PLUGIN_DLL_NAME: "SpeckleInterferometry"
 
 jobs:
@@ -36,7 +36,7 @@ jobs:
       - name: Build .NET Assemblies
         run: |
           dotnet restore
-          dotnet build "${{ env.PLUGIN_SLN_NAME }}.sln" -c Release -p:PostBuildEvent= -p:Version=${{ github.ref_name }}
+          dotnet build "NINA.Plugin.Speckle/${{ env.PLUGIN_SLN_NAME }}.sln" -c Release -p:PostBuildEvent= -p:Version=${{ github.ref_name }}
 
       # If you have mkdocs documentation you want to include, you can uncomment and build it like this
       # - name: Build Documentation
