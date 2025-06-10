@@ -7,11 +7,11 @@ using System.Runtime.InteropServices;
 
 // [MANDATORY] The assembly versioning
 //Should be incremented for each new release build of a plugin
-[assembly: AssemblyVersion("2.2.1.3")]
-[assembly: AssemblyFileVersion("2.2.1.3")]
+//[assembly: AssemblyVersion("2.2.1.3")] Version will be filled by the dotnet build command
+//[assembly: AssemblyFileVersion("2.2.1.3")]
 
 // [MANDATORY] The name of your plugin
-[assembly: AssemblyTitle("Speckle Interferometry")]
+//[assembly: AssemblyTitle("Speckle Interferometry")]
 // [MANDATORY] A short description of your plugin
 [assembly: AssemblyDescription("This plugin automates the acquisition of speckle interferometry data for closely seperated objects.")]
 
@@ -19,9 +19,9 @@ using System.Runtime.InteropServices;
 // The following attributes are not required for the plugin per se, but are required by the official manifest meta data
 
 // Your name
-[assembly: AssemblyCompany("Nick Hardy & Leon Bewersdorff")]
+//[assembly: AssemblyCompany("Nick Hardy & Leon Bewersdorff")] Filled in csproj
 // The product name that this plugin is part of
-[assembly: AssemblyProduct("Speckle Interferometry")]
+//[assembly: AssemblyProduct("Speckle Interferometry")] Filled in csproj
 [assembly: AssemblyCopyright("")]
 
 // The minimum Version of N.I.N.A. that this plugin is compatible with
@@ -156,7 +156,7 @@ If you would like to buy Nick a whisky: [click here](https://www.paypal.com/payp
 // COM, set the ComVisible attribute to true on that type.
 [assembly: ComVisible(false)]
 // [Unused]
-[assembly: AssemblyConfiguration("")]
+//[assembly: AssemblyConfiguration("")]
 // [Unused]
 [assembly: AssemblyTrademark("")]
 // [Unused]
