@@ -80,6 +80,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -b "${{ env.PLUGIN_DLL_NAME }}/${{ github.ref_name }}"
+          git pull
 
       - name: Set remote with token
         run: |
