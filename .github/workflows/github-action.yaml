@@ -75,7 +75,6 @@ jobs:
 
       - name: Clone manifest
         run: |
-          rm -rf ./nina.plugin.manifests
           git clone https://x-access-token:${{ secrets.PAT }}@github.com/NickHardy/nina.plugin.manifests.git
           cd nina.plugin.manifests
           git config user.name "github-actions[bot]"
