@@ -18,6 +18,7 @@ env:
   PLUGIN_NAME: "Speckle Interferometry"
   PLUGIN_SLN_NAME: "NINA.Plugin.Speckle"
   PLUGIN_DLL_NAME: "SpeckleInterferometry"
+  PLUGIN_MANIFEST_PATH: "s/SpeckleInterferometry/3.0.0"
 
 jobs:
   build-and-release:
@@ -79,6 +80,11 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -b "${{ env.PLUGIN_DLL_NAME }}/${{ github.ref_name }}"
+
+      - name: Set remote with token
+        run: |
+          cd nina.plugin.manifests
+          git remote set-url origin https://x-access-token:${{ secrets.PAT }}@github.com/NickHardy/nina.plugin.manifests.git
 
       - name: Copy manifest file
         run: |
