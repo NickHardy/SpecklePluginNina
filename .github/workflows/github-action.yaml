@@ -78,7 +78,7 @@ jobs:
           cd nina.plugin.manifests
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git checkout -b "${{ env.PLUGIN_NAME }}/${{ github.ref_name }}"
+          git checkout -b "${{ env.PLUGIN_DLL_NAME }}/${{ github.ref_name }}"
 
       - name: Copy manifest file
         run: |
@@ -86,7 +86,7 @@ jobs:
           cd nina.plugin.manifests
           git add .
           git commit -m "Add manifest for release ${{ github.ref_name }}"
-          git push origin "${{ env.PLUGIN_NAME }}/${{ github.ref_name }}"
+          git push origin "${{ env.PLUGIN_DLL_NAME }}/${{ github.ref_name }}"
 
       - name: Create pull request
         shell: bash
@@ -95,7 +95,7 @@ jobs:
           gh pr create \
             --title "Add manifest for ${{ env.PLUGIN_NAME }} ${{ github.ref_name }}" \
             --body "Automatically generated manifest for release ${{ github.ref_name }}" \
-            --head NickHardy:${{ env.PLUGIN_NAME }}/${{ github.ref_name }} \
+            --head NickHardy:${{ env.PLUGIN_DLL_NAME }}/${{ github.ref_name }} \
             --base main \
             --repo isbeorn/nina.plugin.manifests
             
