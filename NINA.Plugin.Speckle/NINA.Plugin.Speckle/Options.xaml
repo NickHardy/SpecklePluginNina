@@ -542,6 +542,16 @@
                                 HorizontalAlignment="Left"
                                 VerticalAlignment="Center"
                                 IsChecked="{Binding UseUSNOSingleStarList}" />
+
+                            <TextBlock Grid.Row="7" Grid.Column="0" VerticalAlignment="Center" Text="Prefer brightness over closeness" />
+                            <CheckBox
+                                Grid.Row="7"
+                                Grid.Column="1"
+                                MinWidth="80"
+                                Margin="5,0,0,0"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Center"
+                                IsChecked="{Binding PreferBrighterReferenceStars}" />
                         </Grid>
                     </Grid>
                 </TabItem.Content>

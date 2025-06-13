@@ -523,11 +523,11 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                         }
                         if (x is TakeRoiExposures takeRoiExposures) {
                             takeRoiExposures.ExposureTime = speckleTarget.Exp;
-                            takeRoiExposures.TotalExposureCount = speckleTarget.NExp > 0 ? speckleTarget.NExp : speckle.ReferenceExposures;
+                            takeRoiExposures.TotalExposureCount = speckle.ReferenceExposures > 0 ? speckle.ReferenceExposures : speckleTarget.NExp;
                         }
                         if (x is TakeLiveExposures takeLiveExposures) {
                             takeLiveExposures.ExposureTime = speckleTarget.Exp;
-                            takeLiveExposures.TotalExposureCount = speckleTarget.NExp > 0 ? speckleTarget.NExp : speckle.ReferenceExposures;
+                            takeLiveExposures.TotalExposureCount = speckle.ReferenceExposures > 0 ? speckle.ReferenceExposures : speckleTarget.NExp;
                         }
                         if (x is WaitForTime waitForTime) {
                             waitForTime.Hours = speckleTarget.ImageTime.Hour;
@@ -755,9 +755,11 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                 ReferenceStar refTarget = null;
                 if (!string.IsNullOrWhiteSpace(SpeckleTarget.RefGaiaNum)) {
                     var speckleRefTarget = SpeckleTargets.FirstOrDefault(x => x.GaiaNum == SpeckleTarget?.RefGaiaNum);
-                    refTarget = speckleRefTarget != null ? new ReferenceStar(speckleRefTarget) : null;
-                    if (refTarget == null)
-                        refTarget = ReferenceStarList.FirstOrDefault(x => x.GaiaNum == SpeckleTarget?.RefGaiaNum);
+                    if (speckleRefTarget != null) {
+                        refTarget = new ReferenceStar(speckleRefTarget);
+                        SpeckleTarget.TemplateRef = speckleRefTarget.Template;
+                    }
+                    refTarget ??= ReferenceStarList.FirstOrDefault(x => x.GaiaNum == SpeckleTarget?.RefGaiaNum);
                     if (refTarget != null)
                         SpeckleTarget.ReferenceStarList.Add(refTarget);
                     else
@@ -782,19 +784,20 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                     Separation sep = SpeckleTarget.Coordinates() - rstar.Coordinates();
                     rstar.distance = sep.Distance.Degree;
                 }
-                // RefGaiaNum first, then color match, then distance (the distance is already limited in the simbadutils)
+                // RefGaiaNum first, then brightness, then color match, then distance (the distance is already limited in the simbadutils)
                 SpeckleTarget.ReferenceStarList.AddRange(refStarList
                     .Where(x => x.GaiaNum != SpeckleTarget?.RefGaiaNum)
                     .Where(r => r.Gmag > 7 && r.Gmag < 10 && r.Rp > 7 && r.Rp < 10 && r.Gmag - SpeckleTarget.Gmag > r.color - targetColor)
-                    .OrderBy(r => Math.Round(Math.Abs(r.Dec2000 - SpeckleTarget.Dec2000), 1))
+                    .OrderBy(r => speckle.PreferBrighterReferenceStars ? Math.Round(Math.Abs(r.Gmag - SpeckleTarget.Gmag), 1) : Math.Round(Math.Abs(r.Dec2000 - SpeckleTarget.Dec2000), 1))
+                    .ThenBy(r => !speckle.PreferBrighterReferenceStars ? Math.Round(Math.Abs(r.Gmag - SpeckleTarget.Gmag), 1) : Math.Round(Math.Abs(r.Dec2000 - SpeckleTarget.Dec2000), 1))
                     .ThenBy(r => r.distance).Take(10)
                     .ToList());
 
                 if (SpeckleTarget.ReferenceStarList.Count == 0) { // relax parameters
                     SpeckleTarget.ReferenceStarList = refStarList
                         .Where(r => r.Gmag > 7 && r.Gmag < 10 && r.Rp > 7 && r.Rp < 10)
-                        .OrderBy(r => Math.Round(Math.Abs(r.color - targetColor), 1))
-                        .ThenBy(r => Math.Round(Math.Abs(r.Dec2000 - SpeckleTarget.Dec2000), 1))
+                        .OrderBy(r => speckle.PreferBrighterReferenceStars ? Math.Round(Math.Abs(r.Gmag - SpeckleTarget.Gmag), 1) : Math.Round(Math.Abs(r.Dec2000 - SpeckleTarget.Dec2000), 1))
+                        .ThenBy(r => !speckle.PreferBrighterReferenceStars ? Math.Round(Math.Abs(r.Gmag - SpeckleTarget.Gmag), 1) : Math.Round(Math.Abs(r.Dec2000 - SpeckleTarget.Dec2000), 1))
                         .ThenBy(r => r.distance).Take(10)
                         .ToList();
                 }
@@ -817,7 +820,8 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                     SpeckleTarget.ReferenceStarList = SpeckleTarget.ReferenceStarList
                         .Where(r => r.DomeSlitObservationTime >= topObservationTime)
                         .OrderBy(r => r.GaiaNum == SpeckleTarget.RefGaiaNum ? 0 : 1) // start with selected reference star
-                        .ThenBy(r => Math.Round(Math.Abs(r.Dec2000 - SpeckleTarget.Dec2000), 1))
+                        .ThenBy(r => speckle.PreferBrighterReferenceStars ? Math.Round(Math.Abs(r.Gmag - SpeckleTarget.Gmag), 1) : Math.Round(Math.Abs(r.Dec2000 - SpeckleTarget.Dec2000), 1))
+                        .ThenBy(r => !speckle.PreferBrighterReferenceStars ? Math.Round(Math.Abs(r.Gmag - SpeckleTarget.Gmag), 1) : Math.Round(Math.Abs(r.Dec2000 - SpeckleTarget.Dec2000), 1))
                         .ThenBy(r => r.distance)
                         .ThenBy(r => r.DomeSlitAltTimeList.OrderBy(altTime => altTime.datetime).FirstOrDefault()?.datetime)
                         .ToList();
@@ -942,6 +946,8 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                             speckleTarget.RefGaiaNum = speckleTarget.RefGaiaNum.Trim().TrimStart('G');
                             speckleTarget.Cycles = speckleTarget.Cycles > 0 ? speckleTarget.Cycles : Cycles;
                             speckleTarget.Nights = speckleTarget.Nights > 0 ? speckleTarget.Nights : speckle.Nights;
+                            speckleTarget.Exp = speckleTarget.Exp > 0 ? speckleTarget.Exp : ExposureTime;
+                            speckleTarget.NExp = speckleTarget.NExp > 0 ? speckleTarget.NExp : Exposures;
                             speckleTarget.AirmassMin = speckleTarget.AirmassMin;
                             speckleTarget.AirmassMax = speckleTarget.AirmassMax;
                             speckleTarget.MinAltitude = speckleTarget.MinAltitude == 0d ? speckle.AltitudeMin : speckleTarget.MinAltitude;

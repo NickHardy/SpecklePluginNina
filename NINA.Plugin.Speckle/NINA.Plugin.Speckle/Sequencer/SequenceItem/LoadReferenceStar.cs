@@ -137,18 +137,20 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             if (ItemUtility.RetrieveSpeckleContainer(Parent) == null && ItemUtility.RetrieveSpeckleListContainer(Parent) == null) {
                 i.Add("This instruction only works within a SpeckleTargetContainer.");
             } else {
-                var speckleTargetContainer = ItemUtility.RetrieveSpeckleContainer(Parent);
-                var speckleTarget = ItemUtility.RetrieveSpeckleTarget(Parent);
-                if (ReferenceStarList?.Count == 0 && speckleTarget?.ReferenceStarList?.Count > 0)
-                    ReferenceStarList = new AsyncObservableCollection<ReferenceStar>(speckleTarget?.ReferenceStarList);
                 if (RefStar == null) {
-                    RefStar = ReferenceStarList?.Count > 0 ? ReferenceStarList?.First() : null;
-                    ReferenceStarName = RefStar?.Name;
+                    var speckleTargetContainer = ItemUtility.RetrieveSpeckleContainer(Parent);
+                    var speckleTarget = ItemUtility.RetrieveSpeckleTarget(Parent);
+                    if (ReferenceStarList?.Count == 0 && speckleTarget?.ReferenceStarList?.Count > 0)
+                        ReferenceStarList = new AsyncObservableCollection<ReferenceStar>(speckleTarget?.ReferenceStarList);
+                    if (RefStar == null) {
+                        RefStar = ReferenceStarList?.Count > 0 ? ReferenceStarList?.First() : null;
+                        ReferenceStarName = RefStar?.Name;
+                    }
+                    if (!string.IsNullOrWhiteSpace(speckleTarget?.TemplateRef))
+                        TemplateRef = speckleTarget.TemplateRef;
+                    else if (!string.IsNullOrWhiteSpace(RefStar?.Template) && RefStar?.Template != "_")
+                        TemplateRef = RefStar.Template;
                 }
-                if (!string.IsNullOrWhiteSpace(speckleTarget?.TemplateRef))
-                    TemplateRef = speckleTarget.TemplateRef;
-                else if (!string.IsNullOrWhiteSpace(RefStar?.Template) && RefStar?.Template != "_")
-                    TemplateRef = RefStar.Template;
             }
 
             Issues = i;

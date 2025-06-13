@@ -368,6 +368,14 @@ namespace NINA.Plugin.Speckle {
             }
         }
 
+        public bool PreferBrighterReferenceStars {
+            get => _pluginOptionsAccessor.GetValueBoolean(nameof(PreferBrighterReferenceStars), true);
+            set {
+                _pluginOptionsAccessor.SetValueBoolean(nameof(PreferBrighterReferenceStars), value);
+                RaisePropertyChanged();
+            }
+        }
+
         public bool GetGalaxyFillins {
             get => _pluginOptionsAccessor.GetValueBoolean(nameof(GetGalaxyFillins), false);
             set {

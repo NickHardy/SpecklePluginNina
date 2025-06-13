@@ -501,5 +501,17 @@ namespace NINA.Plugin.Speckle.Properties {
                 this["SaveCsvToFitsHeader"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool PreferBrighterReferenceStars {
+            get {
+                return ((bool)(this["PreferBrighterReferenceStars"]));
+            }
+            set {
+                this["PreferBrighterReferenceStars"] = value;
+            }
+        }
     }
 }
