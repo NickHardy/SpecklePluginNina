@@ -47,11 +47,11 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyMetadata("ChangelogURL", "https://github.com/NickHardy/SpecklePluginNina/commits/net8version/")]
 
 //[Optional] The url to a featured logo that will be displayed in the plugin list next to the name
-[assembly: AssemblyMetadata("FeaturedImageURL", "https://bitbucket.org/NickHardy/nina.plugin.speckle/downloads/SpeckleThumb.png")]
+[assembly: AssemblyMetadata("FeaturedImageURL", "https://github.com/NickHardy/SpecklePluginNina/blob/main/NINA.Plugin.Speckle/NINA.Plugin.Speckle/Resources/SpeckleThumb.png")]
 //[Optional] A url to an example screenshot of your plugin in action
-[assembly: AssemblyMetadata("ScreenshotURL", "https://bitbucket.org/NickHardy/nina.plugin.speckle/downloads/SpeckleOrbits.png")]
+[assembly: AssemblyMetadata("ScreenshotURL", "https://github.com/NickHardy/SpecklePluginNina/blob/main/NINA.Plugin.Speckle/NINA.Plugin.Speckle/Resources/SpeckleOrbits.png")]
 //[Optional] An additional url to an example example screenshot of your plugin in action
-[assembly: AssemblyMetadata("AltScreenshotURL", "https://bitbucket.org/NickHardy/nina.plugin.speckle/downloads/ListSequence.png")]
+[assembly: AssemblyMetadata("AltScreenshotURL", "https://github.com/NickHardy/SpecklePluginNina/blob/main/NINA.Plugin.Speckle/NINA.Plugin.Speckle/Resources/ListSequence.png")]
 //[Optional] An in-depth description of your plugin
 [assembly: AssemblyMetadata("LongDescription", @"#Speckle Interferometry data acquisition plugin#
 
