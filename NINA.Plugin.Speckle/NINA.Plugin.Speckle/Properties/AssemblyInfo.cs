@@ -47,11 +47,11 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyMetadata("ChangelogURL", "https://github.com/NickHardy/SpecklePluginNina/commits/net8version/")]
 
 //[Optional] The url to a featured logo that will be displayed in the plugin list next to the name
-[assembly: AssemblyMetadata("FeaturedImageURL", "https://github.com/NickHardy/SpecklePluginNina/blob/main/NINA.Plugin.Speckle/NINA.Plugin.Speckle/Resources/SpeckleThumb.png")]
+[assembly: AssemblyMetadata("FeaturedImageURL", "https://github.com/NickHardy/SpecklePluginNina/blob/net8version/NINA.Plugin.Speckle/NINA.Plugin.Speckle/Resources/SpeckleThumb.png?raw=true")]
 //[Optional] A url to an example screenshot of your plugin in action
-[assembly: AssemblyMetadata("ScreenshotURL", "https://github.com/NickHardy/SpecklePluginNina/blob/main/NINA.Plugin.Speckle/NINA.Plugin.Speckle/Resources/SpeckleOrbits.png")]
+[assembly: AssemblyMetadata("ScreenshotURL", "https://github.com/NickHardy/SpecklePluginNina/blob/net8version/NINA.Plugin.Speckle/NINA.Plugin.Speckle/Resources/SpeckleOrbits.png?raw=true")]
 //[Optional] An additional url to an example example screenshot of your plugin in action
-[assembly: AssemblyMetadata("AltScreenshotURL", "https://github.com/NickHardy/SpecklePluginNina/blob/main/NINA.Plugin.Speckle/NINA.Plugin.Speckle/Resources/ListSequence.png")]
+[assembly: AssemblyMetadata("AltScreenshotURL", "https://github.com/NickHardy/SpecklePluginNina/blob/net8version/NINA.Plugin.Speckle/NINA.Plugin.Speckle/Resources/ListSequence.png?raw=true")]
 //[Optional] An in-depth description of your plugin
 [assembly: AssemblyMetadata("LongDescription", @"#Speckle Interferometry data acquisition plugin#
 
@@ -87,7 +87,7 @@ and optionally create a separate profile for speckle targets for this unique fil
   After the target and reference containers have run through, it will remove the containers and load the next target until it has finished all targets or until a condition ends the loop.
   When the next target is more than 5 minutes away, it will select a previous target which is highest in altitude and has had the least cycles to fill up the time.
 
-* Speckle Target Container [example](https://bitbucket.org/NickHardy/nina.plugin.speckle/downloads/Speckle_Target_Container.template.json)  
+* Speckle Target Container [example](https://github.com/NickHardy/SpecklePluginNina/blob/net8version/NINA.Plugin.Speckle/NINA.Plugin.Speckle/Resources/Speckle_Target_Container.template.json?raw=true)  
   Use this container to add the instructions that each speckle target will use. Save it as a template to use it for targets within the Speckle Target List Container.
   You will need to set the width and height for the region of interest. Typically 256x256 or 512x512, as mentioned above. Adjust these settings while your camera is connected. 
   The x and y coordinates are the left upper corner of the ROI position.
