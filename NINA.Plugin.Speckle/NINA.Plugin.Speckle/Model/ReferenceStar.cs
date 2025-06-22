@@ -47,7 +47,7 @@ namespace NINA.Plugin.Speckle.Model {
         }
 
         public string Name {
-            get => Name1 + "_" + (string.IsNullOrWhiteSpace(Name2) || "_".Equals(Name2) ? "Gaia-" + GaiaNum?.ToString() ?? "" : Name2);
+            get => Name1 + (string.IsNullOrWhiteSpace(Name2) || "_".Equals(Name2) ? "" : "_" + Name2);
         }
 
         [JsonProperty]
