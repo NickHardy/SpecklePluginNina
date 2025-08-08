@@ -86,7 +86,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                 Gain = Gain,
                 Offset = Offset,
                 ImageType = ImageType,
-                ExposureTimeMultiplier = 1,
+                ExposureTimeMultiplier = ExposureTimeMultiplier,
             };
 
             if (clone.Binning == null) {
