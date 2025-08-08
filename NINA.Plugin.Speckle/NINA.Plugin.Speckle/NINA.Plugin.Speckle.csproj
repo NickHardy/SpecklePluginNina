@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Title>Speckle Interferometry</Title>
-    <Product>Speckle Interferometry</Product>
+    <Title>SpeckleInterferometry</Title>
+    <Product>SpeckleInterferometry</Product>
     <Company>Nick Hardy &amp; Leon Bewersdorff</Company>
     <TargetFramework>net8.0-windows</TargetFramework>
     <OutputType>Library</OutputType>

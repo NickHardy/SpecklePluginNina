@@ -15,7 +15,7 @@ permissions:
 
 env:
   # Adjust this to your plugin title
-  PLUGIN_NAME: "Speckle Interferometry"
+  PLUGIN_NAME: "SpeckleInterferometry"
   PLUGIN_SLN_NAME: "NINA.Plugin.Speckle"
   PLUGIN_DLL_NAME: "SpeckleInterferometry"
   PLUGIN_MANIFEST_PATH: "s/SpeckleInterferometry/3.0.0"

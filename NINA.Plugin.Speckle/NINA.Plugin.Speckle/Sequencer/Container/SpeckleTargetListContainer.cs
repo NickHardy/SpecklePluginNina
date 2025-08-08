@@ -320,8 +320,8 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
         }
 
         public async Task ExportAllTargetsWithReferenceStars() {
-            if (SpeckleTargets.Count == 0) return;
-            if (ReferenceStarList.Count == 0) return;
+            if (SpeckleTargets?.Count == 0) return;
+            if (ReferenceStarList?.Count == 0) return;
             LoadingTargets = true;
             var targets = SpeckleTargets.Where(x => x.Type == "M" || x.Type == "C" || x.Type == "G").OrderBy(x => x.RA2000).ToList();
             foreach (var target in targets) {
@@ -345,8 +345,8 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
         }
 
         public async Task ExportAllTargetsWithReferenceStarsToCsv() {
-            if (SpeckleTargets.Count == 0) return;
-            if (ReferenceStarList.Count == 0) return;
+            if (SpeckleTargets?.Count == 0) return;
+            if (ReferenceStarList?.Count == 0) return;
             LoadingTargets = true;
             var targets = SpeckleTargets.Where(x => x.Type == "M" || x.Type == "C" || x.Type == "G").OrderBy(x => x.RA2000).ToList();
             var targetsWithReferenceStars = new List<SpeckleTarget>();

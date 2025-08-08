@@ -54,6 +54,11 @@ namespace NINA.Plugin.Speckle {
             Guid? guid = PluginOptionsAccessor.GetAssemblyGuid(typeof(Speckle)) ?? throw new Exception($"GUID was not found in assembly metadata");
             _pluginOptionsAccessor = new PluginOptionsAccessor(_profileService, guid.Value);
 
+            var scope = _pluginOptionsAccessor.GetValueString(nameof(Telescope), DefaultTelescope());
+            if (scope == "null") { _pluginOptionsAccessor.SetValueString(nameof(Telescope), DefaultTelescope()); }
+            var barlow = _pluginOptionsAccessor.GetValueString(nameof(Barlow), DefaultBarlow());
+            if (barlow == "null") { _pluginOptionsAccessor.SetValueString(nameof(Barlow), DefaultBarlow()); }
+
             if (!SpeckleSettingsMigrated) {
                 Logger.Info($"Migrating app settings to NINA profile {_profileService.ActiveProfile.Name} ({_profileService.ActiveProfile.Id})");
                 MigrateSettingsToProfile();

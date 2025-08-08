@@ -685,7 +685,7 @@
                                 </DataGridTemplateColumn.CellEditingTemplate>
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <TextBlock Padding="5,0" Foreground="{StaticResource ButtonForegroundBrush}" Text="{Binding Template}" />
+                                        <TextBlock Padding="5,0" Foreground="{StaticResource PrimaryBrush}" Text="{Binding Template}" />
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
@@ -785,7 +785,7 @@
                                         Height="15"
                                         HorizontalAlignment="Center"
                                         VerticalAlignment="Center"
-                                        LoadingImageBrush="{StaticResource ButtonForegroundBrush}" />
+                                        LoadingImageBrush="{StaticResource PrimaryBrush}" />
 
                             </StackPanel>
                             <Button
@@ -809,7 +809,7 @@
                         </StackPanel>
 
                         <StackPanel Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="7" Margin="5" Orientation="Horizontal">
-                            <TextBlock Padding="5,5" Foreground="{StaticResource ButtonForegroundBrush}" Text="Ignore limits" />
+                            <TextBlock Padding="5,5" Foreground="{StaticResource PrimaryBrush}" Text="Ignore limits" />
                             <CheckBox
                                 MinWidth="80"
                                 Margin="5,0,0,0"
@@ -846,7 +846,7 @@
                                 <TextBlock Padding="5,0" Foreground="{StaticResource ButtonForegroundBrush}" Text="Load selected" />
                             </Button>
 
-                            <TextBlock Padding="5,5" Foreground="{StaticResource ButtonForegroundBrush}" Text="Auto load target star" />
+                            <TextBlock Padding="5,5" Foreground="{StaticResource PrimaryBrush}" Text="Auto load target star" />
                             <CheckBox
                                 MinWidth="80"
                                 Margin="5,0,0,0"
@@ -854,7 +854,7 @@
                                 VerticalAlignment="Center"
                                 IsChecked="{Binding AutoLoadTargetStar}" />
 
-                            <TextBlock Padding="5,5" Foreground="{StaticResource ButtonForegroundBrush}" Text="Auto load reference star" />
+                            <TextBlock Padding="5,5" Foreground="{StaticResource PrimaryBrush}" Text="Auto load reference star" />
                             <CheckBox
                                 MinWidth="80"
                                 Margin="5,0,0,0"
