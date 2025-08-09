@@ -12,24 +12,18 @@
 
 #endregion "copyright"
 
-using NINA.Plugin.Speckle.Sequencer.Container;
 using NINA.Astrometry;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using NINA.Sequencer.Container;
-using NINA.Core.Utility;
-using NINA.Plugin.Speckle.Model;
-using NINA.Image.Interfaces;
-using System.Windows.Media.Imaging;
-using System.Windows.Media;
-using System.IO;
-using NINA.Image.ImageAnalysis;
-using NINA.Image.ImageData;
-using NINA.Equipment.Equipment.MyTelescope;
 using NINA.Core.Model;
+using NINA.Core.Utility;
+using NINA.Equipment.Equipment.MyTelescope;
+using NINA.Image.ImageData;
+using NINA.Plugin.Speckle.Model;
+using NINA.Plugin.Speckle.Sequencer.Container;
+using NINA.Sequencer.Container;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Windows.Media.Imaging;
 
 namespace NINA.Plugin.Speckle.Sequencer.Utility {
 

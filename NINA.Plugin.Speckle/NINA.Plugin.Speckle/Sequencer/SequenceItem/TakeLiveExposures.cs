@@ -120,7 +120,8 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                 Offset = Offset,
                 ImageType = ImageType,
                 TotalExposureCount = TotalExposureCount,
-                ExposureTimeMultiplier = ExposureTimeMultiplier
+                ExposureTimeMultiplier = ExposureTimeMultiplier,
+                AutoUpdate = AutoUpdate,
             };
 
             if (clone.Binning == null) {
@@ -161,6 +162,11 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                 RaisePropertyChanged();
             }
         }
+
+        private bool autoUpdate;
+
+        [JsonProperty]
+        public bool AutoUpdate { get => autoUpdate; set { autoUpdate = value; RaisePropertyChanged(); } }
 
         private int gain;
 

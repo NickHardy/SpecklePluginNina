@@ -264,6 +264,22 @@
 
                     <ContentPresenter Content="{StaticResource TakeExposureDetails}" />
 
+                    <TextBlock
+                        Margin="7.5,0,7.5,0"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Text="|" />
+
+                    <TextBlock
+                            VerticalAlignment="Center"
+                            Text="AutoUpdate" />
+                    <CheckBox
+                            Width="65"
+                            Margin="5,0,0,0"
+                            HorizontalAlignment="Right"
+                            IsChecked="{Binding AutoUpdate}">
+                    </CheckBox>
+
                 </WrapPanel>
             </view:SequenceBlockView.SequenceItemContent>
         </view:SequenceBlockView>
@@ -300,6 +316,22 @@
                         Text="|" />
 
                     <ContentPresenter Content="{StaticResource TakeExposureDetails}" />
+
+                    <TextBlock
+                        Margin="7.5,0,7.5,0"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Text="|" />
+
+                    <TextBlock
+                            VerticalAlignment="Center"
+                            Text="AutoUpdate" />
+                    <CheckBox
+                            Width="65"
+                            Margin="5,0,0,0"
+                            HorizontalAlignment="Right"
+                            IsChecked="{Binding AutoUpdate}">
+                    </CheckBox>
 
                 </WrapPanel>
             </view:SequenceBlockView.SequenceItemContent>
@@ -417,7 +449,8 @@
                             VerticalAlignment="Center"
                             Text="Platesolve" />
                     <CheckBox
-                            Width="80"
+                            Width="65"
+                            Margin="5,0,0,0"
                             HorizontalAlignment="Right"
                             IsChecked="{Binding Platesolve}">
                     </CheckBox>
@@ -433,7 +466,8 @@
                             VerticalAlignment="Center"
                             Text="Slew back to target" />
                         <CheckBox
-                            Width="80"
+                            Width="65"
+                            Margin="5,0,0,0"
                             HorizontalAlignment="Right"
                             IsChecked="{Binding SlewBackToTarget}">
                         </CheckBox>
@@ -467,7 +501,8 @@
                             VerticalAlignment="Center"
                             Text="Slew back to target" />
                     <CheckBox
-                            Width="80"
+                            Width="65"
+                            Margin="5,0,0,0"
                             HorizontalAlignment="Right"
                             IsChecked="{Binding SlewBackToTarget}">
                     </CheckBox>
@@ -491,7 +526,25 @@
     <DataTemplate DataType="{x:Type local:TakeSingleExposure}">
         <view:SequenceBlockView>
             <view:SequenceBlockView.SequenceItemContent>
-                <ContentPresenter Content="{StaticResource TakeExposureDetails}" />
+                <WrapPanel Orientation="Horizontal">
+                    <ContentPresenter Content="{StaticResource TakeExposureDetails}" />
+
+                    <TextBlock
+                        Margin="7.5,0,7.5,0"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Text="|" />
+
+                    <TextBlock
+                            VerticalAlignment="Center"
+                            Text="AutoUpdate" />
+                    <CheckBox
+                            Width="65"
+                            Margin="5,0,0,0"
+                            HorizontalAlignment="Right"
+                            IsChecked="{Binding AutoUpdate}">
+                    </CheckBox>
+                </WrapPanel>
             </view:SequenceBlockView.SequenceItemContent>
         </view:SequenceBlockView>
     </DataTemplate>
@@ -510,7 +563,25 @@
     <DataTemplate DataType="{x:Type local:TakeSingleRoiExposure}">
         <view:SequenceBlockView>
             <view:SequenceBlockView.SequenceItemContent>
-                <ContentPresenter Content="{StaticResource TakeExposureDetails}" />
+                <WrapPanel Orientation="Horizontal">
+                    <ContentPresenter Content="{StaticResource TakeExposureDetails}" />
+
+                    <TextBlock
+                        Margin="7.5,0,7.5,0"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Text="|" />
+
+                    <TextBlock
+                            VerticalAlignment="Center"
+                            Text="AutoUpdate" />
+                    <CheckBox
+                            Width="65"
+                            Margin="5,0,0,0"
+                            HorizontalAlignment="Right"
+                            IsChecked="{Binding AutoUpdate}">
+                    </CheckBox>
+                </WrapPanel>
             </view:SequenceBlockView.SequenceItemContent>
         </view:SequenceBlockView>
     </DataTemplate>
@@ -526,7 +597,7 @@
                             VerticalAlignment="Center"
                             Text="X" />
                     <CheckBox
-                            Width="80"
+                            Width="65"
                             HorizontalAlignment="Right"
                             IsChecked="{Binding ImageFlippedX}">
                     </CheckBox>
@@ -535,7 +606,7 @@
                             VerticalAlignment="Center"
                             Text="Y" />
                     <CheckBox
-                            Width="80"
+                            Width="65"
                             HorizontalAlignment="Right"
                             IsChecked="{Binding ImageFlippedY}">
                     </CheckBox>
@@ -549,7 +620,7 @@
                             VerticalAlignment="Center"
                             Text="Platesolve" />
                     <CheckBox
-                            Width="80"
+                            Width="65"
                             HorizontalAlignment="Right"
                             IsChecked="{Binding PlatesolveFirst}">
                     </CheckBox>

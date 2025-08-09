@@ -467,13 +467,19 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                 speckleTargetContainer.SpeckleTarget = SpeckleTarget;
                 speckleTargetContainer.Name = SpeckleTarget.Proj + "_" + SpeckleTarget.Obs + "_" + SpeckleTarget.Name + "_c" + (SpeckleTarget.Completed_cycles + 1);
                 speckleTargetContainer.Items.ToList().ForEach(x => {
-                    if (x is TakeRoiExposures takeRoiExposures) {
+                    if (x is TakeRoiExposures takeRoiExposures && takeRoiExposures.AutoUpdate) {
                         takeRoiExposures.ExposureTime = SpeckleTarget.Exp;
                         takeRoiExposures.TotalExposureCount = SpeckleTarget.NExp;
                     }
-                    if (x is TakeLiveExposures takeLiveExposures) {
+                    if (x is TakeLiveExposures takeLiveExposures && takeLiveExposures.AutoUpdate) {
                         takeLiveExposures.ExposureTime = SpeckleTarget.Exp;
                         takeLiveExposures.TotalExposureCount = SpeckleTarget.NExp;
+                    }
+                    if (x is TakeSingleExposure takeSingleExposure && takeSingleExposure.AutoUpdate) {
+                        takeSingleExposure.ExposureTime = SpeckleTarget.Exp;
+                    }
+                    if (x is TakeSingleRoiExposure takeSingleRoiExposure && takeSingleRoiExposure.AutoUpdate) {
+                        takeSingleRoiExposure.ExposureTime = SpeckleTarget.Exp;
                     }
                     if (x is WaitForTime waitForTime) {
                         waitForTime.Hours = SpeckleTarget.ImageTime.Hour;
@@ -521,13 +527,19 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                         if (x is CalculateExposure calculateExposure) {
                             calculateExposure.ExposureTime = speckleTarget.Exp;
                         }
-                        if (x is TakeRoiExposures takeRoiExposures) {
+                        if (x is TakeRoiExposures takeRoiExposures && takeRoiExposures.AutoUpdate) {
                             takeRoiExposures.ExposureTime = speckleTarget.Exp;
                             takeRoiExposures.TotalExposureCount = speckle.ReferenceExposures > 0 ? speckle.ReferenceExposures : speckleTarget.NExp;
                         }
-                        if (x is TakeLiveExposures takeLiveExposures) {
+                        if (x is TakeLiveExposures takeLiveExposures && takeLiveExposures.AutoUpdate) {
                             takeLiveExposures.ExposureTime = speckleTarget.Exp;
                             takeLiveExposures.TotalExposureCount = speckle.ReferenceExposures > 0 ? speckle.ReferenceExposures : speckleTarget.NExp;
+                        }
+                        if (x is TakeSingleExposure takeSingleExposure && takeSingleExposure.AutoUpdate) {
+                            takeSingleExposure.ExposureTime = speckleTarget.Exp;
+                        }
+                        if (x is TakeSingleRoiExposure takeSingleRoiExposure && takeSingleRoiExposure.AutoUpdate) {
+                            takeSingleRoiExposure.ExposureTime = speckleTarget.Exp;
                         }
                         if (x is WaitForTime waitForTime) {
                             waitForTime.Hours = speckleTarget.ImageTime.Hour;
