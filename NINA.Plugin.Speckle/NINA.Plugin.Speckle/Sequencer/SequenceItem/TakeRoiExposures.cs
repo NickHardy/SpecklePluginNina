@@ -67,6 +67,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             Gain = -1;
             Offset = -1;
             ExposureTimeMultiplier = 1;
+            AutoUpdate = true;
             ImageType = CaptureSequence.ImageTypes.LIGHT;
             this.cameraMediator = cameraMediator;
             this.imagingMediator = imagingMediator;

@@ -12,18 +12,13 @@
 
 #endregion "copyright"
 
-using Newtonsoft.Json;
-using NINA.Core.Model;
-using NINA.Astrometry;
 using CsvHelper.Configuration;
+using Newtonsoft.Json;
+using NINA.Astrometry;
+using NINA.Image.ImageData;
+using NINA.Plugin.Speckle.Sequencer.Container;
 using System;
 using System.Collections.Generic;
-using NINA.Plugin.Speckle.Sequencer.Container;
-using System.Linq;
-using System.Threading;
-using System.Runtime.ExceptionServices;
-using NINA.Image.ImageData;
-using NINA.Equipment.Equipment.MyCamera;
 using System.Reflection;
 
 namespace NINA.Plugin.Speckle.Model {
@@ -140,28 +135,27 @@ namespace NINA.Plugin.Speckle.Model {
 
         public SpeckleTargetMap() {
             // StarMap
-            Map(m => m.Proj).Name(["Proj~", "Proj"]).Optional().Default("");
-            Map(m => m.Obs).Name(["Obs~", "Obs"]).Optional().Default("");
-            Map(m => m.Type).Name(["Type~", "Type"]).Optional().Default("M");
-            Map(m => m.Name1).Name(["Name1*", "Name1"]).Optional().Default("");
-            Map(m => m.Name2).Name(["Name2*", "Name2"]).Optional().Default("");
-            Map(m => m.Priority).Name(["Priority~", "Priority"]).Optional().Default(1);
-            Map(m => m.Template).Name(["Temp","Template"]).Optional().Default("");
-            Map(m => m.RA2000).Name(["RA2000*", "RA2000"]).Optional().Default(0);
-            Map(m => m.Dec2000).Name(["D2000*", "D2000", "Dec2000"]).Optional().Default(0);
-            Map(m => m.Bp).Name(["Bp~", "Bp"]).Optional().Default(0);
-            Map(m => m.Rp).Name(["Rp~", "Rp"]).Optional().Default(0);
-            Map(m => m.Gmag).Name(["Gmag~", "Gmag"]).Optional().Default(0);
-            Map(m => m.GaiaNum).Name(["GaiaNum~", "GaiaNum"]).Optional().Default("0");
-            Map(m => m.Sep).Name(["Sep~", "Sep"]).Optional().Default(0);
+            Map(m => m.Proj).Name(["Proj", "Proj~"]).Optional().Default("");
+            Map(m => m.Obs).Name(["Obs", "Obs~"]).Optional().Default("");
+            Map(m => m.Type).Name(["Type", "Type~"]).Optional().Default("M");
+            Map(m => m.Name1).Name(["Name1", "Name1*"]).Optional().Default("");
+            Map(m => m.Name2).Name(["Name2", "Name2*"]).Optional().Default("");
+            Map(m => m.Priority).Name(["Priority", "Priority~"]).Optional().Default(1);
+            Map(m => m.Template).Name(["Template", "Temp"]).Optional().Default("");
+            Map(m => m.RA2000).Name(["RA2000", "RA2000*"]).Optional().Default(0);
+            Map(m => m.Dec2000).Name(["D2000", "D2000*", "Dec2000"]).Optional().Default(0);
+            Map(m => m.Bp).Name(["Bp", "Bp~", "BP", "BP~"]).Optional().Default(0);
+            Map(m => m.Rp).Name(["Rp", "Rp~", "RP", "RP~"]).Optional().Default(0);
+            Map(m => m.Gmag).Name(["Gmag", "Gmag~"]).Optional().Default(0);
+            Map(m => m.GaiaNum).Name(["GaiaNum", "GaiaNum~"]).Optional().Default("0");
+            Map(m => m.Sep).Name(["Sep", "Sep~"]).Optional().Default(0);
             Map(m => m.PA).Name(["PA", "Pa"]).Optional().Default(0);
             Map(m => m.Parallax).Name("Parallax").Optional().Default(0);
             Map(m => m.Spectrum).Name("Spectrum").Optional().Default("");
-            Map(m => m.Pmag).Name(["Pmag~", "Pmag"]).Optional().Default(0);
-            Map(m => m.Smag).Name(["Smag~", "Smag"]).Optional().Default(0);
-            Map(m => m.Filter).Name("DoNotUseFilterAnymore").Optional().Default("-"); // ["Filter~", "Filter"] Turned this off. use templates instead.
-            Map(m => m.Exp).Name(["Exp~", "Exp"]).Optional().Default(0);
-            Map(m => m.NExp).Name(["NExp~", "Nexp~", "NExp", "Nexp"]).Optional().Default(0);
+            Map(m => m.Pmag).Name(["Pmag", "Pmag~", "PMag"]).Optional().Default(0);
+            Map(m => m.Smag).Name(["Smag", "Smag~", "SMag"]).Optional().Default(0);
+            Map(m => m.Exp).Name(["Exp", "Exp~"]).Optional().Default(0);
+            Map(m => m.NExp).Name(["NExp", "Nexp", "NExp~", "Nexp~"]).Optional().Default(0);
             Map(m => m.NoEC).Name("NoEC").Optional().Default(0);
             Map(m => m.GetRef).Name("GetRef").Optional().Default(1);
             Map(m => m.GPrime).Name("GPrime").Optional().Default(0);
@@ -180,7 +174,7 @@ namespace NINA.Plugin.Speckle.Model {
             Map(m => m.AirmassMax).Name("AirmassMax").Optional().Default(4);
             Map(m => m.MinAltitude).Name("MinAltitude").Optional().Default(0);
             Map(m => m.GetRef).Name("GetRef").Optional().Default(1);
-            Map(m => m.RefGaiaNum).Name("RefGaiaNum~").Optional().Default("");
+            Map(m => m.RefGaiaNum).Name(["RefGaiaNum","RefGaiaNum~"]).Optional().Default("");
             Map(m => m.Completed_cycles).Name("Completed_cycles").Optional().Default(0);
             Map(m => m.Completed_ref_cycles).Name("Completed_ref_cycles").Optional().Default(0);
             Map(m => m.Completed_nights).Name("Completed_nights").Optional().Default(0);

@@ -164,6 +164,11 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
         [JsonProperty]
         public double ExposureTime { get => _ExposureTime; set { _ExposureTime = value; RaisePropertyChanged(); } }
 
+        private bool _sortByRa;
+
+        [JsonProperty]
+        public bool SortByRa { get => _sortByRa; set { _sortByRa = value; RaisePropertyChanged(); } }
+
         private bool _AutoLoadTargetStar;
 
         [JsonProperty]
@@ -278,6 +283,9 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
         public AsyncObservableCollection<SpeckleTarget> SpeckleTargetsView {
             get {
                 if (string.IsNullOrWhiteSpace(SearchTarget)) {
+                    if (SortByRa) {
+                        return new AsyncObservableCollection<SpeckleTarget>(SpeckleTargets.Where(x => x.ImageTarget).OrderBy(x => x.RA2000).ToList());
+                    }
                     return new AsyncObservableCollection<SpeckleTarget>(SpeckleTargets.Where(x => x.ImageTarget).ToList());
                 } else {
                     return new AsyncObservableCollection<SpeckleTarget>(SpeckleTargets.Where(x => x.ImageTarget && (x.Name2.IndexOf(SearchTarget, StringComparison.OrdinalIgnoreCase) >= 0 || x.GaiaNum.ToString().StartsWith(SearchTarget))).ToList());
@@ -303,6 +311,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
 
         public async Task LoadTarget() {
             if (SpeckleTarget != null) {
+                CurrentSpeckleTarget = SpeckleTarget;
                 var templateName = string.IsNullOrWhiteSpace(SpeckleTarget.Template) ? speckle.DefaultTemplate : SpeckleTarget.Template;
                 await LoadSpeckleTarget(templateName);
 
@@ -325,7 +334,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             LoadingTargets = true;
             var targets = SpeckleTargets.Where(x => x.Type == "M" || x.Type == "C" || x.Type == "G").OrderBy(x => x.RA2000).ToList();
             foreach (var target in targets) {
-                if (target.Type == "G")
+                if (target.Type == "G" || target.GetRef == 0)
                     continue;
                 SpeckleTarget = target;
                 using (executeCTS = new CancellationTokenSource()) {
@@ -351,7 +360,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             var targets = SpeckleTargets.Where(x => x.Type == "M" || x.Type == "C" || x.Type == "G").OrderBy(x => x.RA2000).ToList();
             var targetsWithReferenceStars = new List<SpeckleTarget>();
             foreach (var target in targets) {
-                if (target.Type == "G") {
+                if (target.Type == "G" || target.GetRef == 0) {
                     targetsWithReferenceStars.Add(target);
                     continue;
                 }
@@ -570,6 +579,19 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             var slitAz2 = speckle.DomePosition + (speckle.DomeSlitWidth / 2);
 
             // First get the next target with an imageTime in the future
+            if (SortByRa) {
+                var ra = CurrentSpeckleTarget?.RA2000 ?? 0;
+                var target = SpeckleTargets.Where(t => t.ImageTarget && (t.Type == "M" || t.Type == "C" || t.Type == "G"))
+                    .Where(t => t.Nights > t.Completed_nights)
+                    .Where(t => t.Cycles > t.Completed_cycles)
+                    .Where(t => t.ImagedAt == null || t.ImagedAt < quarterAgo)
+                    .Where(t => t.RA2000 > ra)
+                    .OrderBy(t => t.RA2000)
+                    .FirstOrDefault();
+
+                if (target != null)
+                    return target;
+            }
             if (speckle.DomePositionLock) {
                 var targets = SpeckleTargets.Where(t => t.ImageTarget && (t.Type == "M" || t.Type == "C" || t.Type == "G"))
                     .Where(t => t.Nights > t.Completed_nights)
@@ -798,20 +820,22 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                 }
                 // RefGaiaNum first, then brightness, then color match, then distance (the distance is already limited in the simbadutils)
                 SpeckleTarget.ReferenceStarList.AddRange(refStarList
+                    .Where(x => x.GaiaNum != SpeckleTarget?.GaiaNum)
                     .Where(x => x.GaiaNum != SpeckleTarget?.RefGaiaNum)
                     .Where(r => r.Gmag > 7 && r.Gmag < 10 && r.Rp > 7 && r.Rp < 10 && r.Gmag - SpeckleTarget.Gmag > r.color - targetColor)
-                    .OrderBy(r => speckle.PreferBrighterReferenceStars ? Math.Round(Math.Abs(r.Gmag - SpeckleTarget.Gmag), 1) : Math.Round(Math.Abs(r.Dec2000 - SpeckleTarget.Dec2000), 1))
-                    .ThenBy(r => !speckle.PreferBrighterReferenceStars ? Math.Round(Math.Abs(r.Gmag - SpeckleTarget.Gmag), 1) : Math.Round(Math.Abs(r.Dec2000 - SpeckleTarget.Dec2000), 1))
-                    .ThenBy(r => r.distance).Take(10)
-                    .ToList());
+                    .OrderBy(r => speckle.PreferBrighterReferenceStars ? Math.Round(Math.Abs(r.Gmag - SpeckleTarget.Gmag), 1) : Math.Round(Math.Abs(r.Dec2000 - SpeckleTarget.Dec2000) + r.distance, 1))
+                    .ThenBy(r => !speckle.PreferBrighterReferenceStars ? Math.Round(Math.Abs(r.Gmag - SpeckleTarget.Gmag), 1) : Math.Round(Math.Abs(r.Dec2000 - SpeckleTarget.Dec2000) + r.distance, 1))
+                    //.ThenBy(r => r.distance)
+                    .Take(10).ToList());
 
                 if (SpeckleTarget.ReferenceStarList.Count == 0) { // relax parameters
                     SpeckleTarget.ReferenceStarList = refStarList
+                        .Where(x => x.GaiaNum != SpeckleTarget?.GaiaNum)
                         .Where(r => r.Gmag > 7 && r.Gmag < 10 && r.Rp > 7 && r.Rp < 10)
-                        .OrderBy(r => speckle.PreferBrighterReferenceStars ? Math.Round(Math.Abs(r.Gmag - SpeckleTarget.Gmag), 1) : Math.Round(Math.Abs(r.Dec2000 - SpeckleTarget.Dec2000), 1))
-                        .ThenBy(r => !speckle.PreferBrighterReferenceStars ? Math.Round(Math.Abs(r.Gmag - SpeckleTarget.Gmag), 1) : Math.Round(Math.Abs(r.Dec2000 - SpeckleTarget.Dec2000), 1))
-                        .ThenBy(r => r.distance).Take(10)
-                        .ToList();
+                        .OrderBy(r => speckle.PreferBrighterReferenceStars ? Math.Round(Math.Abs(r.Gmag - SpeckleTarget.Gmag), 1) : Math.Round(Math.Abs(r.Dec2000 - SpeckleTarget.Dec2000) + r.distance, 1))
+                        .ThenBy(r => !speckle.PreferBrighterReferenceStars ? Math.Round(Math.Abs(r.Gmag - SpeckleTarget.Gmag), 1) : Math.Round(Math.Abs(r.Dec2000 - SpeckleTarget.Dec2000) + r.distance, 1))
+                        //.ThenBy(r => r.distance)
+                        .Take(10).ToList();
                 }
 
                 if (speckle.DomePositionLock && SpeckleTarget.DomeSlitObservationTime > 0) {
@@ -832,9 +856,9 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                     SpeckleTarget.ReferenceStarList = SpeckleTarget.ReferenceStarList
                         .Where(r => r.DomeSlitObservationTime >= topObservationTime)
                         .OrderBy(r => r.GaiaNum == SpeckleTarget.RefGaiaNum ? 0 : 1) // start with selected reference star
-                        .ThenBy(r => speckle.PreferBrighterReferenceStars ? Math.Round(Math.Abs(r.Gmag - SpeckleTarget.Gmag), 1) : Math.Round(Math.Abs(r.Dec2000 - SpeckleTarget.Dec2000), 1))
-                        .ThenBy(r => !speckle.PreferBrighterReferenceStars ? Math.Round(Math.Abs(r.Gmag - SpeckleTarget.Gmag), 1) : Math.Round(Math.Abs(r.Dec2000 - SpeckleTarget.Dec2000), 1))
-                        .ThenBy(r => r.distance)
+                        .ThenBy(r => speckle.PreferBrighterReferenceStars ? Math.Round(Math.Abs(r.Gmag - SpeckleTarget.Gmag), 1) : Math.Round(Math.Abs(r.Dec2000 - SpeckleTarget.Dec2000) + r.distance, 1))
+                        .ThenBy(r => !speckle.PreferBrighterReferenceStars ? Math.Round(Math.Abs(r.Gmag - SpeckleTarget.Gmag), 1) : Math.Round(Math.Abs(r.Dec2000 - SpeckleTarget.Dec2000) + r.distance, 1))
+                        //.ThenBy(r => r.distance)
                         .ThenBy(r => r.DomeSlitAltTimeList.OrderBy(altTime => altTime.datetime).FirstOrDefault()?.datetime)
                         .ToList();
                 }
@@ -1038,6 +1062,12 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                 Items = new ObservableCollection<ISequenceItem>(Items.Select(i => i.Clone() as ISequenceItem)),
                 Triggers = new ObservableCollection<ISequenceTrigger>(Triggers.Select(t => t.Clone() as ISequenceTrigger)),
                 Conditions = new ObservableCollection<ISequenceCondition>(Conditions.Select(t => t.Clone() as ISequenceCondition)),
+                SortByRa = SortByRa,
+                AutoLoadTargetStar = AutoLoadTargetStar,
+                AutoLoadReferenceStar = AutoLoadReferenceStar,
+                Cycles = Cycles,
+                Exposures = Exposures,
+                ExposureTime = ExposureTime,
             };
 
             foreach (var item in clone.Items) {

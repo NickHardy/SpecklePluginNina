@@ -48,7 +48,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
 
         public override object Clone() {
             var clone = new LoadReferenceStar(this) {
-                TemplateRef = this.TemplateRef
+                TemplateRef = TemplateRef
             };
             return clone;
         }

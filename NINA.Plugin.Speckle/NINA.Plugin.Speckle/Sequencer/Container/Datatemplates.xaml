@@ -862,6 +862,14 @@
                                 VerticalAlignment="Center"
                                 IsChecked="{Binding AutoLoadReferenceStar}" />
 
+                            <TextBlock Padding="5,5" Foreground="{StaticResource PrimaryBrush}" Text="Sort by Ra" />
+                            <CheckBox
+                                MinWidth="80"
+                                Margin="5,0,0,0"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Center"
+                                IsChecked="{Binding SortByRa}" />
+
                         </StackPanel>
                     </Grid>
                 </Grid>
