@@ -146,10 +146,6 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                         RefStar = ReferenceStarList?.Count > 0 ? ReferenceStarList?.First() : null;
                         ReferenceStarName = RefStar?.Name;
                     }
-                    if (!string.IsNullOrWhiteSpace(speckleTarget?.TemplateRef))
-                        TemplateRef = speckleTarget.TemplateRef;
-                    else if (!string.IsNullOrWhiteSpace(RefStar?.Template) && RefStar?.Template != "_")
-                        TemplateRef = RefStar.Template;
                 }
             }
 

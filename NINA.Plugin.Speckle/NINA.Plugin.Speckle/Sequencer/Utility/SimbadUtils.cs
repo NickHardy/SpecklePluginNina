@@ -207,7 +207,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
                 Logger.Error(ex);
                 Notification.ShowError(ex.Message);
             } finally {
-                externalProgress.Report(new ApplicationStatus() { Status = "Completed" });
+                externalProgress.Report(new ApplicationStatus() { Status = "" });
             }
             return starDetails;
         }
