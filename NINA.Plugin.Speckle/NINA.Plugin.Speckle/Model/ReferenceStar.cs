@@ -12,13 +12,14 @@
 
 #endregion "copyright"
 
-using Newtonsoft.Json;
-using NINA.Core.Model;
-using NINA.Astrometry;
 using CsvHelper.Configuration;
+using Newtonsoft.Json;
+using NINA.Astrometry;
+using NINA.Core.Model;
+using NINA.Image.ImageData;
+using NINA.Plugin.Speckle.Sequencer.SequenceItem;
 using System;
 using System.Collections.Generic;
-using NINA.Plugin.Speckle.Sequencer.SequenceItem;
 using System.Reflection;
 
 namespace NINA.Plugin.Speckle.Model {
@@ -64,10 +65,22 @@ namespace NINA.Plugin.Speckle.Model {
         public Coordinates Coordinates() {
             return new Coordinates(Angle.ByDegree(RA2000), Angle.ByDegree(Dec2000), Epoch.J2000);
         }
-
+        public List<IGenericMetaDataHeader> GenericHeaders() {
+            var headerList = new List<IGenericMetaDataHeader>();
+            headerList.Add(new StringMetaDataHeader("Proj~", Proj));
+            headerList.Add(new StringMetaDataHeader("Obs~", Obs));
+            headerList.Add(new StringMetaDataHeader("Type~", Type));
+            headerList.Add(new StringMetaDataHeader("Name1*", Name1));
+            headerList.Add(new StringMetaDataHeader("Name2*", Name2));
+            headerList.Add(new StringMetaDataHeader("GaiaNum~", GaiaNum));
+            headerList.Add(new DoubleMetaDataHeader("Distance", distance));
+            headerList.Add(new DoubleMetaDataHeader("Color", color));
+            headerList.Add(new BoolMetaDataHeader("IsRef", true));
+            return headerList;
+        }
     }
 
-    public sealed class ReferenceStarMap : ClassMap<ReferenceStar> {
+        public sealed class ReferenceStarMap : ClassMap<ReferenceStar> {
 
         public ReferenceStarMap() {
             // StarMap

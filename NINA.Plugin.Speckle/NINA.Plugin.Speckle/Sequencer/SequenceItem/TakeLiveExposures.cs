@@ -271,7 +271,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             var target = targetContainer.Target;
             var title = targetContainer.Title;
             var speckleTarget = ItemUtility.RetrieveSpeckleTarget(Parent);
-            var genericHeaders = speckleTarget?.GenericHeaders(speckle.SaveCsvToFitsHeader);
+            var genericHeaders = targetContainer.IsRef ? speckleTarget.ReferenceStar.GenericHeaders() : speckleTarget?.GenericHeaders(speckle.SaveCsvToFitsHeader);
             if (genericHeaders != null)
                 ItemUtility.AddImagePatterns(customPatterns, speckle, genericHeaders);
 

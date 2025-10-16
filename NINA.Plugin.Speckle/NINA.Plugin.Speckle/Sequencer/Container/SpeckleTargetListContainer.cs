@@ -288,7 +288,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                     }
                     return new AsyncObservableCollection<SpeckleTarget>(SpeckleTargets.Where(x => x.ImageTarget).ToList());
                 } else {
-                    return new AsyncObservableCollection<SpeckleTarget>(SpeckleTargets.Where(x => x.ImageTarget && (x.Name2.IndexOf(SearchTarget, StringComparison.OrdinalIgnoreCase) >= 0 || x.GaiaNum.ToString().StartsWith(SearchTarget))).ToList());
+                    return new AsyncObservableCollection<SpeckleTarget>(SpeckleTargets.Where(x => x.ImageTarget && (x.Name1.IndexOf(SearchTarget, StringComparison.OrdinalIgnoreCase) >= 0 || x.Name2.IndexOf(SearchTarget, StringComparison.OrdinalIgnoreCase) >= 0 || x.GaiaNum.ToString().StartsWith(SearchTarget))).ToList());
                 }
             }
         }
@@ -531,6 +531,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                     };
                     speckleTargetContainerRef.Title = speckleTarget.Obs;
                     speckleTargetContainerRef.IsRef = true;
+                    speckleTargetContainerRef.SpeckleTarget = speckleTarget;
                     speckleTargetContainerRef.Name = speckleTarget.Proj + "_" + speckleTarget.Obs + "_" + speckleTarget.Name2 + "_" + (speckleTarget.Completed_cycles + 1) + "_ref_" + speckleTarget.ReferenceStar.Name;
                     speckleTargetContainerRef.Items.ToList().ForEach(x => {
                         if (x is CalculateExposure calculateExposure) {
