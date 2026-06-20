@@ -676,9 +676,8 @@
                                 <DataGridTemplateColumn.CellEditingTemplate>
                                     <DataTemplate>
                                         <ComboBox
-                                        ItemsSource="{Binding Data.SpeckleTemplates, Source={StaticResource speckleTargetListContainer}, Mode=TwoWay}"
-                                        SelectedItem="{Binding SpeckleTemplate, Mode=TwoWay}"
-                                        SelectedValue="{Binding Template, Mode=TwoWay}"
+                                        ItemsSource="{Binding Data.SpeckleTemplates, Source={StaticResource speckleTargetListContainer}}"
+                                        SelectedValue="{Binding Template, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                         SelectedValuePath="Name"
                                         DisplayMemberPath="Name"/>
                                     </DataTemplate>
@@ -869,6 +868,14 @@
                                 HorizontalAlignment="Left"
                                 VerticalAlignment="Center"
                                 IsChecked="{Binding SortByRa}" />
+
+                            <TextBlock Padding="5,5" Foreground="{StaticResource PrimaryBrush}" Text="Show reference stars" />
+                            <CheckBox
+                                MinWidth="80"
+                                Margin="5,0,0,0"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Center"
+                                IsChecked="{Binding ShowReferenceStars}" />
 
                         </StackPanel>
                     </Grid>

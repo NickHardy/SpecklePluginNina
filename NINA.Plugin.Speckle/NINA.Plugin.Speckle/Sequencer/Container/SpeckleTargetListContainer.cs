@@ -169,6 +169,11 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
         [JsonProperty]
         public bool SortByRa { get => _sortByRa; set { _sortByRa = value; RaisePropertyChanged(); } }
 
+        private bool _showReferenceStars;
+
+        [JsonProperty]
+        public bool ShowReferenceStars { get => _showReferenceStars; set { _showReferenceStars = value; RaisePropertyChanged(); RaisePropertyChanged("SpeckleTargetsView"); } }
+
         private bool _AutoLoadTargetStar;
 
         [JsonProperty]
@@ -282,13 +287,14 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
 
         public AsyncObservableCollection<SpeckleTarget> SpeckleTargetsView {
             get {
+                var targets = SpeckleTargets.Where(x => x.ImageTarget && (ShowReferenceStars || x.Type != "R"));
                 if (string.IsNullOrWhiteSpace(SearchTarget)) {
                     if (SortByRa) {
-                        return new AsyncObservableCollection<SpeckleTarget>(SpeckleTargets.Where(x => x.ImageTarget).OrderBy(x => x.RA2000).ToList());
+                        return new AsyncObservableCollection<SpeckleTarget>(targets.OrderBy(x => x.RA2000).ToList());
                     }
-                    return new AsyncObservableCollection<SpeckleTarget>(SpeckleTargets.Where(x => x.ImageTarget).ToList());
+                    return new AsyncObservableCollection<SpeckleTarget>(targets.ToList());
                 } else {
-                    return new AsyncObservableCollection<SpeckleTarget>(SpeckleTargets.Where(x => x.ImageTarget && (x.Name1.IndexOf(SearchTarget, StringComparison.OrdinalIgnoreCase) >= 0 || x.Name2.IndexOf(SearchTarget, StringComparison.OrdinalIgnoreCase) >= 0 || x.GaiaNum.ToString().StartsWith(SearchTarget))).ToList());
+                    return new AsyncObservableCollection<SpeckleTarget>(targets.Where(x => x.Name1.IndexOf(SearchTarget, StringComparison.OrdinalIgnoreCase) >= 0 || x.Name2.IndexOf(SearchTarget, StringComparison.OrdinalIgnoreCase) >= 0 || x.GaiaNum.ToString().StartsWith(SearchTarget)).ToList());
                 }
             }
         }
@@ -329,68 +335,122 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
         }
 
         public async Task ExportAllTargetsWithReferenceStars() {
-            if (SpeckleTargets?.Count == 0) return;
-            if (ReferenceStarList?.Count == 0) return;
+            if (SpeckleTargets == null || SpeckleTargets.Count == 0) {
+                Notification.ShowWarning("No targets to export. Load a target list first.");
+                return;
+            }
             LoadingTargets = true;
-            var targets = SpeckleTargets.Where(x => x.Type == "M" || x.Type == "C" || x.Type == "G").OrderBy(x => x.RA2000).ToList();
-            foreach (var target in targets) {
-                if (target.Type == "G" || target.GetRef == 0)
-                    continue;
-                SpeckleTarget = target;
-                using (executeCTS = new CancellationTokenSource()) {
-                    if (SpeckleTarget.ReferenceStarList == null || SpeckleTarget.ReferenceStarList.Count == 0)
-                        await RetrieveReferenceStarsForSpeckleTarget(new Progress<ApplicationStatus>(p => AppStatus = p), executeCTS.Token).ConfigureAwait(false);
-                }
-                target.ReferenceStarList = SpeckleTarget.ReferenceStarList;
-            }
-            var jsonExport = JsonConvert.SerializeObject(targets, Formatting.Indented);
+            try {
+                var targets = SpeckleTargets.Where(x => x.Type == "M" || x.Type == "C" || x.Type == "G").OrderBy(x => x.RA2000).ToList();
+                foreach (var target in targets) {
+                    if (target.Type == "G")
+                        continue;
+                    SpeckleTarget = target;
+                    using (executeCTS = new CancellationTokenSource()) {
+                        if (SpeckleTarget.ReferenceStarList == null || SpeckleTarget.ReferenceStarList.Count == 0)
+                            await RetrieveReferenceStarsForSpeckleTarget(new Progress<ApplicationStatus>(p => AppStatus = p), executeCTS.Token).ConfigureAwait(false);
+                    }
+                    target.ReferenceStarList = SpeckleTarget.ReferenceStarList;
 
-            // Write current status to the target csv file
-            string jsonfile = Path.Combine(profileService.ActiveProfile.ImageFileSettings.FilePath, "TargetListIncludingReferenceStars.json");
-            using (var writer = new StreamWriter(jsonfile)) {
-                writer.Write(jsonExport);
+                    // Surface the resolved reference star in the live list so it becomes visible
+                    // via the "Show reference stars" toggle.
+                    var referenceStar = SpeckleTarget.ReferenceStar;
+                    if (referenceStar != null && referenceStar.RA2000 != 0)
+                        SurfaceReferenceStarInList(BuildReferenceStarRecord(target, referenceStar));
+                }
+                var jsonExport = JsonConvert.SerializeObject(targets, Formatting.Indented);
+
+                // Write current status to the target csv file
+                string jsonfile = Path.Combine(profileService.ActiveProfile.ImageFileSettings.FilePath, "TargetListIncludingReferenceStars.json");
+                using (var writer = new StreamWriter(jsonfile)) {
+                    writer.Write(jsonExport);
+                }
+                Notification.ShowSuccess("Exported targets with reference stars to " + jsonfile);
+            } catch (Exception ex) {
+                Logger.Error("Failed to export targets with reference stars.", ex);
+                Notification.ShowError("Failed to export targets with reference stars: " + ex.Message);
+            } finally {
+                LoadingTargets = false;
             }
-            LoadingTargets = false;
         }
 
         public async Task ExportAllTargetsWithReferenceStarsToCsv() {
-            if (SpeckleTargets?.Count == 0) return;
-            if (ReferenceStarList?.Count == 0) return;
+            if (SpeckleTargets == null || SpeckleTargets.Count == 0) {
+                Notification.ShowWarning("No targets to export. Load a target list first.");
+                return;
+            }
             LoadingTargets = true;
-            var targets = SpeckleTargets.Where(x => x.Type == "M" || x.Type == "C" || x.Type == "G").OrderBy(x => x.RA2000).ToList();
-            var targetsWithReferenceStars = new List<SpeckleTarget>();
-            foreach (var target in targets) {
-                if (target.Type == "G" || target.GetRef == 0) {
+            try {
+                var targets = SpeckleTargets.Where(x => x.Type == "M" || x.Type == "C" || x.Type == "G").OrderBy(x => x.RA2000).ToList();
+                var targetsWithReferenceStars = new List<SpeckleTarget>();
+                var addedReferenceGaiaNums = new HashSet<string>();
+                foreach (var target in targets) {
+                    if (target.Type == "G") {
+                        targetsWithReferenceStars.Add(target);
+                        continue;
+                    }
+                    SpeckleTarget = target;
+                    using (executeCTS = new CancellationTokenSource()) {
+                        if (SpeckleTarget.ReferenceStarList == null || SpeckleTarget.ReferenceStarList.Count == 0)
+                            await RetrieveReferenceStarsForSpeckleTarget(new Progress<ApplicationStatus>(p => AppStatus = p), executeCTS.Token).ConfigureAwait(false);
+                    }
                     targetsWithReferenceStars.Add(target);
-                    continue;
-                }
-                SpeckleTarget = target;
-                using (executeCTS = new CancellationTokenSource()) {
-                    if (SpeckleTarget.ReferenceStarList == null || SpeckleTarget.ReferenceStarList.Count == 0)
-                        await RetrieveReferenceStarsForSpeckleTarget(new Progress<ApplicationStatus>(p => AppStatus = p), executeCTS.Token).ConfigureAwait(false);
-                }
-                var refStar = new SpeckleTarget(SpeckleTarget.ReferenceStar);
-                refStar.Type = "R";
-                refStar.Proj = target.Proj;
-                refStar.Obs = target.Obs;
-                refStar.Exp = target.Exp;
-                refStar.NExp = target.NExp;
-                refStar.Name2 = refStar.Name1;
-                refStar.Name1 = target.Name1 + "_ref";
-                refStar.GetRef = 0;
-                refStar.Template = "";
-                target.RefGaiaNum = refStar.GaiaNum;
-                targetsWithReferenceStars.Add(target);
-                targetsWithReferenceStars.Add(refStar);
-            }
 
-            string csvfile = Path.Combine(profileService.ActiveProfile.ImageFileSettings.FilePath, "TargetWithReferenceList-" + DateTime.Now.ToString("yyyy-MM-dd") + ".csv");
-            using (var writer = new StreamWriter(csvfile))
-            using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture)) {
-                csv.Context.RegisterClassMap<SpeckleTargetMap>();
-                csv.WriteRecords(targetsWithReferenceStars);
+                    // Emit the resolved reference star as its own R record, linked back via RefGaiaNum.
+                    // A reference shared by multiple targets is only written once.
+                    var referenceStar = SpeckleTarget.ReferenceStar;
+                    if (referenceStar != null && referenceStar.RA2000 != 0) {
+                        target.RefGaiaNum = referenceStar.GaiaNum;
+                        if (string.IsNullOrWhiteSpace(referenceStar.GaiaNum) || addedReferenceGaiaNums.Add(referenceStar.GaiaNum)) {
+                            var refStar = BuildReferenceStarRecord(target, referenceStar);
+                            targetsWithReferenceStars.Add(refStar);
+                            SurfaceReferenceStarInList(refStar);
+                        }
+                    } else {
+                        Logger.Debug($"No reference star to export for target {target.Name} (GaiaNum {target.GaiaNum}).");
+                    }
+                }
+
+                string csvfile = Path.Combine(profileService.ActiveProfile.ImageFileSettings.FilePath, "TargetWithReferenceList-" + DateTime.Now.ToString("yyyy-MM-dd") + ".csv");
+                using (var writer = new StreamWriter(csvfile))
+                using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture)) {
+                    csv.Context.RegisterClassMap<SpeckleTargetMap>();
+                    csv.WriteRecords(targetsWithReferenceStars);
+                }
+                Notification.ShowSuccess("Exported targets with reference stars to " + csvfile);
+            } catch (Exception ex) {
+                Logger.Error("Failed to export targets with reference stars to CSV.", ex);
+                Notification.ShowError("Failed to export targets with reference stars to CSV: " + ex.Message);
+            } finally {
+                LoadingTargets = false;
             }
-            LoadingTargets = false;
+        }
+
+        // Builds an R-type record for a resolved reference star, linked to its target.
+        private SpeckleTarget BuildReferenceStarRecord(SpeckleTarget target, ReferenceStar referenceStar) {
+            var refStar = new SpeckleTarget(referenceStar);
+            refStar.Type = "R";
+            refStar.Proj = target.Proj;
+            refStar.Obs = target.Obs;
+            refStar.Exp = target.Exp;
+            refStar.NExp = target.NExp;
+            refStar.Name2 = refStar.Name1;
+            refStar.Name1 = target.Name1 + "_ref";
+            refStar.GetRef = 0;
+            refStar.Template = "";
+            refStar.ImageTime = target.ImageTime;
+            return refStar;
+        }
+
+        // Adds a reference star to the live list so it becomes visible via the "Show reference
+        // stars" toggle. Dedupes on GaiaNum (or coordinates when no GaiaNum) so repeated exports
+        // don't pile up duplicate rows.
+        private void SurfaceReferenceStarInList(SpeckleTarget refStar) {
+            bool alreadyInList = SpeckleTargets.Any(x => x.Type == "R" &&
+                ((!string.IsNullOrWhiteSpace(refStar.GaiaNum) && refStar.GaiaNum != "0" && x.GaiaNum == refStar.GaiaNum)
+                 || (x.RA2000 == refStar.RA2000 && x.Dec2000 == refStar.Dec2000)));
+            if (!alreadyInList)
+                SpeckleTargets.Add(refStar);
         }
 
         public void DeleteTarget(Object o) {
@@ -766,7 +826,33 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
         }
 
         private async Task RetrieveReferenceStarsForSpeckleTarget(IProgress<ApplicationStatus> externalProgress, CancellationToken token) {
-            if (SpeckleTarget.GetRef > 0 && (SpeckleTarget.ReferenceStarList == null || !SpeckleTarget.ReferenceStarList.Any())) {
+            if (SpeckleTarget.ReferenceStarList != null && SpeckleTarget.ReferenceStarList.Any())
+                return;
+
+            SpeckleTarget.ReferenceStarList = new List<ReferenceStar>();
+
+            // A reference star can be specified manually by pointing RefGaiaNum at the GaiaNum of
+            // another record (either another entry in this target list, or an entry in the loaded
+            // reference star list). This manual link is always honored, regardless of GetRef.
+            if (!string.IsNullOrWhiteSpace(SpeckleTarget.RefGaiaNum)) {
+                ReferenceStar refTarget = null;
+                var speckleRefTarget = SpeckleTargets.FirstOrDefault(x => x.GaiaNum == SpeckleTarget.RefGaiaNum);
+                if (speckleRefTarget != null) {
+                    refTarget = new ReferenceStar(speckleRefTarget);
+                    if (!string.IsNullOrWhiteSpace(speckleRefTarget.Template))
+                        SpeckleTarget.TemplateRef = speckleRefTarget.Template;
+                }
+                if (refTarget == null && ReferenceStarList != null)
+                    refTarget = ReferenceStarList.FirstOrDefault(x => x.GaiaNum == SpeckleTarget.RefGaiaNum);
+                if (refTarget != null)
+                    SpeckleTarget.ReferenceStarList.Add(refTarget);
+                else
+                    Logger.Debug($"Failed to find referenceStar: {SpeckleTarget?.RefGaiaNum} for target: {SpeckleTarget?.GaiaNum}");
+            }
+
+            // Automatically search for reference stars only when GetRef is enabled. When a manual
+            // reference star was already found above it is kept first and these become alternatives.
+            if (SpeckleTarget.GetRef > 0) {
                 ReferenceStar targetStar = new ReferenceStar();
                 double targetColor = SpeckleTarget.Color != 0 ? SpeckleTarget.Color : 0.65;
                 double minMagnitude = SpeckleTarget.Rp != 0 ? SpeckleTarget.Rp - 1d : speckle.MinReferenceMag;
@@ -785,21 +871,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                     }
                 }
 
-                SpeckleTarget.ReferenceStarList = new List<ReferenceStar>();
                 var refStarList = new List<ReferenceStar>();
-                ReferenceStar refTarget = null;
-                if (!string.IsNullOrWhiteSpace(SpeckleTarget.RefGaiaNum)) {
-                    var speckleRefTarget = SpeckleTargets.FirstOrDefault(x => x.GaiaNum == SpeckleTarget?.RefGaiaNum);
-                    if (speckleRefTarget != null) {
-                        refTarget = new ReferenceStar(speckleRefTarget);
-                        SpeckleTarget.TemplateRef = speckleRefTarget.Template;
-                    }
-                    refTarget ??= ReferenceStarList.FirstOrDefault(x => x.GaiaNum == SpeckleTarget?.RefGaiaNum);
-                    if (refTarget != null)
-                        SpeckleTarget.ReferenceStarList.Add(refTarget);
-                    else
-                        Logger.Debug($"Failed to find referenceStar: {SpeckleTarget?.RefGaiaNum} for target: {SpeckleTarget?.GaiaNum}");
-                }
                 if (speckle.UseSimbadRefStars)
                     refStarList.AddRange(await SimUtils.FindSimbadSaoStars(externalProgress, token, SpeckleTarget.Coordinates(), speckle.SearchRadius, minMagnitude, maxMagnitude).ConfigureAwait(false));
                 if (speckle.UseUSNOSingleStarList)
@@ -853,7 +925,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                         .ToList();
 
                     // Sort by closeness to the target color and then by dome slit observation time for those within the top 30% of observation times
-                    var topObservationTime = SpeckleTarget.ReferenceStarList.Max(s => s.DomeSlitObservationTime) * 0.7;
+                    var topObservationTime = SpeckleTarget.ReferenceStarList.Any() ? SpeckleTarget.ReferenceStarList.Max(s => s.DomeSlitObservationTime) * 0.7 : 0;
                     SpeckleTarget.ReferenceStarList = SpeckleTarget.ReferenceStarList
                         .Where(r => r.DomeSlitObservationTime >= topObservationTime)
                         .OrderBy(r => r.GaiaNum == SpeckleTarget.RefGaiaNum ? 0 : 1) // start with selected reference star
@@ -863,12 +935,17 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                         .ThenBy(r => r.DomeSlitAltTimeList.OrderBy(altTime => altTime.datetime).FirstOrDefault()?.datetime)
                         .ToList();
                 }
-                SpeckleTarget.ReferenceStar = SpeckleTarget.ReferenceStarList.FirstOrDefault();
-                if (SpeckleTarget.ReferenceStar == null) {
+
+                if (!SpeckleTarget.ReferenceStarList.Any()) {
                     Logger.Debug("Couldn't find reference star for SpeckleTarget within " + speckle.SearchRadius + " degrees and magnitudes: " + minMagnitude + " and " + maxMagnitude);
                 }
-                RaiseAllPropertiesChanged();
             }
+
+            SpeckleTarget.ReferenceStar = SpeckleTarget.ReferenceStarList.FirstOrDefault();
+            if (SpeckleTarget.ReferenceStar == null) {
+                Logger.Debug($"No reference star resolved for target {SpeckleTarget?.GaiaNum} (RefGaiaNum: {SpeckleTarget?.RefGaiaNum}, GetRef: {SpeckleTarget?.GetRef}).");
+            }
+            RaiseAllPropertiesChanged();
         }
 
         private async Task<ReferenceStar> RetrieveTargetStar(IProgress<ApplicationStatus> externalProgress, CancellationToken token) {
@@ -1064,6 +1141,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                 Triggers = new ObservableCollection<ISequenceTrigger>(Triggers.Select(t => t.Clone() as ISequenceTrigger)),
                 Conditions = new ObservableCollection<ISequenceCondition>(Conditions.Select(t => t.Clone() as ISequenceCondition)),
                 SortByRa = SortByRa,
+                ShowReferenceStars = ShowReferenceStars,
                 AutoLoadTargetStar = AutoLoadTargetStar,
                 AutoLoadReferenceStar = AutoLoadReferenceStar,
                 Cycles = Cycles,
