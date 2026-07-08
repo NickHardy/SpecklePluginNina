@@ -499,7 +499,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                 await LoadSpeckleTarget(templateName).ConfigureAwait(false);
             }
             using (executeCTS = new CancellationTokenSource()) {
-                if ((SpeckleTarget.Type == "M" || SpeckleTarget.Type == "C") && SpeckleTarget.ReferenceStarList == null || SpeckleTarget.ReferenceStarList.Count == 0)
+                if ((SpeckleTarget.Type == "M" || SpeckleTarget.Type == "C") && (SpeckleTarget.ReferenceStarList == null || SpeckleTarget.ReferenceStarList.Count == 0))
                     await RetrieveReferenceStarsForSpeckleTarget(new Progress<ApplicationStatus>(p => AppStatus = p), executeCTS.Token).ConfigureAwait(false);
             }
 

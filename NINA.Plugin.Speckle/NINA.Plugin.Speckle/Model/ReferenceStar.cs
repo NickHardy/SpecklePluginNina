@@ -67,12 +67,12 @@ namespace NINA.Plugin.Speckle.Model {
         }
         public List<IGenericMetaDataHeader> GenericHeaders() {
             var headerList = new List<IGenericMetaDataHeader>();
-            headerList.Add(new StringMetaDataHeader("Proj~", Proj));
-            headerList.Add(new StringMetaDataHeader("Obs~", Obs));
-            headerList.Add(new StringMetaDataHeader("Type~", Type));
-            headerList.Add(new StringMetaDataHeader("Name1*", Name1));
-            headerList.Add(new StringMetaDataHeader("Name2*", Name2));
-            headerList.Add(new StringMetaDataHeader("GaiaNum~", GaiaNum));
+            headerList.Add(new StringMetaDataHeader("Proj", Proj));
+            headerList.Add(new StringMetaDataHeader("Obs", Obs));
+            headerList.Add(new StringMetaDataHeader("Type", Type));
+            headerList.Add(new StringMetaDataHeader("Name1", Name1));
+            headerList.Add(new StringMetaDataHeader("Name2", Name2));
+            headerList.Add(new StringMetaDataHeader("GaiaNum", GaiaNum));
             headerList.Add(new DoubleMetaDataHeader("Distance", distance));
             headerList.Add(new DoubleMetaDataHeader("Color", color));
             headerList.Add(new BoolMetaDataHeader("IsRef", true));
