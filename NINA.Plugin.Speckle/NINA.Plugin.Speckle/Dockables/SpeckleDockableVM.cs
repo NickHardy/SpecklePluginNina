@@ -2160,7 +2160,10 @@ namespace NINA.Plugin.Speckle.Dockables {
                     return new Point(0d, 0d);
                 }
                 var roi = Session.Roi;
-                if (roi != null
+                var matchesRoiFrame = Math.Abs(Session.RoiFrameWidth - image.PixelWidth) < 1d
+                    && Math.Abs(Session.RoiFrameHeight - image.PixelHeight) < 1d;
+                if (matchesRoiFrame
+                    && roi != null
                     && roi.Width > 0d
                     && roi.Height > 0d
                     && (roi.X > 0d || roi.Y > 0d)

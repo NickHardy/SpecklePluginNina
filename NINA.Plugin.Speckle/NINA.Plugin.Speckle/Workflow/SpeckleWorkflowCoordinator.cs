@@ -1033,6 +1033,8 @@ namespace NINA.Plugin.Speckle.Workflow {
             Session.FrameTotal = plan.NExp > 0 ? plan.NExp : runOptions.DefaultExposures;
             Session.ActiveInputTarget = BuildInputTarget(plan);
             Session.Roi = new ObservableRectangle(0, 0, runOptions.RoiWidth, runOptions.RoiHeight);
+            Session.RoiFrameWidth = 0d;
+            Session.RoiFrameHeight = 0d;
             appliedFilter = null;
             calibratedFilter = null;
             calibratedExposure = 0;
@@ -1246,6 +1248,8 @@ namespace NINA.Plugin.Speckle.Workflow {
         }
 
         private void ApplyRoiResult(SpeckleTarget target, RoiPositionResult result) {
+            Session.RoiFrameWidth = result.FrameWidth;
+            Session.RoiFrameHeight = result.FrameHeight;
             var roi = Session.Roi;
             if (roi != null) {
                 if (result.RoiX.HasValue) {

@@ -30,6 +30,8 @@ namespace NINA.Plugin.Speckle.Services {
         public double? ArcsecPerPix { get; init; }
         public bool PlatesolveSucceeded { get; init; }
         public string Note { get; init; }
+        public double FrameWidth { get; init; }
+        public double FrameHeight { get; init; }
     }
 
     public class ExposureCalibrationRequest {

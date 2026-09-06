@@ -21,6 +21,8 @@ namespace NINA.Plugin.Speckle.Workflow {
         private IReadOnlyList<string> availableFilters = new List<string>();
         private InputTarget activeInputTarget;
         private ObservableRectangle roi;
+        private double roiFrameWidth;
+        private double roiFrameHeight;
         private double? orientation;
         private double? arcsecPerPix;
         private int speckleRun;
@@ -105,6 +107,16 @@ namespace NINA.Plugin.Speckle.Workflow {
         public ObservableRectangle Roi {
             get => roi;
             set { roi = value; RaisePropertyChanged(); }
+        }
+
+        public double RoiFrameWidth {
+            get => roiFrameWidth;
+            set { roiFrameWidth = value; RaisePropertyChanged(); }
+        }
+
+        public double RoiFrameHeight {
+            get => roiFrameHeight;
+            set { roiFrameHeight = value; RaisePropertyChanged(); }
         }
 
         public double? Orientation {

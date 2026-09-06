@@ -71,6 +71,8 @@ namespace NINA.Plugin.Speckle.Services {
             double? arcsecPerPixResult = null;
             bool platesolveSucceeded = false;
             string note = null;
+            double captureFrameWidth = 0d;
+            double captureFrameHeight = 0d;
 
             var seq = PlateSolveCaptureBuilder.Build(profileService, CaptureSequence.ImageTypes.LIGHT);
 
@@ -130,6 +132,8 @@ namespace NINA.Plugin.Speckle.Services {
 
                     var captureWidth = image.Image.PixelWidth * locateToCaptureScale;
                     var captureHeight = image.Image.PixelHeight * locateToCaptureScale;
+                    captureFrameWidth = captureWidth;
+                    captureFrameHeight = captureHeight;
 
                     roiX = Math.Min(Math.Max(Math.Round(targetPoint.X * locateToCaptureScale - (request.RoiWidth / 2), 0), 0), Math.Max(0, captureWidth - request.RoiWidth));
                     roiY = Math.Min(Math.Max(Math.Round(targetPoint.Y * locateToCaptureScale - (request.RoiHeight / 2), 0), 0), Math.Max(0, captureHeight - request.RoiHeight));
@@ -180,6 +184,8 @@ namespace NINA.Plugin.Speckle.Services {
                 if (biggestStar != null) {
                     var fallbackCaptureWidth = image2.Image.PixelWidth * locateToCaptureScale;
                     var fallbackCaptureHeight = image2.Image.PixelHeight * locateToCaptureScale;
+                    captureFrameWidth = fallbackCaptureWidth;
+                    captureFrameHeight = fallbackCaptureHeight;
                     roiX = Math.Min(Math.Max(Math.Round(biggestStar.Position.X * locateToCaptureScale - (request.RoiWidth / 2), 0), 0), Math.Max(0, fallbackCaptureWidth - request.RoiWidth));
                     roiY = Math.Min(Math.Max(Math.Round(biggestStar.Position.Y * locateToCaptureScale - (request.RoiHeight / 2), 0), 0), Math.Max(0, fallbackCaptureHeight - request.RoiHeight));
                     Logger.Debug("Setting roi position to biggest star position " + roiX + "x" + roiY);
@@ -198,7 +204,9 @@ namespace NINA.Plugin.Speckle.Services {
                 Orientation = orientation,
                 ArcsecPerPix = arcsecPerPixResult,
                 PlatesolveSucceeded = platesolveSucceeded,
-                Note = note
+                Note = note,
+                FrameWidth = captureFrameWidth,
+                FrameHeight = captureFrameHeight
             };
         }
     }
