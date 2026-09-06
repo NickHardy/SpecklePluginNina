@@ -1,11 +1,12 @@
 ﻿<!--
-    Copyright © 2016 - 2021 Stefan Berg <isbeorn86+NINA@googlemail.com> and the N.I.N.A. contributors
+    Copyright (c) 2026 Nick Hardy and Leon Bewersdorff
 
-    This file is part of N.I.N.A. - Nighttime Imaging 'N' Astronomy.
+    This file is part of the Speckle Interferometry plugin for
+    N.I.N.A. - Nighttime Imaging 'N' Astronomy.
 
-    This Source Code Form is subject to the terms of the Mozilla Public
-    License, v. 2.0. If a copy of the MPL was not distributed with this
-    file, You can obtain one at http://mozilla.org/MPL/2.0/.-->
+    Released under the MIT License. See LICENSE.txt in the repository
+    root, or https://opensource.org/licenses/MIT
+-->
 <ResourceDictionary
     x:Class="NINA.Plugin.Speckle.Sequencer.Container.Datatemplates"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -193,7 +194,7 @@
                                     <TextBlock
                                         VerticalAlignment="Center"
                                         Foreground="{StaticResource ButtonForegroundBrush}"
-                                        Text="°" />
+                                        Text="deg" />
                                     <StackPanel.Style>
                                         <Style TargetType="StackPanel">
                                             <Style.Triggers>
@@ -454,7 +455,7 @@
                                         </Binding>
                                     </TextBox.Text>
                                 </TextBox>
-                                <TextBlock VerticalAlignment="Center">°</TextBlock>
+                                <TextBlock VerticalAlignment="Center">deg</TextBlock>
                             </StackPanel>
                             
                             <StackPanel
@@ -599,7 +600,6 @@
 
     <DataTemplate DataType="{x:Type local:SpeckleTargetListContainer}">
         <DataTemplate.Resources>
-            <!-- This is not working yet -->
             <ContextMenu  x:Key="RowMenu" DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
                 <MenuItem Header="Load target" CommandParameter="{Binding}" Command="{Binding LoadTargetCommand}" />
                 <MenuItem Header="Delete target" CommandParameter="{Binding}" Command="{Binding DeleteTargetCommand}" />

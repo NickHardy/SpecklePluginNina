@@ -93,33 +93,33 @@ public class GaiaReferenceStar {
 
 public sealed class GaiaReferenceStarMap : ClassMap<GaiaReferenceStar> {
     public GaiaReferenceStarMap() {
-        Map(m => m.AllRec).Name("allrec");
-        Map(m => m.RecNo).Name("recno");
-        Map(m => m.SourceId).Name("source_id");
-        Map(m => m.Raj2000).Name("raj2000");
-        Map(m => m.Dej2000).Name("dej2000");
-        Map(m => m.Ra).Name("ra");
-        Map(m => m.Dec).Name("dec");
-        Map(m => m.Parallax).Name("parallax");
-        Map(m => m.PmRa).Name("pmra");
-        Map(m => m.PmDec).Name("pmdec");
-        Map(m => m.PhotGMeanMag).Name("phot_g_mean_mag");
-        Map(m => m.PhotBpMeanMag).Name("phot_bp_mean_mag");
-        Map(m => m.PhotRpMeanMag).Name("phot_rp_mean_mag");
-        Map(m => m.BMag).Name("bmag");
-        Map(m => m.VMag).Name("vmag");
-        Map(m => m.GMag).Name("g_mag");
-        Map(m => m.RMag).Name("r_mag");
-        Map(m => m.IMag).Name("i_mag");
-        Map(m => m.BV).Name("b_v");
-        Map(m => m.TeffGspphot).Name("teff_gspphot");
-        Map(m => m.PhotVariableFlag).Name("phot_variable_flag");
-        Map(m => m.NonSingleStar).Name("non_single_star");
-        Map(m => m.Ruwe).Name("ruwe");
-        Map(m => m.BpRp).Name("bp_rp");
-        Map(m => m.AstrometricParamsSolved).Name("astrometric_params_solved");
-        Map(m => m.IpdGofHarmonicAmplitude).Name("ipd_gof_harmonic_amplitude");
-        Map(m => m.IpdFracMultiPeak).Name("ipd_frac_multi_peak");
+        Map(column => column.AllRec).Name("allrec");
+        Map(column => column.RecNo).Name("recno");
+        Map(column => column.SourceId).Name("source_id");
+        Map(column => column.Raj2000).Name("raj2000");
+        Map(column => column.Dej2000).Name("dej2000");
+        Map(column => column.Ra).Name("ra");
+        Map(column => column.Dec).Name("dec");
+        Map(column => column.Parallax).Name("parallax");
+        Map(column => column.PmRa).Name("pmra");
+        Map(column => column.PmDec).Name("pmdec");
+        Map(column => column.PhotGMeanMag).Name("phot_g_mean_mag");
+        Map(column => column.PhotBpMeanMag).Name("phot_bp_mean_mag");
+        Map(column => column.PhotRpMeanMag).Name("phot_rp_mean_mag");
+        Map(column => column.BMag).Name("bmag");
+        Map(column => column.VMag).Name("vmag");
+        Map(column => column.GMag).Name("g_mag");
+        Map(column => column.RMag).Name("r_mag");
+        Map(column => column.IMag).Name("i_mag");
+        Map(column => column.BV).Name("b_v");
+        Map(column => column.TeffGspphot).Name("teff_gspphot");
+        Map(column => column.PhotVariableFlag).Name("phot_variable_flag");
+        Map(column => column.NonSingleStar).Name("non_single_star");
+        Map(column => column.Ruwe).Name("ruwe");
+        Map(column => column.BpRp).Name("bp_rp");
+        Map(column => column.AstrometricParamsSolved).Name("astrometric_params_solved");
+        Map(column => column.IpdGofHarmonicAmplitude).Name("ipd_gof_harmonic_amplitude");
+        Map(column => column.IpdFracMultiPeak).Name("ipd_frac_multi_peak");
     }
 }
 

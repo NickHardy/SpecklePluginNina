@@ -1,13 +1,13 @@
 ﻿#region "copyright"
 
 /*
-    Copyright © 2016 - 2021 Stefan Berg <isbeorn86+NINA@googlemail.com> and the N.I.N.A. contributors
+    Copyright (c) 2026 Nick Hardy and Leon Bewersdorff
 
-    This file is part of N.I.N.A. - Nighttime Imaging 'N' Astronomy.
+    This file is part of the Speckle Interferometry plugin for
+    N.I.N.A. - Nighttime Imaging 'N' Astronomy.
 
-    This Source Code Form is subject to the terms of the Mozilla Public
-    License, v. 2.0. If a copy of the MPL was not distributed with this
-    file, You can obtain one at http://mozilla.org/MPL/2.0/.
+    Released under the MIT License. See LICENSE.txt in the repository
+    root, or https://opensource.org/licenses/MIT
 */
 
 #endregion "copyright"
@@ -42,54 +42,75 @@ namespace NINA.Plugin.Speckle.Model {
         public DateTime DomeSlitObservationStartTime { get; set; }
 
         public AltTime MeridianAltTime() {
-            return AltList.OrderByDescending((x) => x.alt).FirstOrDefault();
+            return AltList.OrderByDescending((altTime) => altTime.Altitude).FirstOrDefault();
         }
 
-        public AltTime ImageFrom(double alt = 40d) {
-            return AltList.Where(x => x.datetime > DateTime.Now).Where((x) => x.alt > alt).OrderBy((x) => x.alt).FirstOrDefault();
-        }
-
-        public AltTime ImageTo(NighttimeData nighttimeData, double alt = 90d, double mDistance = 5d, double airmassMin = 0d, double airmassMax = 4d, double distanceToMoon = 20d) {
+        public AltTime ImageTo(NighttimeData nighttimeData, double altitudeCeiling = 90d, double mDistance = 5d, double airmassMin = 0d, double airmassMax = 4d, double distanceToMoon = 20d) {
             DateTime twilightSet = nighttimeData.NauticalTwilightRiseAndSet.Set ?? DateTime.Now;
             DateTime twilightRise = nighttimeData.NauticalTwilightRiseAndSet.Rise ?? DateTime.Now.AddHours(24);
             DateTime minTime = new DateTime(Math.Max(twilightSet.Ticks, DateTime.Now.Ticks));
-            return AltList.Where(x => x.datetime > minTime && x.datetime < twilightRise.AddMinutes(-15))
-                .Where(x => x.alt <= alt)
-                .Where(x => x.airmass >= airmassMin)
-                .Where(x => x.airmass <= airmassMax)
-                .Where(x => x.distanceToMoon >= distanceToMoon)
-                .Where(x => x.deg <= MeridianAltTime().deg - mDistance || x.deg >= MeridianAltTime().deg + mDistance)
-                .OrderByDescending(x => x.alt).FirstOrDefault();
+            return AltList.Where(altTime => altTime.Timestamp > minTime && altTime.Timestamp < twilightRise.AddMinutes(-15))
+                .Where(altTime => altTime.Altitude <= altitudeCeiling)
+                .Where(altTime => altTime.Airmass >= airmassMin)
+                .Where(altTime => altTime.Airmass <= airmassMax)
+                .Where(altTime => altTime.DistanceToMoon >= distanceToMoon)
+                .Where(altTime => altTime.HourAngleDegrees <= MeridianAltTime().HourAngleDegrees - mDistance || altTime.HourAngleDegrees >= MeridianAltTime().HourAngleDegrees + mDistance)
+                .OrderByDescending(altTime => altTime.Altitude).FirstOrDefault();
         }
 
-        public AltTime getCurrentAltTime(double alt = 90d, double mDistance = 5d) {
-            DateTime begin = DateTime.Now;
-            DateTime end = DateTime.Now.AddMinutes(8);
+        public AltTime CurrentAltTime(double altitudeCeiling = 90d, double mDistance = 5d) {
+            DateTime windowStart = DateTime.Now;
+            DateTime windowEnd = DateTime.Now.AddMinutes(8);
             return AltList
-                .Where(x => x.datetime > begin && x.datetime < end)
-                .Where(x => x.alt < alt)
-                .Where(x => x.deg < MeridianAltTime().deg - mDistance || x.deg > MeridianAltTime().deg + mDistance)
-                .OrderByDescending(x => x.alt).FirstOrDefault();
+                .Where(altTime => altTime.Timestamp > windowStart && altTime.Timestamp < windowEnd)
+                .Where(altTime => altTime.Altitude < altitudeCeiling)
+                .Where(altTime => altTime.HourAngleDegrees < MeridianAltTime().HourAngleDegrees - mDistance || altTime.HourAngleDegrees > MeridianAltTime().HourAngleDegrees + mDistance)
+                .OrderByDescending(altTime => altTime.Altitude).FirstOrDefault();
         }
 
-        public AltTime getCurrentDomeAltTime() {
-            DateTime begin = DateTime.Now;
-            DateTime end = DateTime.Now.AddMinutes(3);
+        public AltTime CurrentDomeAltTime() {
+            DateTime windowStart = DateTime.Now;
+            DateTime windowEnd = DateTime.Now.AddMinutes(3);
             return DomeSlitAltTimeList
-                .Where(x => x.datetime > begin && x.datetime < end)
-                .OrderBy(x => x.datetime).FirstOrDefault();
+                .Where(altTime => altTime.Timestamp > windowStart && altTime.Timestamp < windowEnd)
+                .OrderBy(altTime => altTime.Timestamp).FirstOrDefault();
         }
 
-        public void setDomeSlitAltTimeList(Speckle speckle, double begin, double end, double airmassMin = 0d, double airmassMax = 4d) {
+        public const double ShutterOvershootPastZenithDegrees = 10d;
+        public const double DefaultSlitWidthDegrees = 6d;
+
+        public static bool IsInsideDomeSlit(double altitudeDegrees, double azimuthDegrees, double slitAzimuthDegrees, double slitWidthDegrees, double overshootDegrees = ShutterOvershootPastZenithDegrees) {
+            var halfWidth = Math.Abs(slitWidthDegrees) / 2d;
+            if (halfWidth <= 0d) {
+                return false;
+            }
+            var alt = AstroUtil.ToRadians(altitudeDegrees);
+            var deltaAz = AstroUtil.ToRadians(azimuthDegrees - slitAzimuthDegrees);
+            var offset = Math.Abs(Math.Cos(alt) * Math.Sin(deltaAz));
+            if (offset > 1d) {
+                offset = 1d;
+            }
+            if (halfWidth < 90d && AstroUtil.ToDegree(Math.Asin(offset)) > halfWidth) {
+                return false;
+            }
+            if (Math.Cos(deltaAz) >= 0d) {
+                return true;
+            }
+            return altitudeDegrees >= 90d - Math.Max(0d, overshootDegrees);
+        }
+
+        public void BuildDomeSlitAltTimeList(double altitudeMin, double altitudeMax, double slitStartAzimuth, double slitEndAzimuth, double airmassMin = 0d, double airmassMax = 4d) {
+            var slitAzimuth = (slitStartAzimuth + slitEndAzimuth) / 2d;
+            var slitWidth = slitEndAzimuth - slitStartAzimuth;
             DomeSlitAltTimeList = AltList
-                .Where(x => x.az > begin && x.az < end)
-                .Where(x => x.alt > speckle.AltitudeMin && x.alt < speckle.AltitudeMax)
-                .Where(x => x.airmass > airmassMin && x.airmass < airmassMax)
+                .Where(altTime => IsInsideDomeSlit(altTime.Altitude, altTime.Azimuth, slitAzimuth, slitWidth))
+                .Where(altTime => altTime.Altitude > altitudeMin && altTime.Altitude < altitudeMax)
+                .Where(altTime => altTime.Airmass > airmassMin && altTime.Airmass < airmassMax)
                 .ToList();
 
             if (DomeSlitAltTimeList.Count > 0) {
-                DomeSlitObservationStartTime = DomeSlitAltTimeList.OrderBy(x => x.datetime).First().datetime;
-                var lastTime = DomeSlitAltTimeList.OrderBy(x => x.datetime).Last().datetime;
+                DomeSlitObservationStartTime = DomeSlitAltTimeList.OrderBy(altTime => altTime.Timestamp).First().Timestamp;
+                var lastTime = DomeSlitAltTimeList.OrderBy(altTime => altTime.Timestamp).Last().Timestamp;
                 DomeSlitObservationTime = (lastTime - DomeSlitObservationStartTime).TotalSeconds;
             }
         }

@@ -1,0 +1,1993 @@
+﻿<ResourceDictionary
+    x:Class="NINA.Plugin.Speckle.Dockables.DataTemplates"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:dk="clr-namespace:NINA.Plugin.Speckle.Dockables"
+    xmlns:kepler="clr-namespace:NINA.Plugin.Speckle.Dockables.Kepler"
+    xmlns:ninactrl="clr-namespace:NINA.CustomControlLibrary;assembly=NINA.CustomControlLibrary"
+    xmlns:util="clr-namespace:NINA.Core.Utility;assembly=NINA.Core"
+    xmlns:view="clr-namespace:NINA.WPF.Base.View;assembly=NINA.WPF.Base">
+
+    <dk:ReferenceEqualityMultiConverter x:Key="RefEq" />
+    <dk:ZeroBlankConverter x:Key="ZeroBlank" />
+    <dk:ZeroToVisibilityConverter x:Key="ZeroHint" />
+    <dk:FileNameConverter x:Key="FileNameConverter" />
+    <dk:RoomForButtonConverter x:Key="RoomForButton" />
+
+    <SolidColorBrush x:Key="SpeckleHoverBrush" Color="#22808080" />
+    <SolidColorBrush x:Key="SpeckleActiveBrush" Color="#33808080" />
+    <SolidColorBrush x:Key="SpecklePressBrush" Color="#44808080" />
+
+    <ControlTemplate x:Key="SpeckleQuietTemplate" TargetType="ButtonBase">
+        <Border
+            x:Name="Shell"
+            Background="{TemplateBinding Background}"
+            BorderBrush="{TemplateBinding BorderBrush}"
+            BorderThickness="{TemplateBinding BorderThickness}"
+            CornerRadius="3"
+            SnapsToDevicePixels="True">
+            <ContentPresenter
+                Margin="{TemplateBinding Padding}"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Content="{TemplateBinding Content}" />
+        </Border>
+        <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="Shell" Property="Background" Value="{StaticResource SpeckleHoverBrush}" />
+                <Setter TargetName="Shell" Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
+            </Trigger>
+            <Trigger Property="IsPressed" Value="True">
+                <Setter TargetName="Shell" Property="Background" Value="{StaticResource SpecklePressBrush}" />
+                <Setter TargetName="Shell" Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter TargetName="Shell" Property="Background" Value="Transparent" />
+                <Setter TargetName="Shell" Property="BorderBrush" Value="{StaticResource SpeckleHoverBrush}" />
+                <Setter TargetName="Shell" Property="Opacity" Value="0.4" />
+            </Trigger>
+        </ControlTemplate.Triggers>
+    </ControlTemplate>
+
+    <Style x:Key="SpeckleQuietBase" TargetType="ButtonBase">
+        <Setter Property="Height" Value="32" />
+        <Setter Property="MinWidth" Value="56" />
+        <Setter Property="Margin" Value="0,0,7,7" />
+        <Setter Property="Padding" Value="11,0" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="SnapsToDevicePixels" Value="True" />
+        <Setter Property="Template" Value="{StaticResource SpeckleQuietTemplate}" />
+    </Style>
+
+    <Style
+        x:Key="SpeckleQuietButton"
+        BasedOn="{StaticResource SpeckleQuietBase}"
+        TargetType="Button" />
+
+    <Style
+        x:Key="SpeckleClusterButton"
+        BasedOn="{StaticResource SpeckleQuietButton}"
+        TargetType="Button">
+        <Setter Property="Margin" Value="0,0,6,0" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+        <GeometryGroup x:Key="SpeckleGrip">
+            <EllipseGeometry Center="2,2" RadiusX="1.15" RadiusY="1.15" />
+            <EllipseGeometry Center="2,7" RadiusX="1.15" RadiusY="1.15" />
+            <EllipseGeometry Center="2,12" RadiusX="1.15" RadiusY="1.15" />
+            <EllipseGeometry Center="7,2" RadiusX="1.15" RadiusY="1.15" />
+            <EllipseGeometry Center="7,7" RadiusX="1.15" RadiusY="1.15" />
+            <EllipseGeometry Center="7,12" RadiusX="1.15" RadiusY="1.15" />
+        </GeometryGroup>
+
+        <Style x:Key="SpeckleDragHandle" TargetType="Border">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="CornerRadius" Value="3" />
+            <Setter Property="Cursor" Value="SizeAll" />
+            <Setter Property="Padding" Value="9,0" />
+            <Setter Property="VerticalAlignment" Value="Stretch" />
+            <Setter Property="dk:QueueDrag.IsHandle" Value="True" />
+            <Setter Property="ToolTip" Value="Drag to change when this target is imaged" />
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="{StaticResource SpeckleHoverBrush}" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+
+    <Style
+        x:Key="SpeckleLoadListButton"
+        BasedOn="{StaticResource SpeckleQuietButton}"
+        TargetType="Button">
+        <Setter Property="Height" Value="40" />
+        <Setter Property="MinWidth" Value="160" />
+        <Setter Property="Padding" Value="16,0" />
+        <Setter Property="FontSize" Value="16" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding NoTargetsMessageVisible}" Value="True">
+                <Setter Property="Background" Value="{StaticResource ButtonBackgroundBrush}" />
+                <Setter Property="Foreground" Value="{StaticResource ButtonForegroundBrush}" />
+                <Setter Property="BorderBrush" Value="{StaticResource ButtonBackgroundBrush}" />
+                <DataTrigger.EnterActions>
+                    <BeginStoryboard Name="LoadListPulse">
+                        <Storyboard>
+                            <DoubleAnimation
+                                AutoReverse="True"
+                                Duration="0:0:1.4"
+                                From="1"
+                                RepeatBehavior="Forever"
+                                Storyboard.TargetProperty="Opacity"
+                                To="0.45" />
+                        </Storyboard>
+                    </BeginStoryboard>
+                </DataTrigger.EnterActions>
+                <DataTrigger.ExitActions>
+                    <StopStoryboard BeginStoryboardName="LoadListPulse" />
+                </DataTrigger.ExitActions>
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style
+        x:Key="SpeckleQuietToggle"
+        BasedOn="{StaticResource SpeckleQuietBase}"
+        TargetType="ToggleButton">
+        <Style.Triggers>
+            <Trigger Property="IsChecked" Value="True">
+                <Setter Property="Background" Value="{StaticResource SpeckleActiveBrush}" />
+                <Setter Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style
+        x:Key="SpeckleClusterToggle"
+        BasedOn="{StaticResource SpeckleQuietToggle}"
+        TargetType="ToggleButton">
+        <Setter Property="Margin" Value="0,0,6,0" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <Style
+        x:Key="SpeckleIconButton"
+        BasedOn="{StaticResource SpeckleQuietButton}"
+        TargetType="Button">
+        <Setter Property="Width" Value="32" />
+        <Setter Property="MinWidth" Value="0" />
+        <Setter Property="Margin" Value="0,0,5,0" />
+        <Setter Property="Padding" Value="6" />
+    </Style>
+
+    <ControlTemplate x:Key="SpeckleSegmentTemplate" TargetType="ButtonBase">
+        <Border
+            x:Name="Shell"
+            Background="{TemplateBinding Background}"
+            BorderBrush="{TemplateBinding BorderBrush}"
+            BorderThickness="{TemplateBinding BorderThickness}"
+            CornerRadius="3"
+            SnapsToDevicePixels="True">
+            <ContentPresenter
+                Margin="{TemplateBinding Padding}"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Content="{TemplateBinding Content}" />
+        </Border>
+        <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="Shell" Property="Background" Value="{StaticResource SpeckleHoverBrush}" />
+            </Trigger>
+            <Trigger Property="IsPressed" Value="True">
+                <Setter TargetName="Shell" Property="Background" Value="{StaticResource SpecklePressBrush}" />
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter TargetName="Shell" Property="Opacity" Value="0.6" />
+            </Trigger>
+        </ControlTemplate.Triggers>
+    </ControlTemplate>
+
+    <Style
+        x:Key="SpeckleSegment"
+        BasedOn="{StaticResource SpeckleQuietToggle}"
+        TargetType="ToggleButton">
+        <Setter Property="Height" Value="30" />
+        <Setter Property="MinWidth" Value="62" />
+        <Setter Property="Margin" Value="0" />
+        <Setter Property="Padding" Value="10,0" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Template" Value="{StaticResource SpeckleSegmentTemplate}" />
+        <Style.Triggers>
+            <Trigger Property="IsChecked" Value="True">
+                <Setter Property="Background" Value="{StaticResource SpeckleActiveBrush}" />
+                <Setter Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
+                <Setter Property="BorderThickness" Value="2" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style
+        x:Key="SpecklePrimaryButton"
+        BasedOn="{StaticResource SpeckleQuietButton}"
+        TargetType="Button">
+        <Setter Property="Height" Value="NaN" />
+        <Setter Property="MinHeight" Value="38" />
+        <Setter Property="MaxHeight" Value="120" />
+        <Setter Property="MinWidth" Value="0" />
+        <Setter Property="Margin" Value="0" />
+        <Setter Property="Padding" Value="16,0" />
+        <Setter Property="FontSize" Value="17" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="VerticalAlignment" Value="Stretch" />
+        <Setter Property="Background" Value="{StaticResource SpeckleActiveBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
+        <Setter Property="BorderThickness" Value="2" />
+    </Style>
+
+    <Style x:Key="SpeckleChainItem" TargetType="ContentPresenter">
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding State}" Value="Active">
+                <Setter Property="Panel.ZIndex" Value="2" />
+            </DataTrigger>
+            <DataTrigger Binding="{Binding State}" Value="Error">
+                <Setter Property="Panel.ZIndex" Value="2" />
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="SpeckleIconPath" TargetType="Path">
+        <Setter Property="Fill" Value="{StaticResource PrimaryBrush}" />
+        <Setter Property="Stretch" Value="Uniform" />
+    </Style>
+
+    <Style x:Key="SpeckleMicroLabel" TargetType="TextBlock">
+        <Setter Property="Margin" Value="0,0,0,4" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}" />
+    </Style>
+
+    <Style x:Key="SpeckleCellText" TargetType="TextBlock">
+        <Setter Property="Margin" Value="8,0" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="TextAlignment" Value="Left" />
+        <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    </Style>
+
+    <Style
+        x:Key="SpeckleCellNumber"
+        BasedOn="{StaticResource SpeckleCellText}"
+        TargetType="TextBlock">
+        <Setter Property="TextAlignment" Value="Right" />
+    </Style>
+
+    <Style
+        x:Key="SpeckleHeaderLeft"
+        BasedOn="{StaticResource StandardDataGridColumnHeader}"
+        TargetType="DataGridColumnHeader">
+        <Setter Property="HorizontalContentAlignment" Value="Left" />
+        <Setter Property="Padding" Value="8,2" />
+    </Style>
+
+    <Style
+        x:Key="SpeckleHeaderRight"
+        BasedOn="{StaticResource SpeckleHeaderLeft}"
+        TargetType="DataGridColumnHeader">
+        <Setter Property="HorizontalContentAlignment" Value="Right" />
+    </Style>
+
+    <DataTemplate x:Key="SpeckleChainChip">
+        <Grid
+            x:Name="Chip"
+            Width="{Binding ChipWidth}"
+            Height="44"
+            Margin="{Binding ChipMargin}"
+            Background="Transparent"
+            Cursor="Hand"
+            ToolTip="Go to this step">
+            <Grid.InputBindings>
+                <MouseBinding
+                    Command="{Binding DataContext.JumpToStageCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                    CommandParameter="{Binding}"
+                    MouseAction="LeftClick" />
+            </Grid.InputBindings>
+            <Path
+                x:Name="Shape"
+                Data="{Binding ChipGeometry}"
+                Fill="Transparent"
+                Stroke="{StaticResource BorderBrush}"
+                StrokeThickness="1" />
+            <TextBlock
+                x:Name="Lbl"
+                Margin="28,0,28,0"
+                VerticalAlignment="Center"
+                FontFamily="Segoe UI"
+                FontSize="16"
+                Foreground="{StaticResource PrimaryBrush}"
+                Opacity="0.65"
+                Text="{Binding Label}"
+                TextAlignment="Center" />
+        </Grid>
+        <DataTemplate.Triggers>
+            <DataTrigger Binding="{Binding State}" Value="Done">
+                <Setter TargetName="Shape" Property="Fill" Value="{StaticResource SpeckleHoverBrush}" />
+                <Setter TargetName="Lbl" Property="Opacity" Value="0.9" />
+            </DataTrigger>
+            <DataTrigger Binding="{Binding State}" Value="Active">
+                <Setter TargetName="Chip" Property="dk:KeepInView.WhenActive" Value="True" />
+                <Setter TargetName="Shape" Property="Fill" Value="{StaticResource SpeckleActiveBrush}" />
+                <Setter TargetName="Shape" Property="Stroke" Value="{StaticResource PrimaryBrush}" />
+                <Setter TargetName="Shape" Property="StrokeThickness" Value="2" />
+                <Setter TargetName="Lbl" Property="Opacity" Value="1" />
+                <Setter TargetName="Lbl" Property="FontWeight" Value="SemiBold" />
+            </DataTrigger>
+            <DataTrigger Binding="{Binding State}" Value="Error">
+                <Setter TargetName="Shape" Property="Stroke" Value="{StaticResource NotificationErrorBrush}" />
+                <Setter TargetName="Shape" Property="StrokeThickness" Value="2" />
+                <Setter TargetName="Lbl" Property="Foreground" Value="{StaticResource NotificationErrorTextBrush}" />
+                <Setter TargetName="Lbl" Property="Opacity" Value="1" />
+                <Setter TargetName="Lbl" Property="FontWeight" Value="SemiBold" />
+            </DataTrigger>
+        </DataTemplate.Triggers>
+    </DataTemplate>
+
+    <DataTemplate x:Key="NINA.Plugin.Speckle.Dockables.SpeckleDockableVM_Dockable">
+        <Grid Margin="6" Loaded="OnPanelLoaded">
+            <Grid.Resources>
+                <util:BindingProxy x:Key="PlanProxy" Data="{Binding}" />
+            </Grid.Resources>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <ScrollViewer
+                Grid.Row="0"
+                Margin="0,0,0,6"
+                HorizontalScrollBarVisibility="Auto"
+                VerticalScrollBarVisibility="Disabled"
+                Visibility="{Binding ChainVisible, Converter={StaticResource VisibilityConverter}}">
+                <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+                    <Border
+                        Margin="0,0,10,0"
+                        Padding="10,6,10,8"
+                        Background="{StaticResource SpeckleHoverBrush}"
+                        CornerRadius="5">
+                        <StackPanel>
+                            <TextBlock
+                                Margin="2,0,0,6"
+                                HorizontalAlignment="Center"
+                                FontSize="30"
+                                FontWeight="SemiBold"
+                                Foreground="{StaticResource PrimaryBrush}"
+                                Text="{Binding TargetSectionLabel}"
+                                TextTrimming="CharacterEllipsis" />
+                            <ItemsControl
+                                ItemContainerStyle="{StaticResource SpeckleChainItem}"
+                                ItemTemplate="{StaticResource SpeckleChainChip}"
+                                ItemsSource="{Binding TargetSteps}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Orientation="Horizontal" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+
+                    <Border
+                        Padding="10,6,10,8"
+                        Background="{StaticResource SpeckleHoverBrush}"
+                        CornerRadius="5"
+                        Visibility="{Binding ReferenceLegVisible, Converter={StaticResource VisibilityConverter}}">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Session.SkipReference}" Value="True">
+                                        <Setter Property="Opacity" Value="0.4" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Session.ReferenceLegAbandoned}" Value="True">
+                                        <Setter Property="Opacity" Value="0.4" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <StackPanel>
+                            <Grid Margin="2,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock
+                                    Grid.Column="0"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    FontSize="22"
+                                    FontWeight="SemiBold"
+                                    Foreground="{StaticResource PrimaryBrush}"
+                                    Text="{Binding ReferenceSectionLabel}"
+                                    TextTrimming="CharacterEllipsis" />
+                                <ToggleButton
+                                    Grid.Column="1"
+                                    Margin="10,0,0,0"
+                                    Command="{Binding SkipReferenceCommand}"
+                                    Content="Skip"
+                                    IsChecked="{Binding Session.SkipReference, Mode=OneWay}"
+                                    IsEnabled="{Binding CanToggleSkipReference}"
+                                    Style="{StaticResource SpeckleQuietToggle}"
+                                    ToolTip="{Binding SkipReferenceTooltip}" />
+                            </Grid>
+                            <ItemsControl
+                                ItemContainerStyle="{StaticResource SpeckleChainItem}"
+                                ItemTemplate="{StaticResource SpeckleChainChip}"
+                                ItemsSource="{Binding ReferenceSteps}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Orientation="Horizontal" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+
+            <Border
+                Grid.Row="1"
+                Margin="0,0,0,4"
+                Padding="7,3"
+                Background="{StaticResource NotificationWarningBrush}"
+                CornerRadius="3"
+                Visibility="{Binding AutoRunMountWarning, Converter={StaticResource VisibilityConverter}}">
+                <TextBlock
+                    FontSize="14"
+                    Foreground="{StaticResource NotificationWarningTextBrush}"
+                    Text="{Binding AutoRunMountWarningText}"
+                    TextWrapping="Wrap" />
+            </Border>
+
+            <Grid Grid.Row="2">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Grid>
+                    <UniformGrid>
+                        <UniformGrid.Style>
+                            <Style TargetType="UniformGrid">
+                                <Setter Property="Rows" Value="1" />
+                                <Setter Property="Columns" Value="2" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding FringeSideBySide}" Value="False">
+                                        <Setter Property="Rows" Value="2" />
+                                        <Setter Property="Columns" Value="1" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding FringeVisible}" Value="False">
+                                        <Setter Property="Rows" Value="1" />
+                                        <Setter Property="Columns" Value="1" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </UniformGrid.Style>
+
+                        <Grid Visibility="{Binding ImageRegionVisible, Converter={StaticResource VisibilityConverter}}">
+                            <view:ImageView
+                                HorizontalAlignment="Stretch"
+                                VerticalAlignment="Stretch"
+                                dk:ZoomToFit.Token="{Binding ZoomFitToken}"
+                                Visibility="{Binding MainRegionShowsImage, Converter={StaticResource VisibilityConverter}}"
+                                Image="{Binding PreparedImage}"
+                                RightMouseButtonDownCommand="{Binding PixelReadoutStartCommand}"
+                                RightMouseButtonMoveCommand="{Binding PixelReadoutMoveCommand}"
+                                RightMouseButtonUpCommand="{Binding PixelReadoutEndCommand}"
+                                ScrollEnabled="True">
+                                <view:ImageView.ImageAreaContent>
+                                    <Canvas
+                                        Width="{Binding PreparedImage.PixelWidth}"
+                                        Height="{Binding PreparedImage.PixelHeight}"
+                                        IsHitTestVisible="False"
+                                        Visibility="{Binding CrosshairVisible, Converter={StaticResource VisibilityConverter}}">
+                                        <Path
+                                            Canvas.Left="{Binding CrosshairLeft}"
+                                            Canvas.Top="{Binding CrosshairTop}"
+                                            Width="{Binding CrosshairSize}"
+                                            Height="{Binding CrosshairSize}"
+                                            Data="M0.5,0 L0.5,0.34 M0.5,0.66 L0.5,1 M0,0.5 L0.34,0.5 M0.66,0.5 L1,0.5 M0.42,0.5 A 0.08,0.08 1 1 1 0.42,0.50001"
+                                            Opacity="0.85"
+                                            Stretch="Uniform"
+                                            Stroke="{StaticResource SecondaryBrush}"
+                                            StrokeThickness="{Binding CrosshairThickness}"
+                                            UseLayoutRounding="True" />
+                                    </Canvas>
+                                </view:ImageView.ImageAreaContent>
+                            </view:ImageView>
+
+
+                            <Grid
+                                Width="135"
+                                Height="135"
+                                Margin="10"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Top"
+                                IsHitTestVisible="False"
+                                Visibility="{Binding CompassVisible, Converter={StaticResource VisibilityConverter}}">
+                                <Grid.RenderTransform>
+                                    <RotateTransform Angle="{Binding CompassAngle}" CenterX="67.5" CenterY="67.5" />
+                                </Grid.RenderTransform>
+                                <Ellipse
+                                    Opacity="0.5"
+                                    Stroke="{StaticResource PrimaryBrush}"
+                                    StrokeThickness="1" />
+                                <Line
+                                    Opacity="0.8"
+                                    Stroke="{StaticResource PrimaryBrush}"
+                                    StrokeThickness="2"
+                                    X1="67.5"
+                                    X2="67.5"
+                                    Y1="67.5"
+                                    Y2="18" />
+                                <Line
+                                    Opacity="0.8"
+                                    Stroke="{StaticResource PrimaryBrush}"
+                                    StrokeThickness="2"
+                                    X1="67.5"
+                                    X2="18"
+                                    Y1="67.5"
+                                    Y2="67.5" />
+                                <TextBlock
+                                    Margin="0,-2,0,0"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Top"
+                                    FontSize="14"
+                                    FontWeight="Bold"
+                                    Foreground="{StaticResource PrimaryBrush}"
+                                    Text="N" />
+                                <TextBlock
+                                    Margin="0,0,0,-2"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Bottom"
+                                    FontSize="14"
+                                    Foreground="{StaticResource PrimaryBrush}"
+                                    Text="S" />
+                                <TextBlock
+                                    Margin="-2,0,0,0"
+                                    HorizontalAlignment="Left"
+                                    VerticalAlignment="Center"
+                                    FontSize="14"
+                                    FontWeight="Bold"
+                                    Foreground="{StaticResource PrimaryBrush}"
+                                    Text="{Binding CompassLeftLabel}" />
+                                <TextBlock
+                                    Margin="0,0,-2,0"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Center"
+                                    FontSize="14"
+                                    Foreground="{StaticResource PrimaryBrush}"
+                                    Text="{Binding CompassRightLabel}" />
+                            </Grid>
+
+                            <Border
+                                Margin="8"
+                                Padding="10,4"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Bottom"
+                                Background="{StaticResource BackgroundBrush}"
+                                BorderBrush="{StaticResource BorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="4"
+                                IsHitTestVisible="False"
+                                Opacity="0.9"
+                                Visibility="{Binding PreviewBadgeVisible, Converter={StaticResource VisibilityConverter}}">
+                                <TextBlock
+                                    FontSize="16"
+                                    FontWeight="SemiBold"
+                                    Foreground="{StaticResource PrimaryBrush}"
+                                    Text="Preview, not saved" />
+                            </Border>
+
+                            <Border
+                                Margin="8"
+                                Padding="12,6"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Bottom"
+                                Background="{StaticResource BackgroundBrush}"
+                                BorderBrush="{StaticResource BorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="4"
+                                IsHitTestVisible="False"
+                                Opacity="0.9"
+                                Visibility="{Binding PixelReadoutVisible, Converter={StaticResource VisibilityConverter}}">
+                                <TextBlock
+                                    FontFamily="Consolas"
+                                    FontSize="24"
+                                    FontWeight="SemiBold"
+                                    Foreground="{StaticResource PrimaryBrush}"
+                                    Text="{Binding PixelReadout}" />
+                            </Border>
+                        </Grid>
+
+                        <Grid Visibility="{Binding FringeVisible, Converter={StaticResource VisibilityConverter}}">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+
+                            <Grid Grid.Row="0" Margin="4,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <Border
+                                    Grid.Column="0"
+                                    Height="24"
+                                    VerticalAlignment="Center"
+                                    BorderBrush="{StaticResource BorderBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="3"
+                                    ToolTip="Average is the accumulated mean power spectrum, Frame is the last single frame, Autocorr is its inverse transform">
+                                    <StackPanel Orientation="Horizontal">
+                                        <ToggleButton
+                                            Command="{Binding SetFringeModeCommand}"
+                                            CommandParameter="Average"
+                                            Content="Average"
+                                            IsChecked="{Binding FringeModeAverage, Mode=OneWay}"
+                                            Style="{StaticResource SpeckleSegment}" />
+                                        <Rectangle Width="1" Fill="{StaticResource BorderBrush}" />
+                                        <ToggleButton
+                                            Command="{Binding SetFringeModeCommand}"
+                                            CommandParameter="Autocorrelation"
+                                            Content="Autocorrelation"
+                                            IsChecked="{Binding FringeModeAutocorrelation, Mode=OneWay}"
+                                            Style="{StaticResource SpeckleSegment}" />
+                                    </StackPanel>
+                                </Border>
+                                <Button
+                                    Grid.Column="2"
+                                    Command="{Binding ResetFringesCommand}"
+                                    Content="Reset"
+                                    Style="{StaticResource SpeckleQuietButton}"
+                                    ToolTip="Start the accumulation again from the next frame" />
+                            </Grid>
+
+                            <Image
+                                Grid.Row="1"
+                                HorizontalAlignment="Stretch"
+                                VerticalAlignment="Stretch"
+                                RenderOptions.BitmapScalingMode="HighQuality"
+                                Source="{Binding FringeImage}"
+                                Stretch="Uniform"
+                                StretchDirection="Both" />
+                        </Grid>
+                    </UniformGrid>
+
+                </Grid>
+
+                <StackPanel
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Visibility="{Binding ImagePlaceholderVisible, Converter={StaticResource VisibilityConverter}}">
+                    <Path
+                        Width="52"
+                        Height="52"
+                        Data="{StaticResource PictureSVG}"
+                        Fill="{StaticResource SecondaryBrush}"
+                        Opacity="0.5"
+                        Stretch="Uniform" />
+                    <TextBlock
+                        Margin="0,10,0,0"
+                        HorizontalAlignment="Center"
+                        FontSize="14"
+                        Foreground="{StaticResource PrimaryBrush}"
+                        Text="No frame yet" />
+                </StackPanel>
+
+                <Border
+                    Background="{StaticResource BackgroundBrush}"
+                    Visibility="{Binding PlanningPanelVisible, Converter={StaticResource VisibilityConverter}}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+
+                        <WrapPanel Grid.Row="0">
+                            <Button
+                                Command="{Binding LoadListCommand}"
+                                Style="{StaticResource SpeckleLoadListButton}"
+                                ToolTip="{Binding LoadListTooltip}">
+                                <StackPanel Orientation="Horizontal">
+                                    <Path
+                                        Width="16"
+                                        Height="16"
+                                        Margin="0,0,8,0"
+                                        VerticalAlignment="Center"
+                                        Data="{StaticResource LoadSVG}"
+                                        Style="{StaticResource SpeckleIconPath}" />
+                                    <TextBlock VerticalAlignment="Center" Text="{Binding LoadListLabel}" />
+                                </StackPanel>
+                            </Button>
+                            <ToggleButton
+                                Height="32"
+                                Margin="0,0,7,7"
+                                VerticalAlignment="Center"
+                                Content="Add star"
+                                IsChecked="{Binding AddStarOpen, Mode=TwoWay}"
+                                Style="{StaticResource SpeckleQuietToggle}"
+                                ToolTip="Add a single star by hand, for focusing or a quick look" />
+                        </WrapPanel>
+
+                        <StackPanel
+                            Grid.Row="0"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Center"
+                            Orientation="Horizontal">
+                            <Grid
+                                Width="170"
+                                Height="32"
+                                Margin="0,0,8,0"
+                                VerticalAlignment="Center">
+                                <TextBox
+                                    Padding="6,0"
+                                    VerticalContentAlignment="Center"
+                                    FontSize="14"
+                                    Text="{Binding TargetSearch, UpdateSourceTrigger=PropertyChanged}"
+                                    ToolTip="Show only the targets whose name contains this text" />
+                                <TextBlock
+                                    Margin="10,0,0,0"
+                                    VerticalAlignment="Center"
+                                    FontSize="14"
+                                    Foreground="{StaticResource SecondaryBrush}"
+                                    IsHitTestVisible="False"
+                                    Text="Search"
+                                    Visibility="{Binding TargetSearchEmpty, Converter={StaticResource VisibilityConverter}}" />
+                            </Grid>
+                            <Button
+                                Margin="0"
+                                Command="{Binding ExportCsvCommand}"
+                                Content="Save list"
+                                Style="{StaticResource SpeckleQuietButton}"
+                                ToolTip="Save the target list, with the progress so far, to a CSV file" />
+                        </StackPanel>
+
+                        <Border
+                            Grid.Row="1"
+                            Margin="0,2,0,6"
+                            Padding="8,6"
+                            BorderBrush="{StaticResource BorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="4"
+                            Visibility="{Binding AddStarOpen, Converter={StaticResource VisibilityConverter}}">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <StackPanel Margin="0,0,10,0">
+                                        <TextBlock Style="{StaticResource SpeckleMicroLabel}" Text="name" />
+                                        <TextBox
+                                            Width="200"
+                                            Height="32"
+                                            Padding="6,0"
+                                            VerticalContentAlignment="Center"
+                                            FontSize="14"
+                                            Text="{Binding NewStarName, UpdateSourceTrigger=PropertyChanged}" />
+                                    </StackPanel>
+                                    <StackPanel Margin="0,0,10,0">
+                                        <TextBlock Style="{StaticResource SpeckleMicroLabel}" Text="ra in hours" />
+                                        <TextBox
+                                            Width="130"
+                                            Height="32"
+                                            Padding="6,0"
+                                            VerticalContentAlignment="Center"
+                                            FontSize="14"
+                                            Text="{Binding NewStarRa, UpdateSourceTrigger=PropertyChanged}"
+                                            ToolTip="18 36 56 or 18.615" />
+                                    </StackPanel>
+                                    <StackPanel Margin="0,0,10,0">
+                                        <TextBlock Style="{StaticResource SpeckleMicroLabel}" Text="dec in degrees" />
+                                        <TextBox
+                                            Width="130"
+                                            Height="32"
+                                            Padding="6,0"
+                                            VerticalContentAlignment="Center"
+                                            FontSize="14"
+                                            Text="{Binding NewStarDec, UpdateSourceTrigger=PropertyChanged}"
+                                            ToolTip="+38 47 01 or 38.783" />
+                                    </StackPanel>
+                                    <Button
+                                        Height="32"
+                                        VerticalAlignment="Bottom"
+                                        Command="{Binding AddStarCommand}"
+                                        Content="Add and image next"
+                                        Style="{StaticResource SpeckleQuietButton}" />
+                                </StackPanel>
+
+                                <TextBlock
+                                    Margin="0,8,0,0"
+                                    Style="{StaticResource SpeckleMicroLabel}"
+                                    Text="bright stars in the dome slit" />
+                                <ItemsControl ItemsSource="{Binding BrightStars}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <WrapPanel />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Button
+                                                Command="{Binding Data.PickBrightStarCommand, Source={StaticResource PlanProxy}}"
+                                                CommandParameter="{Binding}"
+                                                Style="{StaticResource SpeckleQuietButton}">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock
+                                                        Margin="0,0,8,0"
+                                                        VerticalAlignment="Center"
+                                                        FontSize="14"
+                                                        Foreground="{StaticResource PrimaryBrush}"
+                                                        Text="{Binding Name2}" />
+                                                    <TextBlock
+                                                        VerticalAlignment="Center"
+                                                        FontSize="14"
+                                                        Foreground="{StaticResource SecondaryBrush}"
+                                                        Text="{Binding Rp, StringFormat=F1}" />
+                                                </StackPanel>
+                                            </Button>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+
+                        <Border
+                            Grid.Row="2"
+                            MinHeight="86"
+                            Margin="0,2,0,8"
+                            Background="{StaticResource SpeckleHoverBrush}"
+                            CornerRadius="6"
+                            dk:QueueDrag.IsTarget="True">
+                            <Grid>
+                                <Rectangle
+                                    IsHitTestVisible="False"
+                                    RadiusX="6"
+                                    RadiusY="6"
+                                    Stroke="{StaticResource BorderBrush}"
+                                    StrokeDashArray="4 3"
+                                    StrokeThickness="2" />
+                                <Grid Margin="12,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel
+                                    Grid.Column="0"
+                                    Margin="2,0,16,0"
+                                    VerticalAlignment="Center"
+                                    Orientation="Horizontal">
+                                    <Path
+                                        Width="16"
+                                        Height="22"
+                                        Margin="0,0,8,0"
+                                        VerticalAlignment="Center"
+                                        Data="{StaticResource SpeckleGrip}"
+                                        Fill="{StaticResource SecondaryBrush}"
+                                        Opacity="0.8"
+                                        Stretch="Uniform" />
+                                    <TextBlock
+                                        VerticalAlignment="Center"
+                                        FontSize="17"
+                                        FontWeight="SemiBold"
+                                        Foreground="{StaticResource PrimaryBrush}"
+                                        Text="Queue" />
+                                </StackPanel>
+                                <TextBlock
+                                    Grid.Column="1"
+                                    VerticalAlignment="Center"
+                                    FontSize="15"
+                                    Foreground="{StaticResource PrimaryBrush}"
+                                    IsHitTestVisible="False"
+                                    Opacity="0.8"
+                                    Text="Drag a target here"
+                                    Visibility="{Binding QueueEmpty, Converter={StaticResource VisibilityConverter}}" />
+                                <ScrollViewer Grid.Column="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Disabled">
+                                    <ItemsControl
+                                        MinHeight="60"
+                                        Background="Transparent"
+                                        dk:QueueDrag.IsTarget="True"
+                                        ItemsSource="{Binding UpNext}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <WrapPanel Orientation="Horizontal" />
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border
+                                                    Height="36"
+                                                    Margin="0,0,8,6"
+                                                    Padding="10,0"
+                                                    Background="{StaticResource BackgroundBrush}"
+                                                    BorderBrush="{StaticResource BorderBrush}"
+                                                    BorderThickness="1"
+                                                    CornerRadius="4"
+                                                    dk:QueueDrag.IsTarget="True">
+                                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                        <TextBlock
+                                                            Margin="0,0,8,0"
+                                                            VerticalAlignment="Center"
+                                                            FontSize="15"
+                                                            Foreground="{StaticResource PrimaryBrush}"
+                                                            Text="{Binding Name}" />
+                                                        <Button
+                                                            Margin="0"
+                                                            Command="{Binding Data.RemoveFromQueueCommand, Source={StaticResource PlanProxy}}"
+                                                            CommandParameter="{Binding}"
+                                                            Style="{StaticResource SpeckleIconButton}"
+                                                            ToolTip="Remove this target from the queue">
+                                                            <Path Data="{StaticResource CancelSVG}" Style="{StaticResource SpeckleIconPath}" />
+                                                        </Button>
+                                                        <Border Style="{StaticResource SpeckleDragHandle}">
+                                                            <Path
+                                                                Width="12"
+                                                                Height="17"
+                                                                Data="{StaticResource SpeckleGrip}"
+                                                                Fill="{StaticResource SecondaryBrush}"
+                                                                Opacity="0.75"
+                                                                Stretch="Uniform"
+                                                                VerticalAlignment="Center" />
+                                                        </Border>
+                                                    </StackPanel>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </ScrollViewer>
+                                </Grid>
+                            </Grid>
+                        </Border>
+
+                        <Grid Grid.Row="3">
+                            <TextBlock
+                                VerticalAlignment="Center"
+                                Style="{StaticResource SpeckleMicroLabel}"
+                                Text="Observation order" />
+                            <ItemsControl HorizontalAlignment="Right" ItemsSource="{Binding LoadedLists}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel
+                                            Margin="14,0,0,0"
+                                            VerticalAlignment="Center"
+                                            Opacity="0.6"
+                                            Orientation="Horizontal"
+                                            ToolTip="{Binding Tooltip}">
+                                            <TextBlock
+                                                Margin="0,0,5,0"
+                                                VerticalAlignment="Center"
+                                                FontSize="12"
+                                                Foreground="{StaticResource SecondaryBrush}"
+                                                Text="{Binding Name}" />
+                                            <TextBlock
+                                                Margin="0,0,2,0"
+                                                VerticalAlignment="Center"
+                                                FontSize="12"
+                                                Foreground="{StaticResource SecondaryBrush}"
+                                                Text="{Binding TargetCount}" />
+                                            <Button
+                                                Width="20"
+                                                Height="20"
+                                                Margin="0"
+                                                Padding="4"
+                                                BorderThickness="0"
+                                                Command="{Binding Data.RemoveListCommand, Source={StaticResource PlanProxy}}"
+                                                CommandParameter="{Binding Path}"
+                                                Style="{StaticResource SpeckleIconButton}"
+                                                ToolTip="Remove this list and its targets">
+                                                <Path Data="{StaticResource CancelSVG}" Style="{StaticResource SpeckleIconPath}" />
+                                            </Button>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </Grid>
+
+                        <DataGrid
+                            Grid.Row="4"
+                            AlternationCount="{Binding Items.Count, RelativeSource={RelativeSource Self}}"
+                            AutoGenerateColumns="False"
+                            CanUserAddRows="False"
+                            CanUserDeleteRows="False"
+                            CellStyle="{StaticResource CenteredDataGridCell}"
+                            ColumnHeaderStyle="{StaticResource StandardDataGridColumnHeader}"
+                            FontSize="14"
+                            GridLinesVisibility="None"
+                            HeadersVisibility="Column"
+                            ItemsSource="{Binding TargetsView}"
+                            MinRowHeight="40"
+                            ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                            RowHeaderStyle="{StaticResource StandardDataGridRowHeader}"
+                            SelectionMode="Single"
+                            Style="{StaticResource StandardDataGrid}">
+                            <DataGrid.RowStyle>
+                                <Style BasedOn="{StaticResource StandardDataGridRow}" TargetType="DataGridRow">
+                                    <Setter Property="dk:QueueDrag.IsRow" Value="True" />
+                                    <Setter Property="ToolTip" Value="Right click for more, or drag this row into the queue" />
+                                    <Setter Property="ContextMenu">
+                                        <Setter.Value>
+                                            <ContextMenu>
+                                                <MenuItem
+                                                    Command="{Binding Data.QueueNextCommand, Source={StaticResource PlanProxy}}"
+                                                    CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                    Header="Image this next" />
+                                                <MenuItem
+                                                    Command="{Binding Data.ToggleDoneCommand, Source={StaticResource PlanProxy}}"
+                                                    CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                    Header="Mark done or not done" />
+                                            </ContextMenu>
+                                        </Setter.Value>
+                                    </Setter>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsComplete}" Value="True">
+                                            <Setter Property="Opacity" Value="0.7" />
+                                        </DataTrigger>
+                                        <DataTrigger Value="True">
+                                            <DataTrigger.Binding>
+                                                <MultiBinding Converter="{StaticResource RefEq}">
+                                                    <Binding />
+                                                    <Binding Path="Data.NextUpTarget" Source="{StaticResource PlanProxy}" />
+                                                </MultiBinding>
+                                            </DataTrigger.Binding>
+                                            <Setter Property="Background" Value="{StaticResource SpeckleHoverBrush}" />
+                                            <Setter Property="FontWeight" Value="SemiBold" />
+                                        </DataTrigger>
+                                        <DataTrigger Value="True">
+                                            <DataTrigger.Binding>
+                                                <MultiBinding Converter="{StaticResource RefEq}">
+                                                    <Binding />
+                                                    <Binding Path="Data.Session.CurrentTarget" Source="{StaticResource PlanProxy}" />
+                                                </MultiBinding>
+                                            </DataTrigger.Binding>
+                                            <Setter Property="Background" Value="{StaticResource SpeckleActiveBrush}" />
+                                            <Setter Property="FontWeight" Value="SemiBold" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </DataGrid.RowStyle>
+                            <DataGrid.Columns>
+                                <DataGridTemplateColumn
+                                    Width="46"
+                                    Header=""
+                                    IsReadOnly="True">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Border Style="{StaticResource SpeckleDragHandle}">
+                                                <Path
+                                                    Width="15"
+                                                    Height="21"
+                                                    Data="{StaticResource SpeckleGrip}"
+                                                    Fill="{StaticResource SecondaryBrush}"
+                                                    Opacity="0.75"
+                                                    Stretch="Uniform"
+                                                    VerticalAlignment="Center" />
+                                            </Border>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn
+                                    Width="40"
+                                    Header="#"
+                                    IsReadOnly="True">
+                                    <DataGridTemplateColumn.HeaderStyle>
+                                        <Style BasedOn="{StaticResource SpeckleHeaderRight}" TargetType="DataGridColumnHeader">
+                                            <Setter Property="ToolTip" Value="Position in tonight's observing order. Drag a row by the handle on its left into the queue to image it sooner." />
+                                        </Style>
+                                    </DataGridTemplateColumn.HeaderStyle>
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Style="{StaticResource SpeckleCellNumber}" Text="{Binding PlanNumber}" />
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTextColumn
+                                    Width="2.2*"
+                                    MinWidth="70"
+                                    Binding="{Binding Name}"
+                                    ElementStyle="{StaticResource SpeckleCellText}"
+                                    Header="name"
+                                    IsReadOnly="True">
+                                    <DataGridTextColumn.HeaderStyle>
+                                        <Style BasedOn="{StaticResource SpeckleHeaderLeft}" TargetType="DataGridColumnHeader">
+                                            <Setter Property="ToolTip" Value="Name of the target, taken from the Name1 and Name2 columns of the list. It is written into the FITS header and used for the folder the frames are saved in." />
+                                        </Style>
+                                    </DataGridTextColumn.HeaderStyle>
+                                </DataGridTextColumn>
+                                <DataGridTextColumn
+                                    Width="0.9*"
+                                    MinWidth="42"
+                                    Binding="{Binding Obs}"
+                                    ElementStyle="{StaticResource SpeckleCellText}"
+                                    Header="obs"
+                                    IsReadOnly="True">
+                                    <DataGridTextColumn.HeaderStyle>
+                                        <Style BasedOn="{StaticResource SpeckleHeaderLeft}" TargetType="DataGridColumnHeader">
+                                            <Setter Property="ToolTip" Value="Observer this target belongs to. It comes from the Obs column of the list, or from the observer set in the plugin options when the list leaves it empty." />
+                                        </Style>
+                                    </DataGridTextColumn.HeaderStyle>
+                                </DataGridTextColumn>
+                                <DataGridTextColumn
+                                    Width="1.2*"
+                                    MinWidth="64"
+                                    Binding="{Binding RaText}"
+                                    ElementStyle="{StaticResource SpeckleCellNumber}"
+                                    Header="ra"
+                                    IsReadOnly="True">
+                                    <DataGridTextColumn.HeaderStyle>
+                                        <Style BasedOn="{StaticResource SpeckleHeaderRight}" TargetType="DataGridColumnHeader">
+                                            <Setter Property="ToolTip" Value="Right ascension for epoch J2000, shown as hours, minutes and seconds. The list itself holds it in decimal degrees." />
+                                        </Style>
+                                    </DataGridTextColumn.HeaderStyle>
+                                </DataGridTextColumn>
+                                <DataGridTextColumn
+                                    Width="1.2*"
+                                    MinWidth="66"
+                                    Binding="{Binding DecText}"
+                                    ElementStyle="{StaticResource SpeckleCellNumber}"
+                                    Header="dec"
+                                    IsReadOnly="True">
+                                    <DataGridTextColumn.HeaderStyle>
+                                        <Style BasedOn="{StaticResource SpeckleHeaderRight}" TargetType="DataGridColumnHeader">
+                                            <Setter Property="ToolTip" Value="Declination for epoch J2000, shown as degrees, arcminutes and arcseconds. The list itself holds it in decimal degrees." />
+                                        </Style>
+                                    </DataGridTextColumn.HeaderStyle>
+                                </DataGridTextColumn>
+                                <DataGridTextColumn
+                                    Width="0.7*"
+                                    MinWidth="42"
+                                    Binding="{Binding Gmag, StringFormat=F1}"
+                                    ElementStyle="{StaticResource SpeckleCellNumber}"
+                                    Header="gmag"
+                                    IsReadOnly="True">
+                                    <DataGridTextColumn.HeaderStyle>
+                                        <Style BasedOn="{StaticResource SpeckleHeaderRight}" TargetType="DataGridColumnHeader">
+                                            <Setter Property="ToolTip" Value="Gaia G magnitude, a measure of brightness where smaller numbers are brighter. It drives how long each exposure has to be." />
+                                        </Style>
+                                    </DataGridTextColumn.HeaderStyle>
+                                </DataGridTextColumn>
+                                <DataGridTextColumn
+                                    Width="0.7*"
+                                    Binding="{Binding Sep, StringFormat=F1}"
+                                    ElementStyle="{StaticResource SpeckleCellNumber}"
+                                    Header="sep"
+                                    IsReadOnly="True">
+                                    <DataGridTextColumn.HeaderStyle>
+                                        <Style BasedOn="{StaticResource SpeckleHeaderRight}" TargetType="DataGridColumnHeader">
+                                            <Setter Property="ToolTip" Value="Separation between the two components in arcseconds. Targets outside the separation limits in the plugin options are left out." />
+                                        </Style>
+                                    </DataGridTextColumn.HeaderStyle>
+                                </DataGridTextColumn>
+                                <DataGridTextColumn
+                                    Width="0.6*"
+                                    Binding="{Binding Priority}"
+                                    ElementStyle="{StaticResource SpeckleCellNumber}"
+                                    Header="pri"
+                                    IsReadOnly="True">
+                                    <DataGridTextColumn.HeaderStyle>
+                                        <Style BasedOn="{StaticResource SpeckleHeaderRight}" TargetType="DataGridColumnHeader">
+                                            <Setter Property="ToolTip" Value="Priority from the list. When two targets are best placed at the same time, the higher priority is imaged first." />
+                                        </Style>
+                                    </DataGridTextColumn.HeaderStyle>
+                                </DataGridTextColumn>
+                                <DataGridTextColumn
+                                    Width="0.7*"
+                                    Binding="{Binding CyclesDisplay}"
+                                    ElementStyle="{StaticResource SpeckleCellNumber}"
+                                    Header="cyc"
+                                    IsReadOnly="True">
+                                    <DataGridTextColumn.HeaderStyle>
+                                        <Style BasedOn="{StaticResource SpeckleHeaderRight}" TargetType="DataGridColumnHeader">
+                                            <Setter Property="ToolTip" Value="Cycles taken out of the cycles asked for. One cycle is a full set of video exposures on the target and, when it is wanted, on its reference star." />
+                                        </Style>
+                                    </DataGridTextColumn.HeaderStyle>
+                                </DataGridTextColumn>
+                                <DataGridTextColumn
+                                    Width="0.9*"
+                                    Binding="{Binding ImageTime, StringFormat=HH:mm}"
+                                    ElementStyle="{StaticResource SpeckleCellNumber}"
+                                    Header="time"
+                                    IsReadOnly="True">
+                                    <DataGridTextColumn.HeaderStyle>
+                                        <Style BasedOn="{StaticResource SpeckleHeaderRight}" TargetType="DataGridColumnHeader">
+                                            <Setter Property="ToolTip" Value="Time tonight when the target is best placed: high enough, inside the dome slit, far enough from the moon and the meridian. The run works down the list in this order." />
+                                        </Style>
+                                    </DataGridTextColumn.HeaderStyle>
+                                </DataGridTextColumn>
+                                <DataGridTemplateColumn Width="1.2*" Header="filter">
+                                    <DataGridTemplateColumn.HeaderStyle>
+                                        <Style BasedOn="{StaticResource SpeckleHeaderLeft}" TargetType="DataGridColumnHeader">
+                                            <Setter Property="ToolTip" Value="Filter this target is imaged through. Filled in from the sequence template when the list does not name one, and used to start the capture plan at the confirmation step." />
+                                        </Style>
+                                    </DataGridTemplateColumn.HeaderStyle>
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <ComboBox
+                                                Margin="6,0"
+                                                VerticalAlignment="Center"
+                                                IsEditable="True"
+                                                ItemsSource="{Binding Data.AvailableFilters, Source={StaticResource PlanProxy}}"
+                                                Text="{Binding Filter, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                                                ToolTip="Filter this target is imaged through" />
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn
+                                    Width="110"
+                                    Header=""
+                                    IsReadOnly="True">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Button
+                                                Margin="6,0"
+                                                VerticalAlignment="Center"
+                                                Command="{Binding Data.QueueNextCommand, Source={StaticResource PlanProxy}}"
+                                                CommandParameter="{Binding}"
+                                                Content="Image next"
+                                                Style="{StaticResource SpeckleQuietButton}"
+                                                ToolTip="Put this target at the front of the queue" />
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn
+                                    Width="132"
+                                    Header=""
+                                    IsReadOnly="True">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Button
+                                                Margin="6,0"
+                                                VerticalAlignment="Center"
+                                                Command="{Binding Data.ToggleDoneCommand, Source={StaticResource PlanProxy}}"
+                                                CommandParameter="{Binding}">
+                                                <Button.Style>
+                                                    <Style BasedOn="{StaticResource SpeckleQuietButton}" TargetType="Button">
+                                                        <Setter Property="Content" Value="Mark done" />
+                                                        <Setter Property="ToolTip" Value="Count every cycle of this target as taken, so it is not imaged again" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsComplete}" Value="True">
+                                                                <Setter Property="Content" Value="Completed" />
+                                                                <Setter Property="ToolTip" Value="This target is finished. Put its cycles back to none taken so it is imaged again." />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Button.Style>
+                                            </Button>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                            </DataGrid.Columns>
+                        </DataGrid>
+
+                        <TextBlock
+                            Grid.Row="4"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            FontSize="14"
+                            Foreground="{StaticResource PrimaryBrush}"
+                            IsHitTestVisible="False"
+                            Opacity="0.7"
+                            Text="No target list loaded"
+                            Visibility="{Binding NoTargetsMessageVisible, Converter={StaticResource VisibilityConverter}}" />
+
+                        <Border
+                            Grid.Row="4"
+                            Background="{StaticResource BackgroundBrush}"
+                            Visibility="{Binding IsLoadingList, Converter={StaticResource VisibilityConverter}}">
+                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <ninactrl:LoadingControl
+                                    Width="40"
+                                    Height="40"
+                                    HorizontalAlignment="Center"
+                                    LoadingImageBrush="{StaticResource PrimaryBrush}" />
+                                <TextBlock
+                                    Margin="0,12,0,0"
+                                    HorizontalAlignment="Center"
+                                    FontSize="15"
+                                    Foreground="{StaticResource PrimaryBrush}"
+                                    Text="{Binding LoadingListStatus}" />
+                                <ProgressBar
+                                    Width="220"
+                                    Height="4"
+                                    Margin="0,10,0,0"
+                                    Foreground="{StaticResource ButtonForegroundBrush}"
+                                    IsIndeterminate="True" />
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </Border>
+
+                <Grid
+                    Grid.Row="1"
+                    Margin="6,4,6,2"
+                    HorizontalAlignment="Stretch"
+                    MaxHeight="320"
+                    Visibility="{Binding GateCardVisible, Converter={StaticResource VisibilityConverter}}">
+                    <Border
+                        x:Name="GateGlow"
+                        BorderBrush="{StaticResource PrimaryBrush}"
+                        BorderThickness="2"
+                        CornerRadius="5"
+                        IsHitTestVisible="False">
+                        <Border.Triggers>
+                            <EventTrigger RoutedEvent="FrameworkElement.Loaded">
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation
+                                            AutoReverse="True"
+                                            RepeatBehavior="Forever"
+                                            Storyboard.TargetProperty="Opacity"
+                                            From="1.0"
+                                            To="0.65"
+                                            Duration="0:0:1.6" />
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </EventTrigger>
+                        </Border.Triggers>
+                    </Border>
+                    <Border
+                        Margin="2"
+                        Padding="14,10,14,12"
+                        Background="{StaticResource BackgroundBrush}"
+                        BorderBrush="{StaticResource BorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="4">
+                        <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                        <StackPanel>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock
+                                    Grid.Column="0"
+                                    VerticalAlignment="Center"
+                                    FontSize="21"
+                                    FontWeight="SemiBold"
+                                    Foreground="{StaticResource PrimaryBrush}"
+                                    Text="{Binding GateTitle}"
+                                    TextWrapping="Wrap" />
+                                <ToggleButton
+                                    Grid.Column="1"
+                                    Margin="10,0,0,0"
+                                    Content="{Binding GateCardCollapseLabel}"
+                                    IsChecked="{Binding GateCardCollapsed, Mode=TwoWay}"
+                                    Style="{StaticResource SpeckleQuietToggle}"
+                                    ToolTip="Fold this card away so the image is not covered" />
+                            </Grid>
+                            <StackPanel Visibility="{Binding GateCardExpanded, Converter={StaticResource VisibilityConverter}}">
+                            <TextBlock
+                                Margin="0,6,0,0"
+                                FontSize="15"
+                                Foreground="{StaticResource NotificationErrorTextBrush}"
+                                Text="{Binding GateDetail}"
+                                TextWrapping="Wrap"
+                                Visibility="{Binding IsErrorGate, Converter={StaticResource VisibilityConverter}}" />
+
+                            <ItemsControl
+                                Margin="0,14,0,0"
+                                IsEnabled="{Binding CapturePlanEditable}"
+                                ItemsSource="{Binding CaptureEntries}"
+                                Visibility="{Binding CapturePlanVisible, Converter={StaticResource VisibilityConverter}}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Margin="0,0,0,7" Orientation="Horizontal">
+                                            <ComboBox
+                                                Width="122"
+                                                Height="32"
+                                                Margin="0,0,14,0"
+                                                VerticalContentAlignment="Center"
+                                                IsEditable="False"
+                                                ItemsSource="{Binding Data.AvailableFilters, Source={StaticResource PlanProxy}}"
+                                                SelectedItem="{Binding Filter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                Visibility="{Binding Data.HasFilters, Source={StaticResource PlanProxy}, Converter={StaticResource VisibilityConverter}}" />
+                                            <Grid>
+                                                <TextBox
+                                                    Width="78"
+                                                    Height="32"
+                                                    VerticalContentAlignment="Center"
+                                                    TextAlignment="Right"
+                                                    Text="{Binding ExposureTime, Mode=TwoWay, Converter={StaticResource ZeroBlank}, UpdateSourceTrigger=LostFocus}"
+                                                    ToolTip="Seconds per frame. Leave it empty to use the exposure the calibration step works out." />
+                                                <TextBlock
+                                                    Margin="0,0,7,0"
+                                                    HorizontalAlignment="Right"
+                                                    VerticalAlignment="Center"
+                                                    FontSize="15"
+                                                    Foreground="{StaticResource SecondaryBrush}"
+                                                    IsHitTestVisible="False"
+                                                    Opacity="0.7"
+                                                    Text="auto"
+                                                    Visibility="{Binding ExposureTime, Converter={StaticResource ZeroHint}}" />
+                                            </Grid>
+                                            <TextBlock
+                                                Margin="6,0,0,0"
+                                                VerticalAlignment="Center"
+                                                FontSize="15"
+                                                Foreground="{StaticResource SecondaryBrush}"
+                                                Text="s" />
+                                            <Grid Margin="18,0,0,0">
+                                                <TextBox
+                                                    Width="86"
+                                                    Height="32"
+                                                    VerticalContentAlignment="Center"
+                                                    TextAlignment="Right"
+                                                    Text="{Binding FrameCount, Mode=TwoWay, Converter={StaticResource ZeroBlank}, UpdateSourceTrigger=LostFocus}"
+                                                    ToolTip="How many frames with this filter. Leave it empty to use the default from the plugin options." />
+                                                <TextBlock
+                                                    Margin="0,0,7,0"
+                                                    HorizontalAlignment="Right"
+                                                    VerticalAlignment="Center"
+                                                    FontSize="15"
+                                                    Foreground="{StaticResource SecondaryBrush}"
+                                                    IsHitTestVisible="False"
+                                                    Opacity="0.7"
+                                                    Text="auto"
+                                                    Visibility="{Binding FrameCount, Converter={StaticResource ZeroHint}}" />
+                                            </Grid>
+                                            <TextBlock
+                                                Margin="6,0,0,0"
+                                                VerticalAlignment="Center"
+                                                FontSize="15"
+                                                Foreground="{StaticResource SecondaryBrush}"
+                                                Text="frames" />
+                                            <Button
+                                                Margin="18,0,0,0"
+                                                Command="{Binding Data.TryCaptureEntryCommand, Source={StaticResource PlanProxy}}"
+                                                CommandParameter="{Binding}"
+                                                Content="Try"
+                                                Style="{StaticResource SpeckleQuietButton}"
+                                                ToolTip="Show this filter and exposure in the preview. The capture still starts on the filter at the top of this list." />
+                                            <Button
+                                                Margin="12,0,0,0"
+                                                Command="{Binding Data.RemoveCaptureEntryCommand, Source={StaticResource PlanProxy}}"
+                                                CommandParameter="{Binding}"
+                                                Style="{StaticResource SpeckleIconButton}"
+                                                ToolTip="Remove this filter">
+                                                <Path Data="{StaticResource CancelSVG}" Style="{StaticResource SpeckleIconPath}" />
+                                            </Button>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <Button
+                                Margin="0,3,0,0"
+                                HorizontalAlignment="Left"
+                                Command="{Binding AddCaptureEntryCommand}"
+                                Content="Add a filter"
+                                Style="{StaticResource SpeckleQuietButton}"
+                                Visibility="{Binding CapturePlanVisible, Converter={StaticResource VisibilityConverter}}" />
+
+                            <Button
+                                Margin="0,10,0,0"
+                                HorizontalAlignment="Left"
+                                Command="{Binding SkipStepCommand}"
+                                Content="Skip step"
+                                Style="{StaticResource SpeckleQuietButton}"
+                                Visibility="{Binding CanSkipStep, Converter={StaticResource VisibilityConverter}}" />
+
+                            <Button
+                                Margin="0,6,0,0"
+                                HorizontalAlignment="Left"
+                                Command="{Binding SkipTargetCommand}"
+                                Content="Skip target"
+                                Style="{StaticResource SpeckleQuietButton}"
+                                ToolTip="Drop this target for the rest of the night and go on to the next one. What has already been saved is kept."
+                                Visibility="{Binding ErrorGateVisible, Converter={StaticResource VisibilityConverter}}" />
+                            </StackPanel>
+                        </StackPanel>
+                        </ScrollViewer>
+                    </Border>
+                </Grid>
+
+                <Border
+                    BorderBrush="{StaticResource PrimaryBrush}"
+                    BorderThickness="2"
+                    CornerRadius="4"
+                    IsHitTestVisible="False"
+                    Visibility="{Binding PointingPulseVisible, Converter={StaticResource VisibilityConverter}}">
+                    <Border.Triggers>
+                        <EventTrigger RoutedEvent="FrameworkElement.Loaded">
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation
+                                        AutoReverse="True"
+                                        RepeatBehavior="Forever"
+                                        Storyboard.TargetProperty="Opacity"
+                                        From="1.0"
+                                        To="0.5"
+                                        Duration="0:0:1.6" />
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+                    </Border.Triggers>
+                </Border>
+
+                <Border
+                    Background="{StaticResource BackgroundBrush}"
+                    Visibility="{Binding KeplerVisible, Converter={StaticResource VisibilityConverter}}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+
+                        <Grid Grid.Row="0" Margin="0,0,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <Border
+                                Grid.Column="0"
+                                Height="32"
+                                VerticalAlignment="Center"
+                                BorderBrush="{StaticResource BorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="3"
+                                ToolTip="Where the dome slit is drawn when no dome is connected">
+                                <StackPanel Orientation="Horizontal">
+                                    <ToggleButton
+                                        Command="{Binding Kepler.SlitSouthCommand}"
+                                        Content="Slit S"
+                                        IsChecked="{Binding Kepler.DomeSlitSouth, Mode=OneWay}"
+                                        Style="{StaticResource SpeckleSegment}"
+                                        ToolTip="Draw the dome slit pointing south" />
+                                    <Rectangle Width="1" Fill="{StaticResource BorderBrush}" />
+                                    <ToggleButton
+                                        Command="{Binding Kepler.SlitNorthCommand}"
+                                        Content="Slit N"
+                                        IsChecked="{Binding Kepler.DomeSlitNorth, Mode=OneWay}"
+                                        Style="{StaticResource SpeckleSegment}"
+                                        ToolTip="Draw the dome slit pointing north" />
+                                </StackPanel>
+                            </Border>
+                            <StackPanel
+                                Grid.Column="1"
+                                Margin="10,0,10,0"
+                                VerticalAlignment="Center"
+                                Orientation="Horizontal">
+                                <TextBlock
+                                    Margin="0,0,14,0"
+                                    FontSize="13"
+                                    Foreground="{StaticResource PrimaryBrush}"
+                                    Opacity="0.7"
+                                    Text="{Binding Kepler.SlitLabel}"
+                                    Visibility="{Binding Kepler.SlitLabelVisible, Converter={StaticResource VisibilityConverter}}" />
+                                <TextBlock
+                                    FontSize="13"
+                                    Foreground="{StaticResource PrimaryBrush}"
+                                    Text="{Binding Kepler.NextLabel}"
+                                    TextTrimming="CharacterEllipsis"
+                                    ToolTip="The order is a prediction; the scheduler re-evaluates it before every target" />
+                            </StackPanel>
+                            <Button
+                                Grid.Column="2"
+                                Margin="0"
+                                Command="{Binding Kepler.ResetViewCommand}"
+                                Content="Reset"
+                                Style="{StaticResource SpeckleQuietButton}"
+                                ToolTip="Reset the pan and the zoom of the sky view" />
+                        </Grid>
+
+                        <kepler:KeplerSkyView Grid.Row="1" DataContext="{Binding Kepler}" />
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <Grid Grid.Row="3" Margin="0,6,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="{Binding PrimaryActionVisible, Converter={StaticResource RoomForButton}}" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <Border
+                    Grid.Row="0"
+                    Grid.RowSpan="5"
+                    Grid.Column="0"
+                    Margin="0,0,10,0"
+                    Padding="8,6"
+                    Background="{StaticResource BackgroundBrush}"
+                    BorderBrush="{StaticResource BorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="3"
+                    Visibility="{Binding TwoCameraSetupVisible, Converter={StaticResource VisibilityConverter}}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <Viewbox
+                            Grid.Row="0"
+                            MinWidth="216"
+                            MinHeight="112"
+                            Margin="0,0,0,8"
+                            Stretch="Uniform"
+                            ToolTip="Where the flip mirror is, read from the focuser position. Straight through to the wide field camera, or up to the science camera.">
+                            <Canvas Width="108" Height="56">
+                                <Rectangle
+                                    Canvas.Left="40"
+                                    Canvas.Top="0"
+                                    Width="26"
+                                    Height="15"
+                                    dk:MirrorAnimation.Fade="{Binding SciencePathOpacity}"
+                                    RadiusX="2"
+                                    RadiusY="2"
+                                    Stroke="{StaticResource PrimaryBrush}"
+                                    StrokeThickness="1.5" />
+                                <Line
+                                    dk:MirrorAnimation.Fade="{Binding SciencePathOpacity}"
+                                    Stroke="{StaticResource PrimaryBrush}"
+                                    StrokeThickness="2"
+                                    X1="53"
+                                    X2="53"
+                                    Y1="15"
+                                    Y2="36" />
+                                <Line
+                                    Stroke="{StaticResource PrimaryBrush}"
+                                    StrokeThickness="2"
+                                    X1="0"
+                                    X2="53"
+                                    Y1="36"
+                                    Y2="36" />
+                                <Line
+                                    dk:MirrorAnimation.Fade="{Binding WidePathOpacity}"
+                                    Stroke="{StaticResource PrimaryBrush}"
+                                    StrokeThickness="2"
+                                    X1="53"
+                                    X2="80"
+                                    Y1="36"
+                                    Y2="36" />
+                                <Rectangle
+                                    Canvas.Left="80"
+                                    Canvas.Top="28"
+                                    Width="28"
+                                    Height="17"
+                                    dk:MirrorAnimation.Fade="{Binding WidePathOpacity}"
+                                    RadiusX="2"
+                                    RadiusY="2"
+                                    Stroke="{StaticResource PrimaryBrush}"
+                                    StrokeThickness="1.5" />
+                                <Line
+                                    Canvas.Left="53"
+                                    Canvas.Top="36"
+                                    dk:MirrorAnimation.Angle="{Binding MirrorAngle}"
+                                    Stroke="{StaticResource ButtonBackgroundBrush}"
+                                    StrokeEndLineCap="Round"
+                                    StrokeStartLineCap="Round"
+                                    StrokeThickness="4"
+                                    X1="-13"
+                                    X2="13"
+                                    Y1="0"
+                                    Y2="0" />
+                            </Canvas>
+                        </Viewbox>
+
+                        <Border
+                            Grid.Row="1"
+                            Height="32"
+                            HorizontalAlignment="Center"
+                            BorderBrush="{StaticResource BorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="3"
+                            ToolTip="{Binding LightPathTooltip}"
+                            ToolTipService.ShowOnDisabled="True">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsSwitchingLightPath}" Value="True">
+                                            <Setter Property="Opacity" Value="0.6" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                            <StackPanel Orientation="Horizontal">
+                                <ToggleButton
+                                    Command="{Binding SwitchWidePathCommand}"
+                                    Content="Wide"
+                                    IsChecked="{Binding IsWidePath, Mode=OneWay}"
+                                    Style="{StaticResource SpeckleSegment}" />
+                                <Rectangle Width="1" Fill="{StaticResource BorderBrush}" />
+                                <ToggleButton
+                                    Command="{Binding SwitchSciencePathCommand}"
+                                    Content="Science"
+                                    IsChecked="{Binding IsSciencePath, Mode=OneWay}"
+                                    Style="{StaticResource SpeckleSegment}" />
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </Border>
+
+                <TextBlock
+                    Grid.Row="0"
+                    Grid.Column="1"
+                    MinHeight="18"
+                    HorizontalAlignment="Center"
+                    FontSize="14"
+                    Foreground="{StaticResource PrimaryBrush}"
+                    Text="{Binding StatusLine}"
+                    TextTrimming="CharacterEllipsis"
+                    Visibility="{Binding StatusLineVisible, Converter={StaticResource VisibilityConverter}}" />
+
+                <Grid
+                    Grid.Row="1"
+                    Grid.Column="1"
+                    Height="4"
+                    Visibility="{Binding RunChromeVisible, Converter={StaticResource VisibilityConverter}}">
+                    <ProgressBar
+                        Foreground="{StaticResource ButtonForegroundBrush}"
+                        IsIndeterminate="{Binding ProgressIndeterminate}"
+                        Maximum="{Binding Session.FrameTotal}"
+                        Minimum="0"
+                        Value="{Binding Session.FrameCount}"
+                        Visibility="{Binding ProgressBarVisible, Converter={StaticResource VisibilityConverter}}" />
+                </Grid>
+
+                <StackPanel
+                    Grid.Row="2"
+                    Grid.Column="1"
+                    Margin="0,6,0,0"
+                    HorizontalAlignment="Center"
+                    IsHitTestVisible="False"
+                    Visibility="{Binding PointingOverlayVisible, Converter={StaticResource VisibilityConverter}}">
+                <Viewbox
+                    MaxHeight="86"
+                    HorizontalAlignment="Center"
+                    StretchDirection="DownOnly">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock
+                            Margin="0,0,9,10"
+                            VerticalAlignment="Bottom"
+                            FontFamily="Consolas"
+                            FontSize="20"
+                            Foreground="#FFFF4438"
+                            Opacity="0.9"
+                            Text="RA" />
+                        <TextBlock
+                            FontFamily="Consolas"
+                            FontSize="56"
+                            FontWeight="Bold"
+                            Foreground="#FFFF4438"
+                            Text="{Binding PointingOverlayRa}" />
+                        <TextBlock
+                            Margin="30,0,9,10"
+                            VerticalAlignment="Bottom"
+                            FontFamily="Consolas"
+                            FontSize="20"
+                            Foreground="#FFFF4438"
+                            Opacity="0.9"
+                            Text="DEC" />
+                        <TextBlock
+                            FontFamily="Consolas"
+                            FontSize="56"
+                            FontWeight="Bold"
+                            Foreground="#FFFF4438"
+                            Text="{Binding PointingOverlayDec}" />
+                    </StackPanel>
+                </Viewbox>
+                    <TextBlock
+                        Margin="0,4,0,0"
+                        HorizontalAlignment="Center"
+                        FontSize="16"
+                        Foreground="{StaticResource SecondaryBrush}"
+                        Text="{Binding GateDeltaLine}"
+                        Visibility="{Binding GateDeltaVisible, Converter={StaticResource VisibilityConverter}}" />
+                </StackPanel>
+
+                <Grid
+                    Grid.Row="3"
+                    Grid.Column="1"
+                    MinHeight="38"
+                    Margin="0,8,0,0">
+                    <Button
+                        Command="{Binding PrimaryActionCommand}"
+                        Content="{Binding PrimaryActionLabel}"
+                        Style="{StaticResource SpecklePrimaryButton}"
+                        ToolTip="{Binding PrimaryActionTooltip}"
+                        Visibility="{Binding PrimaryActionVisible, Converter={StaticResource VisibilityConverter}}" />
+                </Grid>
+
+                <Grid Grid.Row="4" Grid.Column="1" Margin="0,8,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel
+                        Grid.Column="1"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Center"
+                        Orientation="Horizontal">
+                        <Button
+                            Margin="0,0,8,0"
+                            Command="{Binding FringeDemoCommand}"
+                            Content="Close demo"
+                            Style="{StaticResource SpeckleClusterButton}"
+                            ToolTip="Stop the power spectrum demo and go back to the plan"
+                            Visibility="{Binding IsFringeDemoRunning, Converter={StaticResource VisibilityConverter}}" />
+                        <ToggleButton
+                            Height="42"
+                            MinWidth="118"
+                            Margin="0,0,8,0"
+                            Padding="20,0"
+                            Content="Plan"
+                            FontSize="17"
+                            FontWeight="SemiBold"
+                            IsChecked="{Binding IsDrawerOpen, Mode=TwoWay}"
+                            Style="{StaticResource SpeckleQuietToggle}"
+                            ToolTip="Show the target list and the queue"
+                            Visibility="{Binding IsRunning, Converter={StaticResource VisibilityConverter}}" />
+                        <Border
+                            Margin="0,0,8,0"
+                            Padding="6,4"
+                            Background="{StaticResource BackgroundBrush}"
+                            BorderBrush="{StaticResource BorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="3"
+                            Visibility="{Binding KeplerButtonVisible, Converter={StaticResource VisibilityConverter}}">
+                            <ToggleButton
+                                Margin="0"
+                                Content="Kepler"
+                                IsChecked="{Binding IsKeplerOpen, Mode=TwoWay}"
+                                Style="{StaticResource SpeckleClusterToggle}"
+                                ToolTip="Show the sky with the dome slit and the targets in observation order" />
+                        </Border>
+                        <Border
+                            Padding="6,4"
+                            Background="{StaticResource BackgroundBrush}"
+                            BorderBrush="{StaticResource BorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="3"
+                            Visibility="{Binding IsRunning, Converter={StaticResource VisibilityConverter}}">
+                            <StackPanel Orientation="Horizontal">
+                                <ToggleButton
+                                    Content="More"
+                                    IsChecked="{Binding IsMoreOpen, Mode=TwoWay}"
+                                    Style="{StaticResource SpeckleClusterToggle}"
+                                    ToolTip="Show the additional run controls" />
+                                <Button
+                                    Margin="0"
+                                    Command="{Binding PauseResumeCommand}"
+                                    Content="{Binding PauseLabel}"
+                                    Style="{StaticResource SpeckleClusterButton}"
+                                    ToolTip="{Binding PauseTooltip}" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Grid>
+            </Grid>
+
+            <Border
+                Grid.Row="4"
+                Margin="0,8,0,0"
+                Padding="10,10,10,4"
+                Background="{StaticResource BackgroundBrush}"
+                BorderBrush="{StaticResource BorderBrush}"
+                BorderThickness="1"
+                CornerRadius="3"
+                Visibility="{Binding IsMoreOpen, Converter={StaticResource VisibilityConverter}}">
+                <WrapPanel>
+                    <ToggleButton
+                        Content="Crosshair"
+                        IsChecked="{Binding ShowCrosshair, Mode=TwoWay}"
+                        Style="{StaticResource SpeckleQuietToggle}"
+                        ToolTip="Draw a crosshair on the image at the centre of the region of interest" />
+                    <ToggleButton
+                        Content="Compass"
+                        IsChecked="{Binding ShowCompass, Mode=TwoWay}"
+                        Style="{StaticResource SpeckleQuietToggle}"
+                        ToolTip="Show which way north and east lie on the current camera" />
+                    <StackPanel
+                        Height="32"
+                        Margin="0,0,6,6"
+                        VerticalAlignment="Center"
+                        Orientation="Horizontal"
+                        Visibility="{Binding ShowCompass, Converter={StaticResource VisibilityConverter}}">
+                        <TextBlock
+                            Margin="0,0,8,0"
+                            VerticalAlignment="Center"
+                            FontSize="14"
+                            Foreground="{StaticResource PrimaryBrush}"
+                            Text="{Binding CompassLabel}" />
+                        <Slider
+                            Width="150"
+                            VerticalAlignment="Center"
+                            IsSnapToTickEnabled="True"
+                            Maximum="359"
+                            Minimum="0"
+                            TickFrequency="1"
+                            ToolTip="Turn the compass until north on the image matches north on the sky. Each camera keeps its own angle."
+                            Value="{Binding CompassAngle, Mode=TwoWay}" />
+                        <ToggleButton
+                            Margin="8,0,0,0"
+                            Content="Mirror"
+                            IsChecked="{Binding CompassMirrored, Mode=TwoWay}"
+                            Style="{StaticResource SpeckleQuietToggle}"
+                            ToolTip="Turn on when the light path flips the field, which puts east on the right." />
+                    </StackPanel>
+                    <ToggleButton
+                        Content="{Binding FocusLabel}"
+                        IsChecked="{Binding IsFocusing, Mode=TwoWay}"
+                        IsEnabled="{Binding CanFocus}"
+                        Style="{StaticResource SpeckleQuietToggle}"
+                        ToolTip="{Binding FocusTooltip}" />
+                    <ToggleButton
+                        Content="Fringes"
+                        IsChecked="{Binding FringePaneEnabled, Mode=TwoWay}"
+                        Style="{StaticResource SpeckleQuietToggle}"
+                        ToolTip="Show the accumulated power spectrum beside the frame" />
+                    <Button
+                        Command="{Binding SlewWithMountCommand}"
+                        Content="Slew with mount"
+                        Style="{StaticResource SpeckleQuietButton}"
+                        ToolTip="Slew the mount to the coordinates of the pending step" />
+                    <Button
+                        Command="{Binding SkipTargetCommand}"
+                        Content="Skip target"
+                        Style="{StaticResource SpeckleQuietButton}"
+                        ToolTip="Drop this target for the rest of the night and go to the next one in the plan"
+                        Visibility="{Binding IsRunning, Converter={StaticResource VisibilityConverter}}" />
+                    <Button
+                        Command="{Binding StopRunCommand}"
+                        Content="Stop"
+                        Style="{StaticResource SpeckleQuietButton}"
+                        ToolTip="{Binding StopRunTooltip}"
+                        Visibility="{Binding StopRunVisible, Converter={StaticResource VisibilityConverter}}" />
+                    <StackPanel
+                        Height="32"
+                        Margin="0,0,6,6"
+                        VerticalAlignment="Center"
+                        Orientation="Horizontal">
+                        <TextBlock
+                            Margin="0,0,6,0"
+                            VerticalAlignment="Center"
+                            FontSize="14"
+                            Foreground="{StaticResource PrimaryBrush}"
+                            Text="{Binding ExposureStepperLabel}" />
+                        <ninactrl:StepperControl
+                            MinWidth="120"
+                            VerticalAlignment="Center"
+                            IsEnabled="{Binding ExposureStepperEditable}"
+                            MaxValue="3600"
+                            MinValue="0.001"
+                            StepSize="{Binding ExposureStepperStep}"
+                            ToolTip="{Binding ExposureStepperTooltip}"
+                            Unit="s"
+                            Value="{Binding ExposureStepperTime, Mode=TwoWay}" />
+                    </StackPanel>
+                </WrapPanel>
+            </Border>
+        </Grid>
+    </DataTemplate>
+</ResourceDictionary>

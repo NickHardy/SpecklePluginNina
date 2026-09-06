@@ -1,19 +1,17 @@
 ﻿#region "copyright"
 
 /*
-    Copyright © 2016 - 2021 Stefan Berg <isbeorn86+NINA@googlemail.com> and the N.I.N.A. contributors
+    Copyright (c) 2026 Nick Hardy and Leon Bewersdorff
 
-    This file is part of N.I.N.A. - Nighttime Imaging 'N' Astronomy.
+    This file is part of the Speckle Interferometry plugin for
+    N.I.N.A. - Nighttime Imaging 'N' Astronomy.
 
-    This Source Code Form is subject to the terms of the Mozilla Public
-    License, v. 2.0. If a copy of the MPL was not distributed with this
-    file, You can obtain one at http://mozilla.org/MPL/2.0/.
+    Released under the MIT License. See LICENSE.txt in the repository
+    root, or https://opensource.org/licenses/MIT
 */
 
 #endregion "copyright"
 
-using CsvHelper;
-using CsvHelper.Configuration;
 using Newtonsoft.Json;
 using NINA.Astrometry;
 using NINA.Astrometry.Interfaces;
@@ -26,6 +24,7 @@ using NINA.Plugin.Speckle.Model;
 using NINA.Plugin.Speckle.Sequencer.Container.ExecutionStrategy;
 using NINA.Plugin.Speckle.Sequencer.SequenceItem;
 using NINA.Plugin.Speckle.Sequencer.Utility;
+using NINA.Plugin.Speckle.Services;
 using NINA.Profile.Interfaces;
 using NINA.Sequencer;
 using NINA.Sequencer.Conditions;
@@ -41,8 +40,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel.Composition;
-using System.Globalization;
-using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -68,6 +65,11 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
         private readonly IApplicationMediator applicationMediator;
         private ITelescopeMediator telescopeMediator;
         private INighttimeCalculator nighttimeCalculator;
+        private readonly ITargetListService targetListService;
+        private readonly ITargetSchedulerService targetSchedulerService;
+        private readonly IReferenceStarService referenceStarService;
+        private readonly ITargetPlanner targetPlanner;
+        private readonly ISpeckleOptionsProvider optionsProvider;
         private Speckle speckle;
         private CancellationTokenSource executeCTS;
 
@@ -80,7 +82,12 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                 ICameraMediator cameraMediator,
                 IFramingAssistantVM framingAssistantVM,
                 IApplicationMediator applicationMediator,
-                ITelescopeMediator telescopeMediator) : base(new SequentialListStrategy()) {
+                ITelescopeMediator telescopeMediator,
+                ITargetListService targetListService,
+                ITargetSchedulerService targetSchedulerService,
+                IReferenceStarService referenceStarService,
+                ITargetPlanner targetPlanner,
+                ISpeckleOptionsProvider optionsProvider) : base(new SequentialListStrategy()) {
             this.profileService = profileService;
             this.sequenceMediator = sequenceMediator;
             this.nighttimeCalculator = nighttimeCalculator;
@@ -89,9 +96,13 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             this.applicationMediator = applicationMediator;
             this.framingAssistantVM = framingAssistantVM;
             this.telescopeMediator = telescopeMediator;
+            this.targetListService = targetListService;
+            this.targetSchedulerService = targetSchedulerService;
+            this.referenceStarService = referenceStarService;
+            this.targetPlanner = targetPlanner;
+            this.optionsProvider = optionsProvider;
 
-            //Task.Run(() => NighttimeData = nighttimeCalculator.Calculate(DateTime.Now.AddHours(4)));
-            speckle = new Speckle(profileService);
+            speckle = optionsProvider.Current;
             TargetNr = 0;
             User = speckle.User;
             Template = speckle.DefaultTemplate;
@@ -102,20 +113,19 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             AutoLoadTargetStar = true;
             AutoLoadReferenceStar = true;
             SpeckleTargets = new AsyncObservableCollection<SpeckleTarget>();
-            SimUtils = new SimbadUtils();
 
             RetrieveTemplates();
             Task.Run(() => {
                 _ = LoadReferenceStarList();
             });
-            
-            OpenFileCommand = new GalaSoft.MvvmLight.Command.RelayCommand<bool>((o) => { using (executeCTS = new CancellationTokenSource()) { OpenFile(); } });
+
+            OpenFileCommand = new GalaSoft.MvvmLight.Command.RelayCommand<bool>((ignored) => { using (executeCTS = new CancellationTokenSource()) { OpenFile(); } });
             DropTargetCommand = new GalaSoft.MvvmLight.Command.RelayCommand<object>(DropTarget);
-            LoadTargetCommand = new GalaSoft.MvvmLight.Command.RelayCommand<bool>(async (o) => { using (executeCTS = new CancellationTokenSource()) { await LoadTarget(); } });
+            LoadTargetCommand = new GalaSoft.MvvmLight.Command.RelayCommand<bool>(async (ignored) => { using (executeCTS = new CancellationTokenSource()) { await LoadTarget(); } });
             DeleteTargetCommand = new GalaSoft.MvvmLight.Command.RelayCommand<object>(DeleteTarget);
-            ExportTargetsCommand = new GalaSoft.MvvmLight.Command.RelayCommand<bool>(async (o) => { using (executeCTS = new CancellationTokenSource()) { await ExportAllTargetsWithReferenceStars(); } });
-            ExportTargetsCsvCommand = new GalaSoft.MvvmLight.Command.RelayCommand<bool>(async (o) => { using (executeCTS = new CancellationTokenSource()) { await ExportAllTargetsWithReferenceStarsToCsv(); } });
-            
+            ExportTargetsCommand = new GalaSoft.MvvmLight.Command.RelayCommand<bool>(async (ignored) => { using (executeCTS = new CancellationTokenSource()) { await ExportAllTargetsWithReferenceStars(); } });
+            ExportTargetsCsvCommand = new GalaSoft.MvvmLight.Command.RelayCommand<bool>(async (ignored) => { using (executeCTS = new CancellationTokenSource()) { await ExportAllTargetsWithReferenceStarsToCsv(); } });
+
         }
 
         private Dispatcher _dispatcher = System.Windows.Application.Current?.Dispatcher ?? Dispatcher.CurrentDispatcher;
@@ -183,7 +193,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
 
         [JsonProperty]
         public bool AutoLoadReferenceStar { get => _AutoLoadReferenceStar; set { _AutoLoadReferenceStar = value; RaisePropertyChanged(); } }
-        
+
         private string _SearchTarget;
 
         [JsonProperty]
@@ -252,26 +262,17 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             if (LoadingReferenceStars)
                 return;
             LoadingReferenceStars = true;
-            if (!speckle.UseReferenceStarList || (ReferenceStarList != null && ReferenceStarList.Count > 0))
-                return;
-            var config = new CsvConfiguration(CultureInfo.InvariantCulture);
-            config.MissingFieldFound = null;
-            using (var reader = new StreamReader(speckle.ReferenceStarListLocation))
-            using (var csv = new CsvReader(reader, config)) {
-                csv.Context.RegisterClassMap<ReferenceStarMap>();
-                var records = csv.GetRecords<ReferenceStar>();
-                ReferenceStarList = new AsyncObservableCollection<ReferenceStar>(records.ToList());
+            try {
+                await referenceStarService.EnsureReferenceListsLoadedAsync(CancellationToken.None);
+                if (speckle.UseReferenceStarList && (ReferenceStarList == null || ReferenceStarList.Count == 0) && referenceStarService.ReferenceStars.Count > 0) {
+                    ReferenceStarList = new AsyncObservableCollection<ReferenceStar>(referenceStarService.ReferenceStars);
+                }
+                if (speckle.UseGaiaReferenceStarList && (GaiaReferenceStarList == null || GaiaReferenceStarList.Count == 0) && referenceStarService.GaiaReferenceStars.Count > 0) {
+                    GaiaReferenceStarList = new AsyncObservableCollection<GaiaReferenceStar>(referenceStarService.GaiaReferenceStars);
+                }
+            } finally {
+                LoadingReferenceStars = false;
             }
-            if (!speckle.UseGaiaReferenceStarList || (GaiaReferenceStarList != null && GaiaReferenceStarList.Count > 0))
-                return;
-            LoadingReferenceStars = true;
-            using (var reader = new StreamReader(speckle.GaiaReferenceStarListLocation))
-            using (var csv = new CsvReader(reader, config)) {
-                csv.Context.RegisterClassMap<GaiaReferenceStarMap>();
-                var records = csv.GetRecords<GaiaReferenceStar>();
-                GaiaReferenceStarList = new AsyncObservableCollection<GaiaReferenceStar>(records.ToList());
-            }
-            LoadingReferenceStars = false;
         }
 
         private AsyncObservableCollection<SpeckleTarget> _speckleTargets;
@@ -287,24 +288,22 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
 
         public AsyncObservableCollection<SpeckleTarget> SpeckleTargetsView {
             get {
-                var targets = SpeckleTargets.Where(x => x.ImageTarget && (ShowReferenceStars || x.Type != "R"));
+                var targets = SpeckleTargets.Where(target => target.ImageTarget && (ShowReferenceStars || target.Type != "R"));
                 if (string.IsNullOrWhiteSpace(SearchTarget)) {
                     if (SortByRa) {
-                        return new AsyncObservableCollection<SpeckleTarget>(targets.OrderBy(x => x.RA2000).ToList());
+                        return new AsyncObservableCollection<SpeckleTarget>(targets.OrderBy(target => target.RA2000).ToList());
                     }
                     return new AsyncObservableCollection<SpeckleTarget>(targets.ToList());
                 } else {
-                    return new AsyncObservableCollection<SpeckleTarget>(targets.Where(x => x.Name1.IndexOf(SearchTarget, StringComparison.OrdinalIgnoreCase) >= 0 || x.Name2.IndexOf(SearchTarget, StringComparison.OrdinalIgnoreCase) >= 0 || x.GaiaNum.ToString().StartsWith(SearchTarget)).ToList());
+                    return new AsyncObservableCollection<SpeckleTarget>(targets.Where(target => target.Name1.IndexOf(SearchTarget, StringComparison.OrdinalIgnoreCase) >= 0 || target.Name2.IndexOf(SearchTarget, StringComparison.OrdinalIgnoreCase) >= 0 || target.GaiaNum.ToString().StartsWith(SearchTarget)).ToList());
                 }
             }
         }
 
         public int SpeckleTargetCount {
-            get => SpeckleTargets.Where(x => x.ImageTarget).Count();
+            get => SpeckleTargets.Where(target => target.ImageTarget).Count();
         }
 
-        private SimbadUtils SimUtils;
-        private List<SimbadGalaxy> Galaxies = new List<SimbadGalaxy>();
         private AsyncObservableCollection<SpeckleTargetContainer> _speckleTemplates = new AsyncObservableCollection<SpeckleTargetContainer>();
 
         public AsyncObservableCollection<SpeckleTargetContainer> SpeckleTemplates {
@@ -318,18 +317,16 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
         public async Task LoadTarget() {
             if (SpeckleTarget != null) {
                 CurrentSpeckleTarget = SpeckleTarget;
-                var templateName = string.IsNullOrWhiteSpace(SpeckleTarget.Template) ? speckle.DefaultTemplate : SpeckleTarget.Template;
+                var templateName = targetPlanner.BuildPlan(SpeckleTarget, false, speckle).TemplateName;
                 await LoadSpeckleTarget(templateName);
 
                 using (executeCTS = new CancellationTokenSource()) {
-                    if (SpeckleTarget.ReferenceStarList == null || SpeckleTarget.ReferenceStarList.Count == 0)
-                        await RetrieveReferenceStarsForSpeckleTarget(new Progress<ApplicationStatus>(p => AppStatus = p), executeCTS.Token).ConfigureAwait(false);
+                    await ResolveReferenceStars(SpeckleTarget, new Progress<ApplicationStatus>(status => AppStatus = status), executeCTS.Token).ConfigureAwait(false);
                 }
 
                 if (AutoLoadReferenceStar) {
-                    var refTemplateName = string.IsNullOrWhiteSpace(SpeckleTarget.TemplateRef) ? speckle.DefaultRefTemplate : SpeckleTarget.TemplateRef;
-                    var refStarTemplate = string.IsNullOrWhiteSpace(SpeckleTarget.ReferenceStar?.Template) ? refTemplateName : SpeckleTarget.ReferenceStar?.Template;
-                    await LoadReferenceTarget(SpeckleTarget, string.IsNullOrWhiteSpace(refStarTemplate) ? templateName : refStarTemplate).ConfigureAwait(false);
+                    var refTemplateName = targetPlanner.BuildPlan(SpeckleTarget, true, speckle).TemplateName;
+                    await LoadReferenceTarget(SpeckleTarget, refTemplateName).ConfigureAwait(false);
                 }
             }
         }
@@ -341,31 +338,13 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             }
             LoadingTargets = true;
             try {
-                var targets = SpeckleTargets.Where(x => x.Type == "M" || x.Type == "C" || x.Type == "G").OrderBy(x => x.RA2000).ToList();
-                foreach (var target in targets) {
-                    if (target.Type == "G")
-                        continue;
-                    SpeckleTarget = target;
-                    using (executeCTS = new CancellationTokenSource()) {
-                        if (SpeckleTarget.ReferenceStarList == null || SpeckleTarget.ReferenceStarList.Count == 0)
-                            await RetrieveReferenceStarsForSpeckleTarget(new Progress<ApplicationStatus>(p => AppStatus = p), executeCTS.Token).ConfigureAwait(false);
+                using (executeCTS = new CancellationTokenSource()) {
+                    var result = await targetListService.ExportWithReferenceStarsAsync(SpeckleTargets.ToList(), ExportFormat.Json, profileService.ActiveProfile.ImageFileSettings.FilePath, new Progress<ApplicationStatus>(status => AppStatus = status), executeCTS.Token).ConfigureAwait(false);
+                    foreach (var refStar in result.SurfacedReferenceRecords) {
+                        SurfaceReferenceStarInList(refStar);
                     }
-                    target.ReferenceStarList = SpeckleTarget.ReferenceStarList;
-
-                    // Surface the resolved reference star in the live list so it becomes visible
-                    // via the "Show reference stars" toggle.
-                    var referenceStar = SpeckleTarget.ReferenceStar;
-                    if (referenceStar != null && referenceStar.RA2000 != 0)
-                        SurfaceReferenceStarInList(BuildReferenceStarRecord(target, referenceStar));
+                    Notification.ShowSuccess("Exported targets with reference stars to " + result.FilePath);
                 }
-                var jsonExport = JsonConvert.SerializeObject(targets, Formatting.Indented);
-
-                // Write current status to the target csv file
-                string jsonfile = Path.Combine(profileService.ActiveProfile.ImageFileSettings.FilePath, "TargetListIncludingReferenceStars.json");
-                using (var writer = new StreamWriter(jsonfile)) {
-                    writer.Write(jsonExport);
-                }
-                Notification.ShowSuccess("Exported targets with reference stars to " + jsonfile);
             } catch (Exception ex) {
                 Logger.Error("Failed to export targets with reference stars.", ex);
                 Notification.ShowError("Failed to export targets with reference stars: " + ex.Message);
@@ -381,43 +360,13 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             }
             LoadingTargets = true;
             try {
-                var targets = SpeckleTargets.Where(x => x.Type == "M" || x.Type == "C" || x.Type == "G").OrderBy(x => x.RA2000).ToList();
-                var targetsWithReferenceStars = new List<SpeckleTarget>();
-                var addedReferenceGaiaNums = new HashSet<string>();
-                foreach (var target in targets) {
-                    if (target.Type == "G") {
-                        targetsWithReferenceStars.Add(target);
-                        continue;
+                using (executeCTS = new CancellationTokenSource()) {
+                    var result = await targetListService.ExportWithReferenceStarsAsync(SpeckleTargets.ToList(), ExportFormat.Csv, profileService.ActiveProfile.ImageFileSettings.FilePath, new Progress<ApplicationStatus>(status => AppStatus = status), executeCTS.Token).ConfigureAwait(false);
+                    foreach (var refStar in result.SurfacedReferenceRecords) {
+                        SurfaceReferenceStarInList(refStar);
                     }
-                    SpeckleTarget = target;
-                    using (executeCTS = new CancellationTokenSource()) {
-                        if (SpeckleTarget.ReferenceStarList == null || SpeckleTarget.ReferenceStarList.Count == 0)
-                            await RetrieveReferenceStarsForSpeckleTarget(new Progress<ApplicationStatus>(p => AppStatus = p), executeCTS.Token).ConfigureAwait(false);
-                    }
-                    targetsWithReferenceStars.Add(target);
-
-                    // Emit the resolved reference star as its own R record, linked back via RefGaiaNum.
-                    // A reference shared by multiple targets is only written once.
-                    var referenceStar = SpeckleTarget.ReferenceStar;
-                    if (referenceStar != null && referenceStar.RA2000 != 0) {
-                        target.RefGaiaNum = referenceStar.GaiaNum;
-                        if (string.IsNullOrWhiteSpace(referenceStar.GaiaNum) || addedReferenceGaiaNums.Add(referenceStar.GaiaNum)) {
-                            var refStar = BuildReferenceStarRecord(target, referenceStar);
-                            targetsWithReferenceStars.Add(refStar);
-                            SurfaceReferenceStarInList(refStar);
-                        }
-                    } else {
-                        Logger.Debug($"No reference star to export for target {target.Name} (GaiaNum {target.GaiaNum}).");
-                    }
+                    Notification.ShowSuccess("Exported targets with reference stars to " + result.FilePath);
                 }
-
-                string csvfile = Path.Combine(profileService.ActiveProfile.ImageFileSettings.FilePath, "TargetWithReferenceList-" + DateTime.Now.ToString("yyyy-MM-dd") + ".csv");
-                using (var writer = new StreamWriter(csvfile))
-                using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture)) {
-                    csv.Context.RegisterClassMap<SpeckleTargetMap>();
-                    csv.WriteRecords(targetsWithReferenceStars);
-                }
-                Notification.ShowSuccess("Exported targets with reference stars to " + csvfile);
             } catch (Exception ex) {
                 Logger.Error("Failed to export targets with reference stars to CSV.", ex);
                 Notification.ShowError("Failed to export targets with reference stars to CSV: " + ex.Message);
@@ -426,35 +375,16 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             }
         }
 
-        // Builds an R-type record for a resolved reference star, linked to its target.
-        private SpeckleTarget BuildReferenceStarRecord(SpeckleTarget target, ReferenceStar referenceStar) {
-            var refStar = new SpeckleTarget(referenceStar);
-            refStar.Type = "R";
-            refStar.Proj = target.Proj;
-            refStar.Obs = target.Obs;
-            refStar.Exp = target.Exp;
-            refStar.NExp = target.NExp;
-            refStar.Name2 = refStar.Name1;
-            refStar.Name1 = target.Name1 + "_ref";
-            refStar.GetRef = 0;
-            refStar.Template = "";
-            refStar.ImageTime = target.ImageTime;
-            return refStar;
-        }
-
-        // Adds a reference star to the live list so it becomes visible via the "Show reference
-        // stars" toggle. Dedupes on GaiaNum (or coordinates when no GaiaNum) so repeated exports
-        // don't pile up duplicate rows.
         private void SurfaceReferenceStarInList(SpeckleTarget refStar) {
-            bool alreadyInList = SpeckleTargets.Any(x => x.Type == "R" &&
-                ((!string.IsNullOrWhiteSpace(refStar.GaiaNum) && refStar.GaiaNum != "0" && x.GaiaNum == refStar.GaiaNum)
-                 || (x.RA2000 == refStar.RA2000 && x.Dec2000 == refStar.Dec2000)));
+            bool alreadyInList = SpeckleTargets.Any(target => target.Type == "R" &&
+                ((!string.IsNullOrWhiteSpace(refStar.GaiaNum) && refStar.GaiaNum != "0" && target.GaiaNum == refStar.GaiaNum)
+                 || (target.RA2000 == refStar.RA2000 && target.Dec2000 == refStar.Dec2000)));
             if (!alreadyInList)
                 SpeckleTargets.Add(refStar);
         }
 
-        public void DeleteTarget(Object o) {
-            Logger.Debug("Object" + o.GetType());
+        public void DeleteTarget(Object targetToDelete) {
+            Logger.Debug("Object" + targetToDelete.GetType());
         }
 
         public void RetrieveTemplates() {
@@ -470,7 +400,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
         }
 
         public async Task<bool> LoadNewTarget() {
-            RegisterStatusCurrentTarget();
+            await RegisterStatusCurrentTarget();
 
             if (AutoLoadTargetStar) {
                 SpeckleTarget = GetNextTarget();
@@ -478,7 +408,6 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                 SpeckleTarget = null;
             }
 
-            // Remove finished instructions
             foreach (ISequenceItem item in Items) {
                 _ = _dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() => { this.Remove(item); }));
             }
@@ -494,19 +423,18 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             CurrentSpeckleTarget = SpeckleTarget;
             TargetNr++;
 
-            var templateName = string.IsNullOrWhiteSpace(SpeckleTarget.Template) ? speckle.DefaultTemplate : SpeckleTarget.Template;
+            var templateName = targetPlanner.BuildPlan(SpeckleTarget, false, speckle).TemplateName;
             if (AutoLoadTargetStar) {
                 await LoadSpeckleTarget(templateName).ConfigureAwait(false);
             }
             using (executeCTS = new CancellationTokenSource()) {
-                if ((SpeckleTarget.Type == "M" || SpeckleTarget.Type == "C") && (SpeckleTarget.ReferenceStarList == null || SpeckleTarget.ReferenceStarList.Count == 0))
-                    await RetrieveReferenceStarsForSpeckleTarget(new Progress<ApplicationStatus>(p => AppStatus = p), executeCTS.Token).ConfigureAwait(false);
+                if (SpeckleTarget.Type == "M" || SpeckleTarget.Type == "C")
+                    await ResolveReferenceStars(SpeckleTarget, new Progress<ApplicationStatus>(status => AppStatus = status), executeCTS.Token).ConfigureAwait(false);
             }
 
             if ((SpeckleTarget.Type == "M" || SpeckleTarget.Type == "C") && AutoLoadReferenceStar) {
-                var refTemplateName = string.IsNullOrWhiteSpace(SpeckleTarget.TemplateRef) ? speckle.DefaultRefTemplate : SpeckleTarget.TemplateRef;
-                var refStarTemplate = string.IsNullOrWhiteSpace(SpeckleTarget.ReferenceStar?.Template) ? refTemplateName : SpeckleTarget.ReferenceStar?.Template;
-                await LoadReferenceTarget(SpeckleTarget, string.IsNullOrWhiteSpace(refStarTemplate) ? templateName : refStarTemplate).ConfigureAwait(false);
+                var refTemplateName = targetPlanner.BuildPlan(SpeckleTarget, true, speckle).TemplateName;
+                await LoadReferenceTarget(SpeckleTarget, refTemplateName).ConfigureAwait(false);
             }
 
             RaiseAllPropertiesChanged();
@@ -517,48 +445,25 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
 
             var templates = sequenceMediator.GetDeepSkyObjectContainerTemplates();
 
-            // Set target
-            var template = templates.FirstOrDefault(x => x.Name == templateName);
+            var template = templates.FirstOrDefault(candidate => candidate.Name == templateName);
             if (template == null) {
                 Notification.ShowWarning("No template found, loading default. Check the selected template: " + templateName);
-                template = templates.FirstOrDefault(x => x.Name == speckle.DefaultTemplate);
+                template = templates.FirstOrDefault(candidate => candidate.Name == speckle.DefaultTemplate);
             }
             else {
+                var plan = targetPlanner.BuildPlan(SpeckleTarget, false, speckle);
                 SpeckleTargetContainer speckleTargetContainer = (SpeckleTargetContainer)template.Clone();
                 speckleTargetContainer.Target = new InputTarget(Angle.ByDegree(profileService.ActiveProfile.AstrometrySettings.Latitude), Angle.ByDegree(profileService.ActiveProfile.AstrometrySettings.Longitude), profileService.ActiveProfile.AstrometrySettings.Horizon) {
-                    TargetName = SpeckleTarget.Name + "_c" + (SpeckleTarget.Completed_cycles + 1),
+                    TargetName = plan.TargetName,
                     InputCoordinates = new InputCoordinates() {
-                        Coordinates = SpeckleTarget.Coordinates()
+                        Coordinates = plan.Coordinates
                     }
                 };
-                speckleTargetContainer.Title = SpeckleTarget.Obs;
+                speckleTargetContainer.Title = plan.Title;
                 speckleTargetContainer.IsRef = false;
                 speckleTargetContainer.SpeckleTarget = SpeckleTarget;
-                speckleTargetContainer.Name = SpeckleTarget.Proj + "_" + SpeckleTarget.Obs + "_" + SpeckleTarget.Name + "_c" + (SpeckleTarget.Completed_cycles + 1);
-                speckleTargetContainer.Items.ToList().ForEach(x => {
-                    if (x is TakeRoiExposures takeRoiExposures && takeRoiExposures.AutoUpdate) {
-                        takeRoiExposures.ExposureTime = SpeckleTarget.Exp;
-                        takeRoiExposures.TotalExposureCount = SpeckleTarget.NExp;
-                    }
-                    if (x is TakeLiveExposures takeLiveExposures && takeLiveExposures.AutoUpdate) {
-                        takeLiveExposures.ExposureTime = SpeckleTarget.Exp;
-                        takeLiveExposures.TotalExposureCount = SpeckleTarget.NExp;
-                    }
-                    if (x is TakeSingleExposure takeSingleExposure && takeSingleExposure.AutoUpdate) {
-                        takeSingleExposure.ExposureTime = SpeckleTarget.Exp;
-                    }
-                    if (x is TakeSingleRoiExposure takeSingleRoiExposure && takeSingleRoiExposure.AutoUpdate) {
-                        takeSingleRoiExposure.ExposureTime = SpeckleTarget.Exp;
-                    }
-                    if (x is WaitForTime waitForTime) {
-                        waitForTime.Hours = SpeckleTarget.ImageTime.Hour;
-                        waitForTime.Minutes = SpeckleTarget.ImageTime.Minute;
-                        waitForTime.Seconds = SpeckleTarget.ImageTime.Second;
-                    }
-                    if (x is SwitchFilter switchFilter && SpeckleTarget.Filter != null && SpeckleTarget.Filter != "-" && SpeckleTarget.Filter.Length > 0) {
-                        switchFilter.Filter = Filters?.FirstOrDefault(f => f.Name == SpeckleTarget.Filter);
-                    }
-                });
+                speckleTargetContainer.Name = plan.ContainerName;
+                ApplyPlanToItems(speckleTargetContainer, plan);
                 await _dispatcher.BeginInvoke(DispatcherPriority.Send, new Action(() => {
                     lock (Items) {
                         this.InsertIntoSequenceBlocks(100, speckleTargetContainer);
@@ -570,56 +475,29 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
 
         public async Task LoadReferenceTarget(SpeckleTarget speckleTarget, string templateName) {
             var templates = sequenceMediator.GetDeepSkyObjectContainerTemplates();
-            // TODO Choose given referencestar template!!
-            var template = templates.FirstOrDefault(x => x.Name == templateName) ?? templates.FirstOrDefault(x => x.Name == speckle.DefaultRefTemplate);
+            var template = templates.FirstOrDefault(candidate => candidate.Name == templateName) ?? templates.FirstOrDefault(candidate => candidate.Name == speckle.DefaultRefTemplate);
             if (template == null) {
                 Notification.ShowWarning("No ref template found, loading default. Check the selected template: " + templateName);
-                template = templates.FirstOrDefault(x => x.Name == speckle.DefaultRefTemplate);
+                template = templates.FirstOrDefault(candidate => candidate.Name == speckle.DefaultRefTemplate);
             }
             else {
                 using (executeCTS = new CancellationTokenSource()) {
-                    if (speckleTarget.ReferenceStarList == null || speckleTarget.ReferenceStarList.Count == 0)
-                        await RetrieveReferenceStarsForSpeckleTarget(new Progress<ApplicationStatus>(p => AppStatus = p), executeCTS.Token).ConfigureAwait(false);
+                    await ResolveReferenceStars(speckleTarget, new Progress<ApplicationStatus>(status => AppStatus = status), executeCTS.Token).ConfigureAwait(false);
                 }
                 if (speckleTarget.ReferenceStar != null && speckleTarget.ReferenceStar.RA2000 != 0) {
+                    var plan = targetPlanner.BuildPlan(speckleTarget, true, speckle);
                     SpeckleTargetContainer speckleTargetContainerRef = (SpeckleTargetContainer)template.Clone();
                     speckleTargetContainerRef.Target = new InputTarget(Angle.ByDegree(profileService.ActiveProfile.AstrometrySettings.Latitude), Angle.ByDegree(profileService.ActiveProfile.AstrometrySettings.Longitude), profileService.ActiveProfile.AstrometrySettings.Horizon) {
-                        TargetName = speckleTarget.Name2 + "_c" + (speckleTarget.Completed_cycles + 1) + "_ref_" + speckleTarget.ReferenceStar.Name,
+                        TargetName = plan.TargetName,
                         InputCoordinates = new InputCoordinates() {
-                            Coordinates = speckleTarget.ReferenceStar.Coordinates()
+                            Coordinates = plan.Coordinates
                         }
                     };
-                    speckleTargetContainerRef.Title = speckleTarget.Obs;
+                    speckleTargetContainerRef.Title = plan.Title;
                     speckleTargetContainerRef.IsRef = true;
                     speckleTargetContainerRef.SpeckleTarget = speckleTarget;
-                    speckleTargetContainerRef.Name = speckleTarget.Proj + "_" + speckleTarget.Obs + "_" + speckleTarget.Name2 + "_" + (speckleTarget.Completed_cycles + 1) + "_ref_" + speckleTarget.ReferenceStar.Name;
-                    speckleTargetContainerRef.Items.ToList().ForEach(x => {
-                        if (x is CalculateExposure calculateExposure) {
-                            calculateExposure.ExposureTime = speckleTarget.Exp;
-                        }
-                        if (x is TakeRoiExposures takeRoiExposures && takeRoiExposures.AutoUpdate) {
-                            takeRoiExposures.ExposureTime = speckleTarget.Exp;
-                            takeRoiExposures.TotalExposureCount = speckle.ReferenceExposures > 0 ? speckle.ReferenceExposures : speckleTarget.NExp;
-                        }
-                        if (x is TakeLiveExposures takeLiveExposures && takeLiveExposures.AutoUpdate) {
-                            takeLiveExposures.ExposureTime = speckleTarget.Exp;
-                            takeLiveExposures.TotalExposureCount = speckle.ReferenceExposures > 0 ? speckle.ReferenceExposures : speckleTarget.NExp;
-                        }
-                        if (x is TakeSingleExposure takeSingleExposure && takeSingleExposure.AutoUpdate) {
-                            takeSingleExposure.ExposureTime = speckleTarget.Exp;
-                        }
-                        if (x is TakeSingleRoiExposure takeSingleRoiExposure && takeSingleRoiExposure.AutoUpdate) {
-                            takeSingleRoiExposure.ExposureTime = speckleTarget.Exp;
-                        }
-                        if (x is WaitForTime waitForTime) {
-                            waitForTime.Hours = speckleTarget.ImageTime.Hour;
-                            waitForTime.Minutes = speckleTarget.ImageTime.Minute;
-                            waitForTime.Seconds = speckleTarget.ImageTime.Second;
-                        }
-                        if (x is SwitchFilter switchFilter && speckleTarget.Filter != null && speckleTarget.Filter != "-" && speckleTarget.Filter.Length > 0) {
-                            switchFilter.Filter = Filters?.FirstOrDefault(f => f.Name == speckleTarget.Filter);
-                        }
-                    });
+                    speckleTargetContainerRef.Name = plan.ContainerName;
+                    ApplyPlanToItems(speckleTargetContainerRef, plan);
 
                     await _dispatcher.BeginInvoke(DispatcherPriority.Send, new Action(() => {
                         lock (Items) {
@@ -631,370 +509,68 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             }
         }
 
+        private void ApplyPlanToItems(SpeckleTargetContainer container, TargetPlan plan) {
+            container.Items.ToList().ForEach(item => {
+                if (item is CalculateExposure calculateExposure && plan.IsReference) {
+                    calculateExposure.ExposureTime = plan.Exp;
+                }
+                if (item is TakeRoiExposures takeRoiExposures && takeRoiExposures.AutoUpdate) {
+                    takeRoiExposures.ExposureTime = plan.Exp;
+                    takeRoiExposures.TotalExposureCount = plan.NExp;
+                }
+                if (item is TakeLiveExposures takeLiveExposures && takeLiveExposures.AutoUpdate) {
+                    takeLiveExposures.ExposureTime = plan.Exp;
+                    takeLiveExposures.TotalExposureCount = plan.NExp;
+                }
+                if (item is TakeSingleExposure takeSingleExposure && takeSingleExposure.AutoUpdate) {
+                    takeSingleExposure.ExposureTime = plan.Exp;
+                }
+                if (item is TakeSingleRoiExposure takeSingleRoiExposure && takeSingleRoiExposure.AutoUpdate) {
+                    takeSingleRoiExposure.ExposureTime = plan.Exp;
+                }
+                if (item is WaitForTime waitForTime) {
+                    waitForTime.Hours = plan.ImageTime.Hour;
+                    waitForTime.Minutes = plan.ImageTime.Minute;
+                    waitForTime.Seconds = plan.ImageTime.Second;
+                }
+                if (item is SwitchFilter switchFilter && plan.FilterName != null && plan.FilterName != "-" && plan.FilterName.Length > 0) {
+                    switchFilter.Filter = Filters?.FirstOrDefault(filter => filter.Name == plan.FilterName);
+                }
+            });
+        }
+
         private SpeckleTarget GetNextTarget() {
-            Logger.Debug("Getting next target from list: " + SpeckleTargets.Count + " targets total.");
-
-            var targetAzimuth = speckle.DomePosition;
-            var quarterAgo = DateTime.Now.AddMinutes(-15);
-            var slitAz1 = speckle.DomePosition - (speckle.DomeSlitWidth / 2);
-            var slitAz2 = speckle.DomePosition + (speckle.DomeSlitWidth / 2);
-
-            // First get the next target with an imageTime in the future
-            if (SortByRa) {
-                var ra = CurrentSpeckleTarget?.RA2000 ?? 0;
-                var target = SpeckleTargets.Where(t => t.ImageTarget && (t.Type == "M" || t.Type == "C" || t.Type == "G"))
-                    .Where(t => t.Nights > t.Completed_nights)
-                    .Where(t => t.Cycles > t.Completed_cycles)
-                    .Where(t => t.ImagedAt == null || t.ImagedAt < quarterAgo)
-                    .Where(t => t.RA2000 > ra)
-                    .OrderBy(t => t.RA2000)
-                    .FirstOrDefault();
-
-                if (target != null)
-                    return target;
-            }
-            if (speckle.DomePositionLock) {
-                var targets = SpeckleTargets.Where(t => t.ImageTarget && (t.Type == "M" || t.Type == "C" || t.Type == "G"))
-                    .Where(t => t.Nights > t.Completed_nights)
-                    .Where(t => t.Cycles > t.Completed_cycles)
-                    .Where(t => t.ImagedAt == null || t.ImagedAt < quarterAgo)
-                    .Where(t => t.DomeSlitAltTimeList.Count > 0)
-                    .Where(t => t.DomeSlitObservationStartTime > DateTime.Now)
-                    .OrderBy(t => t.DomeSlitObservationStartTime); // Favor targets that have been observed before
-
-                if (targets.Count() > 0) {
-                    Logger.Debug(JsonConvert.SerializeObject(targets, Formatting.Indented));
-                    SpeckleTarget = targets.First();
-                    var altTime = SpeckleTarget.getCurrentDomeAltTime();
-                    SpeckleTarget.ImageTime = altTime?.datetime ?? DateTime.Now;
-                } else {
-                    return null;
-                }
-            } else {
-                DateTime maxImageTime = DateTime.Now.AddMinutes(-5);
-                SpeckleTarget = SpeckleTargets.Where(t => t.ImageTarget && (t.Type == "M" || t.Type == "C" || t.Type == "G"))
-                    .Where(t => t.Nights > t.Completed_nights)
-                    .Where(t => t.Cycles > t.Completed_cycles)
-                    .Where(t => t.ImageTime > maxImageTime)
-                    .OrderBy(t => t.Completed_cycles)
-                    .ThenBy(t => t.ImageTime)
-                    .FirstOrDefault();
-
-                if (SpeckleTarget == null) {
-                    Logger.Debug("No next target. Looking for previous target.");
-                    var fillinTarget = SpeckleTargets.Where(t => t.ImageTarget)
-                        .Where(t => t.Nights > t.Completed_nights)
-                        .Where(t => t.Cycles > t.Completed_cycles)
-                        .Where(t => t.getCurrentAltTime(speckle.AltitudeMax, speckle.MDistance) != null
-                            && t.getCurrentAltTime(speckle.AltitudeMax, speckle.MDistance).alt > t.MinAltitude
-                            && t.getCurrentAltTime(speckle.AltitudeMax, speckle.MDistance).distanceToMoon > speckle.MoonDistance)
-                        .OrderBy(t => t.getCurrentAltTime(speckle.AltitudeMax, speckle.MDistance).alt)
-                        .FirstOrDefault();
-                    if (fillinTarget != null) {
-                        Logger.Debug("Getting fillin target " + fillinTarget.Name2);
-                        SpeckleTarget = fillinTarget;
-                    }
-                }
-            }
-            //SpeckleTarget.AltList.Where(x => x.datetime > maxImageTime).Count() // && x.datetime < DateTime.Now.AddHours(8)).Count()
-            //    .Where(x => x.alt > speckle.AltitudeMin && x.alt < speckle.AltitudeMax)
-            //    //.Where(x => x.airmass > this.AirmassMin && x.airmass < this.AirmassMax)
-            //    .OrderByDescending(x => x.alt).FirstOrDefault()
-
-            // Check imagetime is within 5 minutes, then set it to now
-            if (SpeckleTarget.ImageTime > DateTime.Now && SpeckleTarget.ImageTime < DateTime.Now.AddMinutes(5)) {
-                SpeckleTarget.ImageTime = DateTime.Now;
-            }
-            return SpeckleTarget;
+            var opts = SchedulingOptions.FromOptions(speckle, SortByRa, IgnoreLimits);
+            return targetSchedulerService.PickNextTarget(SpeckleTargets.ToList(), opts, CurrentSpeckleTarget?.RA2000, DateTime.Now);
         }
 
-        private SpeckleTarget GetNextTargetOld() {
-            Logger.Debug("Getting next target from list: " + SpeckleTargets.Count + " targets total.");
-            
-            // First get the next target with an imageTime in the future
-            DateTime maxImageTime = DateTime.Now.AddMinutes(-5);
-            SpeckleTarget = SpeckleTargets.Where(t => t.ImageTarget)
-                .Where(t => t.Nights > t.Completed_nights)
-                .Where(t => t.Cycles > t.Completed_cycles)
-                .Where(t => t.ImageTime > maxImageTime)
-                .OrderBy(t => t.Completed_cycles)
-                .ThenBy(t => t.ImageTime)
-                .FirstOrDefault();
-            if (SpeckleTarget != null) {
-                Logger.Debug("Getting next target " + SpeckleTarget.Name);
-
-                // When the target is more than 6 minutes away, check for earlier targets that can be used as a fill in.
-                if (SpeckleTarget.ImageTime > DateTime.Now.AddMinutes(6)) {
-                    maxImageTime = SpeckleTarget.ImageTime;
-                    var fillinTarget = SpeckleTargets.Where(t => t.ImageTarget)
-                        .Where(t => t.Nights > t.Completed_nights)
-                        .Where(t => t.Cycles > t.Completed_cycles)
-                        .Where(t => t.ImageTime < maxImageTime)
-                        .Where(t => t.getCurrentAltTime(speckle.AltitudeMax, speckle.MDistance) != null
-                            && t.getCurrentAltTime(speckle.AltitudeMax, speckle.MDistance).alt > t.MinAltitude
-                            && t.getCurrentAltTime(speckle.AltitudeMax, speckle.MDistance).distanceToMoon > speckle.MoonDistance)
-                        .OrderBy(t => t.Completed_cycles)
-                        .ThenBy(t => t.getCurrentAltTime(speckle.AltitudeMax, speckle.MDistance).alt)
-                        .FirstOrDefault();
-                    if (fillinTarget != null) {
-                        Logger.Debug("Getting fillin target " + fillinTarget.Name);
-                        SpeckleTarget = fillinTarget;
-                    } else if (speckle.GetGalaxyFillins) {
-                        // Getting fillin galaxy
-                        var coords = new InputTopocentricCoordinates(Angle.ByDegree(profileService.ActiveProfile.AstrometrySettings.Latitude), Angle.ByDegree(profileService.ActiveProfile.AstrometrySettings.Longitude));
-                        coords.AltDegrees = 85;
-                        using (executeCTS = new CancellationTokenSource()) {
-                            if (Galaxies.Count <= 0)
-                                Galaxies = SimUtils.FindSimbadGalaxies(new Progress<ApplicationStatus>(p => AppStatus = p), executeCTS.Token, coords.Coordinates.Transform(Epoch.J2000), 30, speckle.MaxGalaxyMag).Result;
-                            SimbadGalaxy galaxy = Galaxies.FirstOrDefault();
-                            // TODO: check altitude and distance to the moon
-                            if (galaxy != null) {
-                                Logger.Debug("Getting fillin galaxy target: " + galaxy.Name2);
-                                SpeckleTarget = new SpeckleTarget();
-                                SpeckleTarget.Proj = "Galaxies";
-                                SpeckleTarget.RA2000 = galaxy.RA2000;
-                                SpeckleTarget.Dec2000 = galaxy.Dec2000;
-                                SpeckleTarget.Name2 = galaxy.Name2;
-                                SpeckleTarget.Pmag = galaxy.Rp;
-                                SpeckleTarget.Template = speckle.GalaxyTemplate;
-                                SpeckleTarget.GetRef = 0;
-                                SpeckleTarget.RegisterTarget = false;
-                            }
-                            Galaxies.Remove(galaxy);
-                        }
-                    }
-                }
-            } else {
-                Logger.Debug("No next target. Looking for previous target.");
-                var fillinTarget = SpeckleTargets.Where(t => t.ImageTarget)
-                    .Where(t => t.Nights > t.Completed_nights)
-                    .Where(t => t.Cycles > t.Completed_cycles)
-                    .Where(t => t.getCurrentAltTime(speckle.AltitudeMax, speckle.MDistance) != null 
-                        && t.getCurrentAltTime(speckle.AltitudeMax, speckle.MDistance).alt > t.MinAltitude
-                        && t.getCurrentAltTime(speckle.AltitudeMax, speckle.MDistance).distanceToMoon > speckle.MoonDistance)
-                    .OrderBy(t => t.getCurrentAltTime(speckle.AltitudeMax, speckle.MDistance).alt)
-                    .FirstOrDefault();
-                if (fillinTarget != null) {
-                    Logger.Debug("Getting fillin target " + fillinTarget.Name2);
-                    SpeckleTarget = fillinTarget;
-                }
-            }
-
-            // Check imagetime is within 5 minutes, then set it to now
-            if (SpeckleTarget.ImageTime > DateTime.Now && SpeckleTarget.ImageTime < DateTime.Now.AddMinutes(5)) {
-                SpeckleTarget.ImageTime = DateTime.Now;
-            }
-            return SpeckleTarget;
-        }
-
-        private void RegisterStatusCurrentTarget() {
+        private async Task RegisterStatusCurrentTarget() {
             if (CurrentSpeckleTarget == null) return;
-            SpeckleTarget = SpeckleTargets.Where(x => x.TargetId == CurrentSpeckleTarget.TargetId).FirstOrDefault();
+            SpeckleTarget = SpeckleTargets.Where(target => target.TargetId == CurrentSpeckleTarget.TargetId).FirstOrDefault();
             if (SpeckleTarget != null) {
                 if (!SpeckleTarget.RegisterTarget) return;
-                SpeckleTarget.ImagedAt = DateTime.Now;
-                SpeckleTarget.Completed_cycles += 1;
-                if (SpeckleTarget.Completed_cycles == SpeckleTarget.Cycles) {
-                    SpeckleTarget.Completed_nights += 1;
-                }
+                targetSchedulerService.MarkCycleComplete(SpeckleTarget, DateTime.Now);
             }
 
-            // Write current status to the target csv file
-            string csvfile = Path.Combine(profileService.ActiveProfile.ImageFileSettings.FilePath, "TargetList-" + DateTime.Now.AddHours(-12).ToString("yyyy-MM-dd") + ".csv");
-            using (var writer = new StreamWriter(csvfile))
-            using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture)) {
-                csv.Context.RegisterClassMap<SpeckleTargetMap>();
-                csv.WriteRecords(SpeckleTargets);
-            }
+            await targetListService.SaveSnapshotAsync(SpeckleTargets.ToList(), profileService.ActiveProfile.ImageFileSettings.FilePath).ConfigureAwait(false);
         }
 
         private void DropTarget(object obj) {
-            var p = obj as NINA.Sequencer.DragDrop.DropIntoParameters;
-            if (p != null) {
-                var con = p.Source as TargetSequenceContainer;
-                if (con != null) {
-                    var dropTarget = con.Container.Target;
-                    if (dropTarget != null) {
-                        // TODO Add target/template to list
-/*                        this.Name = dropTarget.TargetName;
-                        this.Target.TargetName = dropTarget.TargetName;
-                        this.Target.InputCoordinates = dropTarget.InputCoordinates.Clone();
-                        this.Target.Rotation = dropTarget.Rotation;*/
-                    }
-                }
-            }
         }
 
-        private async Task RetrieveReferenceStarsForSpeckleTarget(IProgress<ApplicationStatus> externalProgress, CancellationToken token) {
-            if (SpeckleTarget.ReferenceStarList != null && SpeckleTarget.ReferenceStarList.Any())
+        private async Task ResolveReferenceStars(SpeckleTarget target, IProgress<ApplicationStatus> externalProgress, CancellationToken token) {
+            if (target.ReferenceStarList != null && target.ReferenceStarList.Any())
                 return;
 
-            SpeckleTarget.ReferenceStarList = new List<ReferenceStar>();
-
-            // A reference star can be specified manually by pointing RefGaiaNum at the GaiaNum of
-            // another record (either another entry in this target list, or an entry in the loaded
-            // reference star list). This manual link is always honored, regardless of GetRef.
-            if (!string.IsNullOrWhiteSpace(SpeckleTarget.RefGaiaNum)) {
-                ReferenceStar refTarget = null;
-                var speckleRefTarget = SpeckleTargets.FirstOrDefault(x => x.GaiaNum == SpeckleTarget.RefGaiaNum);
-                if (speckleRefTarget != null) {
-                    refTarget = new ReferenceStar(speckleRefTarget);
-                    if (!string.IsNullOrWhiteSpace(speckleRefTarget.Template))
-                        SpeckleTarget.TemplateRef = speckleRefTarget.Template;
-                }
-                if (refTarget == null && ReferenceStarList != null)
-                    refTarget = ReferenceStarList.FirstOrDefault(x => x.GaiaNum == SpeckleTarget.RefGaiaNum);
-                if (refTarget != null)
-                    SpeckleTarget.ReferenceStarList.Add(refTarget);
-                else
-                    Logger.Debug($"Failed to find referenceStar: {SpeckleTarget?.RefGaiaNum} for target: {SpeckleTarget?.GaiaNum}");
-            }
-
-            // Automatically search for reference stars only when GetRef is enabled. When a manual
-            // reference star was already found above it is kept first and these become alternatives.
-            if (SpeckleTarget.GetRef > 0) {
-                ReferenceStar targetStar = new ReferenceStar();
-                double targetColor = SpeckleTarget.Color != 0 ? SpeckleTarget.Color : 0.65;
-                double minMagnitude = SpeckleTarget.Rp != 0 ? SpeckleTarget.Rp - 1d : speckle.MinReferenceMag;
-                double maxMagnitude = speckle.MaxReferenceMag;
-
-                if (SpeckleTarget.Color == 0) {
-                    try {
-                        targetStar = await RetrieveTargetStar(externalProgress, token);
-                        if (targetStar == null) throw new Exception("Target star not found.");
-                        targetColor = targetStar.color != 0 ? targetStar.color : 0.65;
-                        minMagnitude = speckle.MinReferenceMag > targetStar.Rp ? targetStar.Rp - 1d : speckle.MinReferenceMag;
-                        maxMagnitude = speckle.MaxReferenceMag; //Math.Min(targetStar.v_mag, speckle.MaxReferenceMag);
-                    }
-                    catch (Exception ex) {
-                        Logger.Debug("Couldn't find target star for SpeckleTarget. Assuming G-type star. Error: " + ex.Message);
-                    }
-                }
-
-                var refStarList = new List<ReferenceStar>();
-                if (speckle.UseSimbadRefStars)
-                    refStarList.AddRange(await SimUtils.FindSimbadSaoStars(externalProgress, token, SpeckleTarget.Coordinates(), speckle.SearchRadius, minMagnitude, maxMagnitude).ConfigureAwait(false));
-                if (speckle.UseUSNOSingleStarList)
-                    refStarList.AddRange(await SimUtils.FindSingleBrightStars(externalProgress, token, SpeckleTarget.Coordinates(), speckle.SearchRadius, minMagnitude, maxMagnitude).ConfigureAwait(false));
-                if (speckle.UseReferenceStarList && ReferenceStarList != null)
-                    refStarList.AddRange(
-                        ReferenceStarList.Where(x => x.RA2000 > SpeckleTarget.RA2000 - speckle.SearchRadius && x.RA2000 < SpeckleTarget.RA2000 + speckle.SearchRadius &&
-                                                        x.Dec2000 > SpeckleTarget.Dec2000 - speckle.SearchRadius && x.Dec2000 < SpeckleTarget.Dec2000));
-                
-                if (speckle.UseGaiaReferenceStarList && GaiaReferenceStarList != null) {
-                    var gaiaRefStarsFiltered = GaiaReferenceStarList.Where(x => x.Raj2000 > SpeckleTarget.RA2000 - speckle.SearchRadius && x.Raj2000 < SpeckleTarget.RA2000 + speckle.SearchRadius &&
-                                                        x.Dej2000 > SpeckleTarget.Dec2000 - speckle.SearchRadius && x.Dej2000 < SpeckleTarget.Dec2000);
-                    // TODO implement Mark's check
-                }
-
-                foreach (var rstar in refStarList) {
-                    Separation sep = SpeckleTarget.Coordinates() - rstar.Coordinates();
-                    rstar.distance = sep.Distance.Degree;
-                }
-                // RefGaiaNum first, then brightness, then color match, then distance (the distance is already limited in the simbadutils)
-                SpeckleTarget.ReferenceStarList.AddRange(refStarList
-                    .Where(x => x.GaiaNum != SpeckleTarget?.GaiaNum)
-                    .Where(x => x.GaiaNum != SpeckleTarget?.RefGaiaNum)
-                    .Where(r => r.Gmag > 7 && r.Gmag < 10 && r.Rp > 7 && r.Rp < 10 && r.Gmag - SpeckleTarget.Gmag > r.color - targetColor)
-                    .OrderBy(r => speckle.PreferBrighterReferenceStars ? Math.Round(Math.Abs(r.Gmag - SpeckleTarget.Gmag), 1) : Math.Round(Math.Abs(r.Dec2000 - SpeckleTarget.Dec2000) + r.distance, 1))
-                    .ThenBy(r => !speckle.PreferBrighterReferenceStars ? Math.Round(Math.Abs(r.Gmag - SpeckleTarget.Gmag), 1) : Math.Round(Math.Abs(r.Dec2000 - SpeckleTarget.Dec2000) + r.distance, 1))
-                    //.ThenBy(r => r.distance)
-                    .Take(10).ToList());
-
-                if (SpeckleTarget.ReferenceStarList.Count == 0) { // relax parameters
-                    SpeckleTarget.ReferenceStarList = refStarList
-                        .Where(x => x.GaiaNum != SpeckleTarget?.GaiaNum)
-                        .Where(r => r.Gmag > 7 && r.Gmag < 10 && r.Rp > 7 && r.Rp < 10)
-                        .OrderBy(r => speckle.PreferBrighterReferenceStars ? Math.Round(Math.Abs(r.Gmag - SpeckleTarget.Gmag), 1) : Math.Round(Math.Abs(r.Dec2000 - SpeckleTarget.Dec2000) + r.distance, 1))
-                        .ThenBy(r => !speckle.PreferBrighterReferenceStars ? Math.Round(Math.Abs(r.Gmag - SpeckleTarget.Gmag), 1) : Math.Round(Math.Abs(r.Dec2000 - SpeckleTarget.Dec2000) + r.distance, 1))
-                        //.ThenBy(r => r.distance)
-                        .Take(10).ToList();
-                }
-
-                if (speckle.DomePositionLock && SpeckleTarget.DomeSlitObservationTime > 0) {
-                    var slitAz1 = speckle.DomePosition - (speckle.DomeSlitWidth / 2);
-                    var slitAz2 = speckle.DomePosition + (speckle.DomeSlitWidth / 2);
-                    foreach (var rstar in SpeckleTarget.ReferenceStarList) {
-                        rstar.AltList = GetAltList(rstar.Coordinates());
-                        rstar.setDomeSlitAltTimeList(speckle, slitAz1, slitAz2);
-                    }
-
-                    // Filter stars with non-null and non-empty DomeSlitAltTimeList
-                    SpeckleTarget.ReferenceStarList = SpeckleTarget.ReferenceStarList
-                        .Where(r => r.DomeSlitAltTimeList != null && r.DomeSlitAltTimeList.Any())
-                        .ToList();
-
-                    // Sort by closeness to the target color and then by dome slit observation time for those within the top 30% of observation times
-                    var topObservationTime = SpeckleTarget.ReferenceStarList.Any() ? SpeckleTarget.ReferenceStarList.Max(s => s.DomeSlitObservationTime) * 0.7 : 0;
-                    SpeckleTarget.ReferenceStarList = SpeckleTarget.ReferenceStarList
-                        .Where(r => r.DomeSlitObservationTime >= topObservationTime)
-                        .OrderBy(r => r.GaiaNum == SpeckleTarget.RefGaiaNum ? 0 : 1) // start with selected reference star
-                        .ThenBy(r => speckle.PreferBrighterReferenceStars ? Math.Round(Math.Abs(r.Gmag - SpeckleTarget.Gmag), 1) : Math.Round(Math.Abs(r.Dec2000 - SpeckleTarget.Dec2000) + r.distance, 1))
-                        .ThenBy(r => !speckle.PreferBrighterReferenceStars ? Math.Round(Math.Abs(r.Gmag - SpeckleTarget.Gmag), 1) : Math.Round(Math.Abs(r.Dec2000 - SpeckleTarget.Dec2000) + r.distance, 1))
-                        //.ThenBy(r => r.distance)
-                        .ThenBy(r => r.DomeSlitAltTimeList.OrderBy(altTime => altTime.datetime).FirstOrDefault()?.datetime)
-                        .ToList();
-                }
-
-                if (!SpeckleTarget.ReferenceStarList.Any()) {
-                    Logger.Debug("Couldn't find reference star for SpeckleTarget within " + speckle.SearchRadius + " degrees and magnitudes: " + minMagnitude + " and " + maxMagnitude);
-                }
-            }
-
-            SpeckleTarget.ReferenceStar = SpeckleTarget.ReferenceStarList.FirstOrDefault();
-            if (SpeckleTarget.ReferenceStar == null) {
-                Logger.Debug($"No reference star resolved for target {SpeckleTarget?.GaiaNum} (RefGaiaNum: {SpeckleTarget?.RefGaiaNum}, GetRef: {SpeckleTarget?.GetRef}).");
-            }
+            var result = await referenceStarService.ResolveAsync(target, SpeckleTargets.ToList(), ReferenceStarQueryOptions.FromOptions(speckle), externalProgress, token).ConfigureAwait(false);
+            result.ApplyTo(target);
             RaiseAllPropertiesChanged();
-        }
-
-        private async Task<ReferenceStar> RetrieveTargetStar(IProgress<ApplicationStatus> externalProgress, CancellationToken token) {
-            var coords = SpeckleTarget.Coordinates();
-            var magnitude = SpeckleTarget.Pmag;
-            return await SimUtils.GetStarByPosition(externalProgress, token, coords.RADegrees, coords.Dec, magnitude);
-        }
-
-        private List<AltTime> GetAltList(Coordinates coords) {
-            var start = DateTime.Now; // NighttimeData.NauticalTwilightRiseAndSet.Set ?? DateTime.Now;
-            start = start.AddHours(-1);
-            var siderealTime = AstroUtil.GetLocalSiderealTime(start, profileService.ActiveProfile.AstrometrySettings.Longitude);
-            var hourAngle = AstroUtil.GetHourAngle(siderealTime, coords.RA);
-            var end = DateTime.Now.AddHours(10); // NighttimeData.NauticalTwilightRiseAndSet.Rise ?? DateTime.Now.AddHours(23);
-            end = end.AddHours(1);
-            var siderealEndTime = AstroUtil.GetLocalSiderealTime(end, profileService.ActiveProfile.AstrometrySettings.Longitude);
-            var hourEndAngle = AstroUtil.GetHourAngle(siderealEndTime, coords.RA);
-            if (hourEndAngle < hourAngle) {
-                hourEndAngle += 24;
-            }
-            
-            List<AltTime> altList = new List<AltTime>();
-            for (double angle = hourAngle; angle < hourEndAngle; angle += speckle.DomePositionLock ? 0.01 : 0.05) {
-                var degAngle = AstroUtil.HoursToDegrees(angle);
-                var altitude = AstroUtil.GetAltitude(degAngle, profileService.ActiveProfile.AstrometrySettings.Latitude, coords.Dec);
-                var azimuth = AstroUtil.GetAzimuth(degAngle, altitude, profileService.ActiveProfile.AstrometrySettings.Latitude, coords.Dec);
-                var horizonAltitude = 0d;
-                if (profileService.ActiveProfile.AstrometrySettings.Horizon != null) {
-                    horizonAltitude = profileService.ActiveProfile.AstrometrySettings.Horizon.GetAltitude(azimuth);
-                }
-                // Run the whole thing and get the top value
-                if (altitude > horizonAltitude)
-                    altList.Add(new AltTime(altitude, azimuth, degAngle, start, AstroUtil.Airmass(altitude), CalculateMoonSeparation(start, coords)));
-                start = start.AddHours(speckle.DomePositionLock ? 0.01 : 0.05);
-            }
-            return altList;
-        }
-
-        private Coordinates GetDomeSlitCoords() {
-            var observer = profileService.ActiveProfile.AstrometrySettings;
-            ICustomDateTime SystemDateTime = new SystemDateTime();
-            var domeSlitCoords = new TopocentricCoordinates(Angle.ByDegree(speckle.DomePosition), Angle.ByDegree(45), Angle.ByDegree(observer.Latitude), Angle.ByDegree(observer.Longitude), observer.Elevation, SystemDateTime);
-            return domeSlitCoords.Transform(Epoch.J2000);
         }
 
         private void OpenFile() {
             OpenFileDialog fileDialog = new OpenFileDialog();
-            fileDialog.DefaultExt = ".csv"; // Required file extension 
-            fileDialog.Filter = "Csv documents (.csv)|*.csv"; // Optional file extensions
+            fileDialog.DefaultExt = ".csv";
+            fileDialog.Filter = "Csv documents (.csv)|*.csv";
 
             if (fileDialog.ShowDialog() == DialogResult.OK) {
                 _ = LoadTargets(fileDialog.FileName);
@@ -1024,122 +600,39 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
 
         private Task<bool> LoadTargets(string file) {
             LoadingTargets = true;
-            return Task.Run(() => {
-                if (DateTime.Now.Hour <= 12 && DateTime.Now.Hour >= 8) {
-                    NighttimeData = nighttimeCalculator.Calculate(DateTime.Now.AddHours(5));
-                } else {
-                    NighttimeData = nighttimeCalculator.Calculate();
-                }
+            return Task.Run(async () => {
+                NighttimeData = targetListService.GetNighttimeData(DateTime.Now);
                 try {
-                    var slitAz1 = speckle.DomePosition - (speckle.DomeSlitWidth / 2);
-                    var slitAz2 = speckle.DomePosition + (speckle.DomeSlitWidth / 2);
-                    var config = new CsvConfiguration(CultureInfo.InvariantCulture);
-                    config.MissingFieldFound = null;
-                    config.TrimOptions = TrimOptions.Trim;
-                    using (var reader = new StreamReader(file))
-                    using (var csv = new CsvReader(reader, config)) {
-                        csv.Context.RegisterClassMap<SpeckleTargetMap>();
-                        var records = csv.GetRecords<SpeckleTarget>();
-                        foreach (SpeckleTarget speckleTarget in records.ToList()) {
-                            if (speckleTarget.RA2000 == 0d && speckleTarget.Dec2000 == 0d) {
-                                Logger.Debug("No coordinates found. Skipping target " + speckleTarget.Name + " for user " + speckleTarget.Proj);
-                                continue;
-                            }
-                            speckleTarget.Obs = speckleTarget.Obs.Trim() != "" ? speckleTarget.Obs.Trim() : User.Trim() != "" ? User.Trim() : speckle.User;
-                            if (!IgnoreLimits && speckleTarget.Nights > 0 && speckleTarget.Nights <= speckleTarget.Completed_nights) {
-                                Logger.Debug("Target already imaged enough nights. Skipping target " + speckleTarget.Name + " for user " + speckleTarget.Proj);
-                                speckleTarget.ImageTarget = false; // Can't image this target
-                                speckleTarget.Note2 = "Target finished.";
-                            }
-                            if (!IgnoreLimits && speckleTarget.Sep > 0 && (speckleTarget.Sep < speckle.MinSep || speckleTarget.Sep > speckle.MaxSep)) {
-                                Logger.Debug("Seperation not within limits. Skipping target " + speckleTarget.Name + " for user " + speckleTarget.Proj);
-                                speckleTarget.ImageTarget = false; // Can't image this target
-                                speckleTarget.Note2 = "Target not within separation limits.";
-                            }
-                            speckleTarget.GaiaNum = speckleTarget.GaiaNum.Trim().TrimStart('G');
-                            speckleTarget.RefGaiaNum = speckleTarget.RefGaiaNum.Trim().TrimStart('G');
-                            speckleTarget.Cycles = speckleTarget.Cycles > 0 ? speckleTarget.Cycles : Cycles;
-                            speckleTarget.Nights = speckleTarget.Nights > 0 ? speckleTarget.Nights : speckle.Nights;
-                            speckleTarget.Exp = speckleTarget.Exp > 0 ? speckleTarget.Exp : ExposureTime;
-                            speckleTarget.NExp = speckleTarget.NExp > 0 ? speckleTarget.NExp : Exposures;
-                            speckleTarget.AirmassMin = speckleTarget.AirmassMin;
-                            speckleTarget.AirmassMax = speckleTarget.AirmassMax;
-                            speckleTarget.MinAltitude = speckleTarget.MinAltitude == 0d ? speckle.AltitudeMin : speckleTarget.MinAltitude;
-                            speckleTarget.AltList = GetAltList(speckleTarget.Coordinates());
-                            speckleTarget.setDomeSlitAltTimeList(speckle, slitAz1, slitAz2, speckleTarget.AirmassMin, speckleTarget.AirmassMax);
-                            var imageTo = speckleTarget.DomeSlitAltTimeList.OrderBy(x => x.datetime).FirstOrDefault();
-                            if (!speckle.DomePositionLock) {
-                                imageTo = speckleTarget.ImageTo(NighttimeData, speckle.AltitudeMax, speckle.MDistance, speckleTarget.AirmassMin, speckleTarget.AirmassMax, speckle.MoonDistance);
-                            }
-                            if (imageTo != null && imageTo.alt > speckleTarget.MinAltitude && imageTo.datetime >= NighttimeData.NauticalTwilightRiseAndSet.Set && imageTo.datetime <= NighttimeData.NauticalTwilightRiseAndSet.Rise) {
-                                speckleTarget.ImageTime = speckle.DomePositionLock ? imageTo.datetime : RoundUp(imageTo.datetime, TimeSpan.FromMinutes(5));
-                                speckleTarget.ImageTimeAlt = imageTo.alt;
-                            }
-                            else if (!IgnoreLimits) {
-                                Logger.Debug("Image time not within limits or too close to the moon. Skipping target " + speckleTarget.Name + " for user " + speckleTarget.Proj);
-                                speckleTarget.ImageTarget = false; // Can't image this target
-                                speckleTarget.Note2 = "Target cannot be imaged tonight.";
-                            }
-                            speckleTarget.Template = speckleTarget.Template != "" ? speckleTarget.Template : Template != "" ? Template : speckle.DefaultTemplate;
-                            speckleTarget.TemplateRef = speckleTarget.TemplateRef != "" ? speckleTarget.TemplateRef : TemplateRef != "" ? TemplateRef : speckle.DefaultRefTemplate;
-                            if (speckleTarget.Type == "M" || speckleTarget.Type == "C") {
-                                if (!IgnoreLimits && speckleTarget.Pmag > 0 && (speckleTarget.Pmag < speckle.MinMag || speckleTarget.Pmag > speckle.MaxMag)) {
-                                    Logger.Debug("Magnitude not within limits. Skipping target " + speckleTarget.Name + " for user " + speckleTarget.Proj);
-                                    speckleTarget.ImageTarget = false; // Can't image this target
-                                    speckleTarget.Note2 = "Target not within magnitude limits.";
-                                }
-                                if (speckleTarget.Smag == 0) {
-                                    Logger.Debug("Failed to get secondary magnitude for " + speckleTarget.Name);
-                                    speckleTarget.NoEC = 1;
-                                }
-                            }
-
-                            SpeckleTargets.Add(speckleTarget);
-
-                            RaisePropertyChanged("SpeckleTargetCount");
-                            RaisePropertyChanged("SpeckleTargetsView");
-                        }
-                        Logger.Debug("Loaded " + SpeckleTargets.Count + " speckletargets");
-
-                        SpeckleTargets = new AsyncObservableCollection<SpeckleTarget>(
-                            SpeckleTargets.Where(i => i.ImageTime != null).GroupBy(i => i.ImageTime)
-                            .SelectMany(g => g.OrderByDescending(n => n.Priority).ThenByDescending(i => i.ImageTimeAlt).ToList())
-                            .OrderBy(i => i.ImageTime).ThenBy(i => i.ImageTimeAlt));
-                    }
-                } catch (Exception e) {
-                    Notification.ShowError("Failed to load list. " + e.Message);
+                    var defaults = new TargetListDefaults {
+                        User = User,
+                        Template = Template,
+                        TemplateRef = TemplateRef,
+                        Cycles = Cycles,
+                        Exposures = Exposures,
+                        ExposureTime = ExposureTime
+                    };
+                    var targets = await targetListService.LoadTargetsAsync(file, defaults, IgnoreLimits, CancellationToken.None).ConfigureAwait(false);
+                    SpeckleTargets = new AsyncObservableCollection<SpeckleTarget>(targets);
+                    Logger.Debug("Loaded " + SpeckleTargets.Count + " speckletargets");
+                    RaisePropertyChanged("SpeckleTargetCount");
+                    RaisePropertyChanged("SpeckleTargetsView");
+                } catch (Exception ex) {
+                    Notification.ShowError("Failed to load list. " + ex.Message);
                 }
                 LoadingTargets = false;
                 return true;
             });
         }
 
-        private DateTime RoundUp(DateTime dt, TimeSpan d) {
-            return new DateTime((dt.Ticks + d.Ticks - 1) / d.Ticks * d.Ticks, dt.Kind);
-        }
-
-        private double CalculateMoonSeparation(DateTime time, Coordinates coords) {
-            NOVAS.SkyPosition pos = AstroUtil.GetMoonPosition(time, AstroUtil.GetJulianDate(time), new ObserverInfo { Latitude = profileService.ActiveProfile.AstrometrySettings.Latitude, Longitude = profileService.ActiveProfile.AstrometrySettings.Longitude, Elevation = profileService.ActiveProfile.AstrometrySettings.Elevation });
-            var moonRaRadians = AstroUtil.ToRadians(AstroUtil.HoursToDegrees(pos.RA));
-            var moonDecRadians = AstroUtil.ToRadians(pos.Dec);
-
-            Coordinates target = coords.Transform(Epoch.JNOW);
-            var targetRaRadians = AstroUtil.ToRadians(target.RADegrees);
-            var targetDecRadians = AstroUtil.ToRadians(target.Dec);
-
-            var theta = SOFA.Seps(moonRaRadians, moonDecRadians, targetRaRadians, targetDecRadians);
-            return AstroUtil.ToDegree(theta); // return separation
-        }
-
         public override object Clone() {
-            var clone = new SpeckleTargetListContainer(profileService, sequenceMediator, nighttimeCalculator, applicationStatusMediator, cameraMediator, framingAssistantVM, applicationMediator, telescopeMediator) {
+            var clone = new SpeckleTargetListContainer(profileService, sequenceMediator, nighttimeCalculator, applicationStatusMediator, cameraMediator, framingAssistantVM, applicationMediator, telescopeMediator, targetListService, targetSchedulerService, referenceStarService, targetPlanner, optionsProvider) {
                 Icon = Icon,
                 Name = Name,
                 Category = Category,
                 Description = Description,
-                Items = new ObservableCollection<ISequenceItem>(Items.Select(i => i.Clone() as ISequenceItem)),
-                Triggers = new ObservableCollection<ISequenceTrigger>(Triggers.Select(t => t.Clone() as ISequenceTrigger)),
-                Conditions = new ObservableCollection<ISequenceCondition>(Conditions.Select(t => t.Clone() as ISequenceCondition)),
+                Items = new ObservableCollection<ISequenceItem>(Items.Select(item => item.Clone() as ISequenceItem)),
+                Triggers = new ObservableCollection<ISequenceTrigger>(Triggers.Select(item => item.Clone() as ISequenceTrigger)),
+                Conditions = new ObservableCollection<ISequenceCondition>(Conditions.Select(item => item.Clone() as ISequenceCondition)),
                 SortByRa = SortByRa,
                 ShowReferenceStars = ShowReferenceStars,
                 AutoLoadTargetStar = AutoLoadTargetStar,

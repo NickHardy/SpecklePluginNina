@@ -1,13 +1,13 @@
 ﻿#region "copyright"
 
 /*
-    Copyright © 2016 - 2021 Stefan Berg <isbeorn86+NINA@googlemail.com> and the N.I.N.A. contributors
+    Copyright (c) 2026 Nick Hardy and Leon Bewersdorff
 
-    This file is part of N.I.N.A. - Nighttime Imaging 'N' Astronomy.
+    This file is part of the Speckle Interferometry plugin for
+    N.I.N.A. - Nighttime Imaging 'N' Astronomy.
 
-    This Source Code Form is subject to the terms of the Mozilla Public
-    License, v. 2.0. If a copy of the MPL was not distributed with this
-    file, You can obtain one at http://mozilla.org/MPL/2.0/.
+    Released under the MIT License. See LICENSE.txt in the repository
+    root, or https://opensource.org/licenses/MIT
 */
 
 #endregion "copyright"
@@ -172,105 +172,30 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
             return s;
         }
 
+        public static string GetHeaderValue(IEnumerable<IGenericMetaDataHeader> genericHeaders, params string[] keys) {
+            return genericHeaders?.OfType<StringMetaDataHeader>().FirstOrDefault(header => keys.Contains(header.Key))?.Value ?? string.Empty;
+        }
+
         public static void AddImagePatterns(List<ImagePattern> customPatterns, Speckle speckle, List<IGenericMetaDataHeader> genericHeaders) {
             if (genericHeaders == null)
                 return;
 
-            var name1Header = (StringMetaDataHeader)genericHeaders.Where(h => h.Key == "Name1*").FirstOrDefault();
             customPatterns.Add(new ImagePattern(speckle.name1Pattern.Key, speckle.name1Pattern.Description, speckle.name1Pattern.Category) {
-                Value = name1Header?.Value ?? string.Empty
+                Value = GetHeaderValue(genericHeaders, "Name1*", "Name1")
             });
-            var name2Header = (StringMetaDataHeader)genericHeaders.Where(h => h.Key == "Name2*").FirstOrDefault();
             customPatterns.Add(new ImagePattern(speckle.name2Pattern.Key, speckle.name2Pattern.Description, speckle.name2Pattern.Category) {
-                Value = name2Header?.Value ?? string.Empty
+                Value = GetHeaderValue(genericHeaders, "Name2*", "Name2")
             });
-            var projectHeader = (StringMetaDataHeader)genericHeaders.Where(h => h.Key == "Proj~").FirstOrDefault();
             customPatterns.Add(new ImagePattern(speckle.projectPattern.Key, speckle.projectPattern.Description, speckle.projectPattern.Category) {
-                Value = projectHeader?.Value ?? string.Empty
+                Value = GetHeaderValue(genericHeaders, "Proj~", "Proj")
             });
-            var observerHeader = (StringMetaDataHeader)genericHeaders.Where(h => h.Key == "Obs~").FirstOrDefault();
             customPatterns.Add(new ImagePattern(speckle.observerPattern.Key, speckle.observerPattern.Description, speckle.observerPattern.Category) {
-                Value = observerHeader?.Value ?? string.Empty
+                Value = GetHeaderValue(genericHeaders, "Obs~", "Obs")
             });
-            var gaiaNumberHeader = (StringMetaDataHeader)genericHeaders.Where(h => h.Key == "GaiaNum~").FirstOrDefault();
             customPatterns.Add(new ImagePattern(speckle.gaiaNumberPattern.Key, speckle.gaiaNumberPattern.Description, speckle.gaiaNumberPattern.Category) {
-                Value = gaiaNumberHeader?.Value ?? string.Empty
+                Value = GetHeaderValue(genericHeaders, "GaiaNum~", "GaiaNum")
             });
-
         }
-
-        //public static BitmapSource GetDFTImage(BitmapSource image) {
-        //    //var grayImage = ConvertTo16BppSource(image);
-        //    var img = Mat.ImDecode(BitmapSourceToByte(image), ImreadModes.Grayscale); //Cv2.ImRead(ImagePath.Lenna, ImreadModes.Grayscale);
-
-        //    // expand input image to optimal size
-        //    var padded = new Mat();
-        //    int m = Cv2.GetOptimalDFTSize(img.Rows);
-        //    int n = Cv2.GetOptimalDFTSize(img.Cols); // on the border add zero values
-        //    Cv2.CopyMakeBorder(img, padded, 0, m - img.Rows, 0, n - img.Cols, BorderTypes.Constant, Scalar.All(0));
-
-        //    // Add to the expanded another plane with zeros
-        //    var paddedF32 = new Mat();
-        //    padded.ConvertTo(paddedF32, MatType.CV_32F);
-        //    Mat[] planes = { paddedF32, Mat.Zeros(padded.Size(), MatType.CV_32F) };
-        //    var complex = new Mat();
-        //    Cv2.Merge(planes, complex);
-
-        //    // this way the result may fit in the source matrix
-        //    var dft = new Mat();
-        //    Cv2.Dft(complex, dft);
-
-        //    // compute the magnitude and switch to logarithmic scale
-        //    // => log(1 + sqrt(Re(DFT(I))^2 + Im(DFT(I))^2))
-        //    Cv2.Split(dft, out var dftPlanes);  // planes[0] = Re(DFT(I), planes[1] = Im(DFT(I))
-
-        //    // planes[0] = magnitude
-        //    var magnitude = new Mat();
-        //    Cv2.Magnitude(dftPlanes[0], dftPlanes[1], magnitude);
-
-        //    Mat magnitude1 = magnitude + Scalar.All(1);  // switch to logarithmic scale
-        //    Cv2.Log(magnitude1, magnitude1);
-
-        //    // crop the spectrum, if it has an odd number of rows or columns
-        //    var spectrum = magnitude1[
-        //        new Rect(0, 0, magnitude1.Cols & -2, magnitude1.Rows & -2)];
-
-        //    // rearrange the quadrants of Fourier image  so that the origin is at the image center
-        //    int cx = spectrum.Cols / 2;
-        //    int cy = spectrum.Rows / 2;
-
-        //    var q0 = new Mat(spectrum, new Rect(0, 0, cx, cy));   // Top-Left - Create a ROI per quadrant
-        //    var q1 = new Mat(spectrum, new Rect(cx, 0, cx, cy));  // Top-Right
-        //    var q2 = new Mat(spectrum, new Rect(0, cy, cx, cy));  // Bottom-Left
-        //    var q3 = new Mat(spectrum, new Rect(cx, cy, cx, cy)); // Bottom-Right
-
-        //    // swap quadrants (Top-Left with Bottom-Right)
-        //    var tmp = new Mat();
-        //    q0.CopyTo(tmp);
-        //    q3.CopyTo(q0);
-        //    tmp.CopyTo(q3);
-
-        //    // swap quadrant (Top-Right with Bottom-Left)
-        //    q1.CopyTo(tmp);
-        //    q2.CopyTo(q1);
-        //    tmp.CopyTo(q2);
-
-        //    // Transform the matrix with float values into a
-        //    Cv2.Normalize(spectrum, spectrum, 0, 255, NormTypes.MinMax);
-        //    spectrum.ConvertTo(spectrum, MatType.CV_8U);
-
-        //    //var point = Cv2.PhaseCorrelate(spectrum, previousSpectrum);
-
-        //    // calculating the idft
-        //    /*            var inverseTransform = new Mat();
-        //                Cv2.Dft(dft, inverseTransform, DftFlags.Inverse | DftFlags.RealOutput);
-        //                Cv2.Normalize(inverseTransform, inverseTransform, 0, 255, NormTypes.MinMax);
-        //                inverseTransform.ConvertTo(inverseTransform, MatType.CV_8U);*/
-
-        //    var returnImage = ImageUtility.ConvertBitmap(BitmapConverter.ToBitmap(spectrum), PixelFormats.Gray8);
-        //    returnImage.Freeze();
-        //    return returnImage;
-        //}
 
     }
 }

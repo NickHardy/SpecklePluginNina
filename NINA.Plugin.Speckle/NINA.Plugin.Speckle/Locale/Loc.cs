@@ -1,13 +1,13 @@
 #region "copyright"
 
 /*
-    Copyright © 2016 - 2021 Stefan Berg <isbeorn86+NINA@googlemail.com> and the N.I.N.A. contributors
+    Copyright (c) 2026 Nick Hardy and Leon Bewersdorff
 
-    This file is part of N.I.N.A. - Nighttime Imaging 'N' Astronomy.
+    This file is part of the Speckle Interferometry plugin for
+    N.I.N.A. - Nighttime Imaging 'N' Astronomy.
 
-    This Source Code Form is subject to the terms of the Mozilla Public
-    License, v. 2.0. If a copy of the MPL was not distributed with this
-    file, You can obtain one at http://mozilla.org/MPL/2.0/.
+    Released under the MIT License. See LICENSE.txt in the repository
+    root, or https://opensource.org/licenses/MIT
 */
 
 #endregion "copyright"
@@ -23,7 +23,6 @@ using System.Windows.Data;
 
 namespace NINA.Plugin.Speckle.Locale {
 
-    // This is not in use yet. I was hoping to make it intenational, but Nina is not ready for that yet.
 
     [Export(typeof(ILoc))]
     [JsonObject(MemberSerialization.OptIn)]

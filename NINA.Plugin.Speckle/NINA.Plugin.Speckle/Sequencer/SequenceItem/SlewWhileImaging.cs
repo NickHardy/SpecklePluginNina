@@ -1,13 +1,13 @@
 ﻿#region "copyright"
 
 /*
-    Copyright © 2016 - 2024 Stefan Berg <isbeorn86+NINA@googlemail.com> and the N.I.N.A. contributors
+    Copyright (c) 2026 Nick Hardy and Leon Bewersdorff
 
-    This file is part of N.I.N.A. - Nighttime Imaging 'N' Astronomy.
+    This file is part of the Speckle Interferometry plugin for
+    N.I.N.A. - Nighttime Imaging 'N' Astronomy.
 
-    This Source Code Form is subject to the terms of the Mozilla Public
-    License, v. 2.0. If a copy of the MPL was not distributed with this
-    file, You can obtain one at http://mozilla.org/MPL/2.0/.
+    Released under the MIT License. See LICENSE.txt in the repository
+    root, or https://opensource.org/licenses/MIT
 */
 
 #endregion "copyright"
@@ -16,7 +16,7 @@ using Newtonsoft.Json;
 using NINA.Core.Model;
 using NINA.Core.Utility;
 using NINA.Equipment.Interfaces.Mediator;
-using NINA.Equipment.Model;
+using NINA.Plugin.Speckle.Services;
 using NINA.Profile.Interfaces;
 using NINA.Sequencer.Container;
 using NINA.Sequencer.SequenceItem;
@@ -25,12 +25,10 @@ using NINA.Sequencer.Utility;
 using NINA.WPF.Base.Interfaces.Mediator;
 using NINA.WPF.Base.Interfaces.ViewModel;
 using System;
-using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Runtime.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows.Documents;
 
 namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
 
@@ -43,8 +41,7 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
     [JsonObject(MemberSerialization.OptIn)]
     public class SlewWhileImaging : SequentialContainer, IImmutableContainer {
         private IProfileService profileService;
-        private IImagingMediator imagingMediator;
-        private IGuiderMediator guiderMediator;
+        private ISpeckleAcquisitionService acquisitionService;
 
         [OnDeserializing]
         public void OnDeserializing(StreamingContext context) {
@@ -54,11 +51,11 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
         }
 
         [ImportingConstructor]
-        public SlewWhileImaging(IProfileService profileService, ICameraMediator cameraMediator, IImagingMediator imagingMediator, IImageSaveMediator imageSaveMediator, IImageHistoryVM imageHistoryVM, ITelescopeMediator telescopeMediator, IGuiderMediator guiderMediator) :
+        public SlewWhileImaging(IProfileService profileService, ICameraMediator cameraMediator, IImagingMediator imagingMediator, IImageSaveMediator imageSaveMediator, IImageHistoryVM imageHistoryVM, ITelescopeMediator telescopeMediator, IGuiderMediator guiderMediator, ISpeckleAcquisitionService acquisitionService) :
                 this(
                     null,
                     profileService,
-                    imagingMediator,
+                    acquisitionService,
                     new SlewScopeToRaDec(telescopeMediator, guiderMediator)
                     ) {
         }
@@ -98,16 +95,13 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
         [JsonProperty]
         public double ExposureTime { get => exposureTime; set { exposureTime = value; RaisePropertyChanged(); } }
 
-        /// <summary>
-        /// Clone Constructor
-        /// </summary>
         private SlewWhileImaging(
                 SlewWhileImaging cloneMe,
                 IProfileService profileService,
-                IImagingMediator imagingMediator,
+                ISpeckleAcquisitionService acquisitionService,
                 SlewScopeToRaDec slewScopeToRaDec) {
             this.profileService = profileService;
-            this.imagingMediator = imagingMediator;
+            this.acquisitionService = acquisitionService;
 
             Items.Add(slewScopeToRaDec);
 
@@ -123,27 +117,20 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
         }
 
         public override async Task Execute(IProgress<ApplicationStatus> progress, CancellationToken token) {
-            IProgress<ApplicationStatus> localProgress = new Progress<ApplicationStatus>(x => {
-                x.Source = "Slew while imaging";
-                progress?.Report(x);
+            IProgress<ApplicationStatus> localProgress = new Progress<ApplicationStatus>(status => {
+                status.Source = "Slew while imaging";
+                progress?.Report(status);
             });
             try {
-                var capture = new CaptureSequence() {
-                    ExposureTime = ExposureTime
-                };
-                var imageParams = new PrepareImageParameters(true, false);
                 var target = Utility.ItemUtility.RetrieveInputTarget(Parent);
                 var localCTS = CancellationTokenSource.CreateLinkedTokenSource(token);
-                var exposures = 1;
                 var slewScopeToRaDec = GetSlewScopeToRaDec();
                 slewScopeToRaDec.Coordinates = target.InputCoordinates;
-                var imagingTask = Task.Run(async () => {
-                    while (localCTS != null && !localCTS.IsCancellationRequested) {
-                        capture.ExposureTime = ExposureTime;
-                        await imagingMediator.CaptureAndPrepareImage(capture, imageParams, localCTS.Token, progress);
-                        localProgress?.Report(new ApplicationStatus() { Status = $"Images {exposures++}" });
-                    }
-                }, token);
+                var previewRequest = new PreviewLoopRequest {
+                    GetExposureTime = () => ExposureTime,
+                    LoopProgress = localProgress
+                };
+                var imagingTask = Task.Run(() => acquisitionService.RunPreviewLoopAsync(previewRequest, progress, localCTS.Token), token);
                 await slewScopeToRaDec.Execute(progress, token);
                 localCTS.Cancel();
             }
@@ -168,16 +155,12 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             var clone = new SlewWhileImaging(
                     this,
                     profileService,
-                    imagingMediator,
+                    acquisitionService,
                     (SlewScopeToRaDec)this.GetSlewScopeToRaDec().Clone());
             clone.ExposureTime = this.ExposureTime;
             return clone;
         }
 
-        /// <summary>
-        /// When an inner instruction interrupts this set, it should reroute the interrupt to the real parent set
-        /// </summary>
-        /// <returns></returns>
         public override Task Interrupt() {
             return this.Parent?.Interrupt();
         }

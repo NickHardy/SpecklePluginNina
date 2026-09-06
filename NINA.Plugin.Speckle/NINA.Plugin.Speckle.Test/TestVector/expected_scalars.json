@@ -1,0 +1,86 @@
+{
+ "generator": {
+  "seed": 20260804,
+  "frames": 32,
+  "size": 64,
+  "arcsec_per_pixel": 0.02,
+  "aperture_m": 2.5,
+  "lambda_m": 6e-07,
+  "seeing_arcsec_nominal": 0.3,
+  "photons_per_frame": 30000.0,
+  "sky_e_per_px": 5.0,
+  "read_noise_e": 2.0,
+  "offset_adu": 100.0,
+  "e_per_adu": 1.0
+ },
+ "injected": {
+  "rho_arcsec": 0.1980142139972125,
+  "rho_over_rho_min": 4.0,
+  "pa_det_deg": 30.0,
+  "d_px": 9.900710699860625,
+  "dx_px": 8.57426698159971,
+  "dy_px": 4.9503553499303115,
+  "period_px": 6.464182414793814,
+  "ratio": 1.0,
+  "visibility": 1.0
+ },
+ "optics": {
+  "k_space_radius_px": 25.856729659175258,
+  "rho_min_arcsec": 0.049503553499303125,
+  "rho_min_px": 2.475177674965156
+ },
+ "frames_checksum": {
+  "sum_u64": 14720105,
+  "min": 93,
+  "max": 789,
+  "mean": 112.30548858642578
+ },
+ "psd_mean_unshifted": {
+  "sum": 10947912599.96875,
+  "max": 526376180.7717014,
+  "argmax_flat": 64,
+  "at_0_0": 0.0,
+  "at_0_1": 464210095.1804215,
+  "at_1_0": 526376180.7717014,
+  "at_32_32": 68720.28125,
+  "at_10_20": 83695.67839674931,
+  "at_63_63": 247010125.8121899
+ },
+ "psd_mean_unshifted_noprep": {
+  "sum": 222550994816.0,
+  "at_0_0": 211603082216.03125
+ },
+ "parseval_frame0": {
+  "sum_pixels_squared": 3061145.99609375,
+  "sum_psd_over_n2": 3061145.996093751
+ },
+ "photon_bias": {
+  "k_space_radius_px": 25.856729659175258,
+  "pedestal": 66915.45403707604,
+  "sum_after": 10674936222.498285,
+  "max_after": 526309265.3176643
+ },
+ "autocorrelation": {
+  "sum": 0.0,
+  "at_center": 2606185.6011958704,
+  "max": 2606185.6011958704
+ },
+ "metrics": {
+  "d_px": 10.019053762925893,
+  "dx": -8.683277420907416,
+  "dy": -4.998212834199734,
+  "period_px": 6.387828782476749,
+  "pa_det_deg": 29.925317298160962,
+  "lobe_snr": 9.41273190754784,
+  "high_pass_radius": 6.387828782476749,
+  "low_pass_radius": 25.856729659175258,
+  "fv": 0.4929427661820134,
+  "visibility": 0.9858855323640268,
+  "ratio_from_v": 0.8444988735135865,
+  "rho_arcsec": 0.20038107525851787
+ },
+ "tolerance": {
+  "psd_relative": 1e-09,
+  "note": "compare as max|a-b| / max|b| over the whole array; a hand-rolled radix-2 double FFT agrees with numpy to about 1e-13 relative here"
+ }
+}

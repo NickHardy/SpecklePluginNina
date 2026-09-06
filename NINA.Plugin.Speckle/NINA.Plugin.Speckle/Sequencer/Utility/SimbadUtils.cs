@@ -1,13 +1,13 @@
 ﻿#region "copyright"
 
 /*
-    Copyright © 2016 - 2021 Stefan Berg <isbeorn86+NINA@googlemail.com> and the N.I.N.A. contributors
+    Copyright (c) 2026 Nick Hardy and Leon Bewersdorff
 
-    This file is part of N.I.N.A. - Nighttime Imaging 'N' Astronomy.
+    This file is part of the Speckle Interferometry plugin for
+    N.I.N.A. - Nighttime Imaging 'N' Astronomy.
 
-    This Source Code Form is subject to the terms of the Mozilla Public
-    License, v. 2.0. If a copy of the MPL was not distributed with this
-    file, You can obtain one at http://mozilla.org/MPL/2.0/.
+    Released under the MIT License. See LICENSE.txt in the repository
+    root, or https://opensource.org/licenses/MIT
 */
 
 #endregion "copyright"
@@ -24,17 +24,26 @@ using NINA.Core.Utility;
 using NINA.Core.Model;
 using System.Threading;
 using NINA.Plugin.Speckle.Model;
+using NINA.Plugin.Speckle.Services;
 using System.Net;
 using System.IO;
 using Newtonsoft.Json;
 using NINA.Core.Utility.Notification;
 using System.Net.Http;
+using System.ComponentModel.Composition;
 using System.Globalization;
 using System.Reflection;
+using static System.FormattableString;
 
 namespace NINA.Plugin.Speckle.Sequencer.Utility {
 
-    public class SimbadUtils {
+    [Export(typeof(ISimbadUtils))]
+    [PartCreationPolicy(CreationPolicy.Shared)]
+    public class SimbadUtils : ISimbadUtils {
+
+        [ImportingConstructor]
+        public SimbadUtils() {
+        }
 
         public async Task<List<SimbadStarCluster>> FindSimbadStarClusters(IProgress<ApplicationStatus> externalProgress, CancellationToken token, Coordinates coords, double maxDistance = 5d) {
             List<SimbadStarCluster> starClusters = new List<SimbadStarCluster>();
@@ -51,7 +60,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
                     dictionary.Add("maxrec", "100");
                     dictionary.Add("runid", "");
                     dictionary.Add("phase", "run");
-                    dictionary.Add("query", "SELECT TOP 10 main_id, ra, dec, DISTANCE(POINT('ICRS', " + coords.RADegrees + ", " + coords.Dec + "), POINT('ICRS', ra, dec)) as dist FROM basic WHERE (otype_txt = 'Cl*' OR otype_txt = 'C?*') AND CONTAINS(POINT('ICRS', ra, dec), CIRCLE('ICRS', " + coords.RADegrees + ", " + coords.Dec + ", " + maxDistance + ")) = 1 AND galdim_majaxis IS NOT NULL AND ra IS NOT NULL AND dec IS NOT NULL ORDER BY galdim_majaxis DESC;");
+                    dictionary.Add("query", Invariant($"SELECT TOP 10 main_id, ra, dec, DISTANCE(POINT('ICRS', {coords.RADegrees}, {coords.Dec}), POINT('ICRS', ra, dec)) as dist FROM basic WHERE (otype_txt = 'Cl*' OR otype_txt = 'C?*') AND CONTAINS(POINT('ICRS', ra, dec), CIRCLE('ICRS', {coords.RADegrees}, {coords.Dec}, {maxDistance})) = 1 AND galdim_majaxis IS NOT NULL AND ra IS NOT NULL AND dec IS NOT NULL ORDER BY galdim_majaxis DESC;"));
                     VoTable voTable = await PostForm(url, dictionary, localCTS.Token);
                     if (voTable != null) {
                         foreach (List<object> obj in voTable.Data) {
@@ -60,6 +69,10 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
                     }
                 }
             } catch (OperationCanceledException) {
+                if (token.IsCancellationRequested) {
+                    throw;
+                }
+                Logger.Warning("The Simbad query took longer than 30 seconds and was given up on");
             } catch (Exception ex) {
                 Logger.Error(ex);
                 Notification.ShowError(ex.Message);
@@ -77,19 +90,18 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
                     externalProgress.Report(new ApplicationStatus() { Status = "Retrieving stars in the SAO catalogue from Simbad" });
                     var url = "http://simbad.u-strasbg.fr/simbad/sim-tap/sync";
                     double maxDistanceRadians = maxDistance * Math.PI / 180;
-                    double minDistanceRadians = (1.0 / 60.0) * (Math.PI / 180); // 1 arcminute in radians
-                    // TODO check for wds reference
-                    string query = $"SELECT TOP 100 basic.main_id, basic.ra, basic.dec, basic.otype_txt, allfluxes.v, allfluxes.b - allfluxes.v AS color, " +
-                                   $"2 * ASIN(SQRT(POWER(SIN(({coords.Dec} - basic.dec) * PI() / 360), 2) + COS({coords.Dec} * PI() / 180) * COS(basic.dec * PI() / 180) * POWER(SIN(({coords.RADegrees} - basic.ra) * PI() / 360), 2))) AS dist " +
-                                   $"FROM basic " +
-                                   $"JOIN ident ON basic.oid = ident.oidref " +
-                                   $"JOIN ids ON basic.oid = ids.oidref " +
-                                   $"JOIN allfluxes ON basic.oid = allfluxes.oidref " +
-                                   $"WHERE ident.id LIKE 'SAO%' AND basic.otype_txt = '*' AND allfluxes.v BETWEEN {minMag} AND {maxMag} " +
-                                   $"AND ids.ids NOT LIKE '%WDS%' AND ids.ids NOT LIKE '%IDS%' AND ids.ids NOT LIKE '%CCDM%' " +
-                                   $"AND basic.ra IS NOT NULL AND basic.dec IS NOT NULL " +
-                                   $"AND 2 * ASIN(SQRT(POWER(SIN(({coords.Dec} - basic.dec) * PI() / 360), 2) + COS({coords.Dec} * PI() / 180) * COS(basic.dec * PI() / 180) * POWER(SIN(({coords.RADegrees} - basic.ra) * PI() / 360), 2))) BETWEEN {minDistanceRadians} AND {maxDistanceRadians} " +
-                                   $"ORDER BY dist;";
+                    double minDistanceRadians = (1.0 / 60.0) * (Math.PI / 180);
+                    string query = Invariant($"SELECT TOP 100 basic.main_id, basic.ra, basic.dec, basic.otype_txt, allfluxes.v, allfluxes.b - allfluxes.v AS color, ") +
+                                   Invariant($"2 * ASIN(SQRT(POWER(SIN(({coords.Dec} - basic.dec) * PI() / 360), 2) + COS({coords.Dec} * PI() / 180) * COS(basic.dec * PI() / 180) * POWER(SIN(({coords.RADegrees} - basic.ra) * PI() / 360), 2))) AS dist ") +
+                                   "FROM basic " +
+                                   "JOIN ident ON basic.oid = ident.oidref " +
+                                   "JOIN ids ON basic.oid = ids.oidref " +
+                                   "JOIN allfluxes ON basic.oid = allfluxes.oidref " +
+                                   Invariant($"WHERE ident.id LIKE 'SAO%' AND basic.otype_txt = '*' AND allfluxes.v BETWEEN {minMag} AND {maxMag} ") +
+                                   "AND ids.ids NOT LIKE '%WDS%' AND ids.ids NOT LIKE '%IDS%' AND ids.ids NOT LIKE '%CCDM%' " +
+                                   "AND basic.ra IS NOT NULL AND basic.dec IS NOT NULL " +
+                                   Invariant($"AND 2 * ASIN(SQRT(POWER(SIN(({coords.Dec} - basic.dec) * PI() / 360), 2) + COS({coords.Dec} * PI() / 180) * COS(basic.dec * PI() / 180) * POWER(SIN(({coords.RADegrees} - basic.ra) * PI() / 360), 2))) BETWEEN {minDistanceRadians} AND {maxDistanceRadians} ") +
+                                   "ORDER BY dist;";
 
                     Dictionary<string, string> dictionary = new Dictionary<string, string>();
                     dictionary.Add("request", "doQuery");
@@ -109,13 +121,17 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
                                 Dec2000 = Convert.ToDouble(obj[2]),
                                 Rp = Convert.ToDouble(obj[4]),
                                 color = Convert.ToDouble(obj[5]),
-                                distance = Convert.ToDouble(obj[6]) * (180 / Math.PI) // Convert radians to degrees
+                                distance = Convert.ToDouble(obj[6]) * (180 / Math.PI)
                             };
                             stars.Add(star);
                         }
                     }
                 }
             } catch (OperationCanceledException) {
+                if (token.IsCancellationRequested) {
+                    throw;
+                }
+                Logger.Warning("The Simbad query took longer than 30 seconds and was given up on");
             } catch (Exception ex) {
                 Logger.Error(ex);
                 Notification.ShowError(ex.Message);
@@ -128,16 +144,15 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
         public async Task<List<ReferenceStar>> FindSingleBrightStars(IProgress<ApplicationStatus> externalProgress, CancellationToken token, Coordinates coords, double maxDistance = 5d, double minMag = 0.0d, double maxMag = 10.0d) {
             List<ReferenceStar> stars = new List<ReferenceStar>();
             var assemblyFolder = new Uri(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)).LocalPath;
-            var i = 1;
+            var lineNumber = 1;
             try {
                 using (StreamReader sr = new StreamReader(Path.Combine(assemblyFolder, "SingleBrightStarsUSNO2006.txt"))) {
                     externalProgress.Report(new ApplicationStatus() { Status = "Retrieving stars from the SingleBrightStars list" });
                     string line;
-                    // Skip the header line
                     sr.ReadLine();
 
                     while ((line = sr.ReadLine()) != null) {
-                        i++;
+                        lineNumber++;
                         token.ThrowIfCancellationRequested();
                         ReferenceStar record = new ReferenceStar {
                             Name2 = $"{line.Substring(0, 7).Trim()} {line.Substring(32, 10).Trim()}",
@@ -158,6 +173,10 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
                 }
             }
             catch (OperationCanceledException) {
+                if (token.IsCancellationRequested) {
+                    throw;
+                }
+                Logger.Warning("The Simbad query took longer than 30 seconds and was given up on");
             }
             catch (Exception ex) {
                 Logger.Error(ex);
@@ -176,9 +195,9 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
                     localCTS.CancelAfter(TimeSpan.FromSeconds(30));
                     externalProgress.Report(new ApplicationStatus() { Status = "Retrieving target star from Simbad" });
                     var url = "http://simbad.u-strasbg.fr/simbad/sim-tap/sync";
-                    var query = $"SELECT basic.main_id, basic.ra, basic.dec, basic.otype_txt, allfluxes.b, allfluxes.v, allfluxes.b - allfluxes.v AS color ";
-                        query += $"FROM basic JOIN allfluxes ON(basic.oid = allfluxes.oidref) ";
-                        query += $"WHERE CONTAINS(POINT('ICRS', basic.ra, basic.dec), CIRCLE('ICRS', {ra}, {dec}, 0.083333)) = 1";
+                    var query = "SELECT basic.main_id, basic.ra, basic.dec, basic.otype_txt, allfluxes.b, allfluxes.v, allfluxes.b - allfluxes.v AS color ";
+                        query += "FROM basic JOIN allfluxes ON(basic.oid = allfluxes.oidref) ";
+                        query += Invariant($"WHERE CONTAINS(POINT('ICRS', basic.ra, basic.dec), CIRCLE('ICRS', {ra}, {dec}, 0.083333)) = 1");
 
                     Dictionary<string, string> dictionary = new Dictionary<string, string>
                     {
@@ -203,6 +222,10 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
                     }
                 }
             } catch (OperationCanceledException) {
+                if (token.IsCancellationRequested) {
+                    throw;
+                }
+                Logger.Warning("The Simbad query took longer than 30 seconds and was given up on");
             } catch (Exception ex) {
                 Logger.Error(ex);
                 Notification.ShowError(ex.Message);
@@ -227,12 +250,12 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
                     dictionary.Add("maxrec", "100");
                     dictionary.Add("runid", "");
                     dictionary.Add("phase", "run");
-                    dictionary.Add("query", "SELECT TOP 10 basic.main_id, basic.ra, basic.dec, allfluxes.v, DISTANCE(POINT('ICRS', " + coords.RADegrees + ", " + coords.Dec + "), POINT('ICRS', basic.ra, basic.dec)) as dist " +
+                    dictionary.Add("query", Invariant($"SELECT TOP 10 basic.main_id, basic.ra, basic.dec, allfluxes.v, DISTANCE(POINT('ICRS', {coords.RADegrees}, {coords.Dec}), POINT('ICRS', basic.ra, basic.dec)) as dist ") +
                         "FROM basic " +
                         "JOIN ident on(basic.oid = ident.oidref) " +
                         "JOIN allfluxes using (oidref) " +
                         "WHERE ident.id like 'WDS%' and (basic.otype_txt = '**?' OR basic.otype_txt = '**') " +
-                        "AND CONTAINS(POINT('ICRS', basic.ra, basic.dec), CIRCLE('ICRS', " + coords.RADegrees + ", " + coords.Dec + ", " + maxDistance + ")) = 1 " +
+                        Invariant($"AND CONTAINS(POINT('ICRS', basic.ra, basic.dec), CIRCLE('ICRS', {coords.RADegrees}, {coords.Dec}, {maxDistance})) = 1 ") +
                         "AND basic.ra IS NOT NULL " +
                         "AND basic.dec IS NOT NULL " +
                         "ORDER BY dist;");
@@ -244,6 +267,10 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
                     }
                 }
             } catch (OperationCanceledException) {
+                if (token.IsCancellationRequested) {
+                    throw;
+                }
+                Logger.Warning("The Simbad query took longer than 30 seconds and was given up on");
             } catch (Exception ex) {
                 Logger.Error(ex);
                 Notification.ShowError(ex.Message);
@@ -268,12 +295,12 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
                     dictionary.Add("maxrec", "100");
                     dictionary.Add("runid", "");
                     dictionary.Add("phase", "run");
-                    dictionary.Add("query", "SELECT DISTINCT TOP 10 basic.main_id, basic.ra, basic.dec, allfluxes.v, DISTANCE(POINT('ICRS', " + coords.RADegrees + ", " + coords.Dec + "), POINT('ICRS', basic.ra, basic.dec)) as dist, galdim_majaxis as sizemax , galdim_minaxis as sizemin " +
+                    dictionary.Add("query", Invariant($"SELECT DISTINCT TOP 10 basic.main_id, basic.ra, basic.dec, allfluxes.v, DISTANCE(POINT('ICRS', {coords.RADegrees}, {coords.Dec}), POINT('ICRS', basic.ra, basic.dec)) as dist, galdim_majaxis as sizemax , galdim_minaxis as sizemin ") +
                         "FROM basic " +
                         "JOIN ident on(basic.oid = ident.oidref) " +
                         "JOIN allfluxes using (oidref) " +
-                        "WHERE basic.otype = 'Galaxy..' and allfluxes.v <= " + maxMag + " " +
-                        "AND CONTAINS(POINT('ICRS', basic.ra, basic.dec), CIRCLE('ICRS', " + coords.RADegrees + ", " + coords.Dec + ", " + maxDistance + ")) = 1 " +
+                        Invariant($"WHERE basic.otype = 'Galaxy..' and allfluxes.v <= {maxMag} ") +
+                        Invariant($"AND CONTAINS(POINT('ICRS', basic.ra, basic.dec), CIRCLE('ICRS', {coords.RADegrees}, {coords.Dec}, {maxDistance})) = 1 ") +
                         "AND basic.ra IS NOT NULL " +
                         "AND basic.dec IS NOT NULL " +
                         "ORDER BY dist;");
@@ -286,6 +313,10 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
                 }
             }
             catch (OperationCanceledException) {
+                if (token.IsCancellationRequested) {
+                    throw;
+                }
+                Logger.Warning("The Simbad query took longer than 30 seconds and was given up on");
             }
             catch (Exception ex) {
                 Logger.Error(ex);
@@ -301,26 +332,21 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
 
             using var httpClient = new HttpClient();
 
-            // Define your form data
             var formData = new MultipartFormDataContent();
 
             foreach (string key in dictionary.Keys) {
                 formData.Add(new StringContent(dictionary[key]), key);
             }
 
-            try {
-                HttpResponseMessage response = await httpClient.PostAsync(url, formData, token);
-
-                var serializer = new JsonSerializer();
-
-                using var sr = new StreamReader(await response.Content?.ReadAsStreamAsync(), Encoding.UTF8);
-                using var jsonTextReader = new JsonTextReader(sr);
-                return serializer.Deserialize<VoTable>(jsonTextReader);
+            HttpResponseMessage response = await httpClient.PostAsync(url, formData, token);
+            if (!response.IsSuccessStatusCode) {
+                throw new HttpRequestException("Simbad answered " + (int)response.StatusCode + " " + response.ReasonPhrase);
             }
-            catch {
-                Logger.Info("Couldn't process simbad comparison stars.");
-                return null;
-            }
+
+            var serializer = new JsonSerializer();
+            using var reader = new StreamReader(await response.Content.ReadAsStreamAsync(token), Encoding.UTF8);
+            using var jsonTextReader = new JsonTextReader(reader);
+            return serializer.Deserialize<VoTable>(jsonTextReader);
         }
     }
 }

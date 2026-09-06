@@ -11,6 +11,7 @@ using NINA.WPF.Base.Interfaces.ViewModel;
 using NINA.Sequencer.SequenceItem;
 using NINA.Plugin.Speckle.Sequencer.Utility;
 using NINA.Plugin.Speckle.Model;
+using NINA.Plugin.Speckle.Services;
 using System.Linq;
 using NINA.Core.Utility;
 using NINA.Plugin.Speckle.Sequencer.Container;
@@ -30,19 +31,21 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
         private IProfileService profileService;
         private IOptionsVM options;
         private ISequenceMediator sequenceMediator;
+        private ISpeckleOptionsProvider optionsProvider;
         private Speckle speckle;
 
         [ImportingConstructor]
-        public LoadReferenceStar(IProfileService profileService, IOptionsVM options, ISequenceMediator sequenceMediator) {
+        public LoadReferenceStar(IProfileService profileService, IOptionsVM options, ISequenceMediator sequenceMediator, ISpeckleOptionsProvider optionsProvider) {
             this.profileService = profileService;
             this.options = options;
             this.sequenceMediator = sequenceMediator;
-            speckle = new Speckle(profileService);
+            this.optionsProvider = optionsProvider;
+            speckle = optionsProvider.Current;
 
             RetrieveTemplates();
         }
 
-        private LoadReferenceStar(LoadReferenceStar cloneMe) : this(cloneMe.profileService, cloneMe.options, cloneMe.sequenceMediator) {
+        private LoadReferenceStar(LoadReferenceStar cloneMe) : this(cloneMe.profileService, cloneMe.options, cloneMe.sequenceMediator, cloneMe.optionsProvider) {
             CopyMetaData(cloneMe);
         }
 
@@ -132,10 +135,10 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
         }
 
         public bool Validate() {
-            var i = new List<string>();
+            var issues = new List<string>();
 
             if (ItemUtility.RetrieveSpeckleContainer(Parent) == null && ItemUtility.RetrieveSpeckleListContainer(Parent) == null) {
-                i.Add("This instruction only works within a SpeckleTargetContainer.");
+                issues.Add("This instruction only works within a SpeckleTargetContainer.");
             } else {
                 if (RefStar == null) {
                     var speckleTargetContainer = ItemUtility.RetrieveSpeckleContainer(Parent);
@@ -149,8 +152,8 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                 }
             }
 
-            Issues = i;
-            return i.Count == 0;
+            Issues = issues;
+            return issues.Count == 0;
         }
 
         public override string ToString() {
