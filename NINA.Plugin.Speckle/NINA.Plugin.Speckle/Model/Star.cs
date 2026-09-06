@@ -109,43 +109,10 @@ public class Star : TargetBase {
 
     [JsonProperty]
     public string Note2 { get; set; }
-}
 
-public sealed class StarMap : ClassMap<Star> {
-    public StarMap() {
-        Map(m => m.TargetRecno).Name("targetrecno").Optional().Default(0);
-        Map(m => m.Recno).Name("recno").Optional().Default(0);
-        Map(m => m.Proj).Name("Proj").Optional().Default("");
-        Map(m => m.Obs).Name("Obs").Optional().Default("");
-        Map(m => m.Type).Name("Type").Optional().Default("");
-        Map(m => m.Name1).Name("Name1").Optional().Default("");
-        Map(m => m.Name2).Name("Name2").Optional().Default("");
-        Map(m => m.Priority).Name("Priority").Optional().Default(1);
-        Map(m => m.Template).Name("Template").Optional().Default("");
-        Map(m => m.RA2000).Name("RA2000").Optional().Default(0);
-        Map(m => m.Dec2000).Name("Dec2000").Optional().Default(0);
-        Map(m => m.Bp).Name("Bp").Optional().Default(0.0);
-        Map(m => m.Rp).Name("Rp").Optional().Default(0.0);
-        Map(m => m.Gmag).Name("Gmag").Optional().Default(0.0);
-        Map(m => m.GaiaNum).Name("GaiaNum").Optional().Default("0");
-        Map(m => m.Sep).Name("Sep").Optional().Default(0.0);
-        Map(m => m.PA).Name("PA").Optional().Default(0.0);
-        Map(m => m.Parallax).Name("Parallax").Optional().Default(0.0);
-        Map(m => m.Spectrum).Name("Spectrum").Optional().Default("");
-        Map(m => m.Pmag).Name("Pmag").Optional().Default(0.0);
-        Map(m => m.Smag).Name("Smag").Optional().Default(0.0);
-        Map(m => m.Filter).Name("Filter").Optional().Default("");
-        Map(m => m.Exp).Name("Exp").Optional().Default(0.0);
-        Map(m => m.NExp).Name("NExp").Optional().Default(0);
-        Map(m => m.NoEC).Name("NoEC").Optional().Default(0);
-        Map(m => m.GetRef).Name("GetRef").Optional().Default(1);
-        Map(m => m.GPrime).Name("GPrime").Optional().Default(0.0);
-        Map(m => m.RPrime).Name("RPrime").Optional().Default(0.0);
-        Map(m => m.IPrime).Name("IPrime").Optional().Default(0.0);
-        Map(m => m.ZPrime).Name("ZPrime").Optional().Default(0.0);
-        Map(m => m.RUWE).Name("RUWE").Optional().Default(0);
-        Map(m => m.FDBL).Name("FDBL").Optional().Default(0);
-        Map(m => m.Note1).Name("Note1").Optional().Default("");
-        Map(m => m.Note2).Name("Note2").Optional().Default("");
+    public NINA.Astrometry.Coordinates Coordinates() {
+        return new NINA.Astrometry.Coordinates(NINA.Astrometry.Angle.ByDegree(RA2000),
+                                               NINA.Astrometry.Angle.ByDegree(Dec2000),
+                                               NINA.Astrometry.Epoch.J2000);
     }
 }

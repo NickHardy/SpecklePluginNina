@@ -105,9 +105,6 @@ namespace NINA.Plugin.Speckle.Sequencer.Utility {
 
                             if (targetStar != null) {
                                 graphics.DrawEllipse(TARGET_PEN, new RectangleF(targetStar.Position.X, targetStar.Position.Y, 15, 15));
-                                // graphics.DrawString("T (" + targetStar.Position.X.ToString("##") + "," + targetStar.Position.Y.ToString("##") + ")", FONT, TARGET_TEXTBRUSH, new PointF(Convert.ToSingle(targetStar.Position.X - offset - 1.5 * offset), Convert.ToSingle(targetStar.Position.Y + 2.5 * offset)));
-                                // graphics.DrawString("max pixel: " + targetStar.MaxBrightness.ToString("##"), FONT, TARGET_TEXTBRUSH, new PointF(Convert.ToSingle(targetStar.Position.X - offset - 1.5 * offset), Convert.ToSingle(targetStar.Position.Y + 5 * offset)));
-                                // graphics.DrawString("Exposure: " + exposuretime.ToString("##") + "s", FONT, TARGET_TEXTBRUSH, new PointF(Convert.ToSingle(targetStar.Position.X - offset - 1.5 * offset), Convert.ToSingle(targetStar.Position.Y + 7.5 * offset)));
                             }
 
                             if (annotationJpg != null)

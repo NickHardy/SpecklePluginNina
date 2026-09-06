@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<title>Speckle - Telescope Operator</title>
+<style>
+  html,body{height:100%;margin:0;overflow:hidden;-webkit-text-size-adjust:100%}
+  body{
+    background:url('/background.jpg') no-repeat center center fixed;
+    background-size:cover;
+    font-family:ui-monospace,"Cascadia Mono","Consolas","DejaVu Sans Mono",monospace;
+  }
+  .overlay{
+    background:rgba(0,0,0,.72);color:#ff2b2b;
+    display:flex;flex-direction:column;justify-content:center;align-items:center;
+    height:100vh;height:100dvh;width:100%;box-sizing:border-box;padding:2vh 3vw;
+  }
+  .target{font-size:calc(14px + 2.2vw);letter-spacing:.04em;opacity:.9;margin-bottom:1vh;text-align:center}
+  .sep{font-size:calc(20px + 6vw);font-weight:700;line-height:1;margin:.4vh 0 .2vh}
+  .sep.close{color:#4dff62}
+  .sepcap{font-size:calc(9px + .9vw);letter-spacing:.16em;text-transform:uppercase;opacity:.55;margin-bottom:1.2vh;min-height:1em}
+  .waiting .sep{animation:pulse 1.2s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+  .grid{
+    display:grid;grid-template-columns:max-content max-content max-content;
+    gap:.25em 1em;font-size:calc(12px + 2.4vw);align-items:baseline;
+  }
+  .lbl{text-align:right;opacity:.72;font-size:.62em}
+  .cur{text-align:left;font-variant-numeric:tabular-nums}
+  .tgt{text-align:left;font-variant-numeric:tabular-nums;color:#fff}
+  .hdr{opacity:.5;font-size:.5em;text-transform:uppercase;letter-spacing:.12em}
+  .buttons{display:flex;gap:2vw;flex-wrap:wrap;justify-content:center}
+  button{
+    margin-top:3vh;background:#000;color:#fff;border:3px solid #fff;border-radius:12px;
+    font:inherit;font-size:calc(16px + 3vw);padding:.5em 1.4em;min-height:4rem;
+    -webkit-tap-highlight-color:transparent;touch-action:manipulation;cursor:pointer;
+  }
+  button:active{background:#fff;color:#000}
+  button[disabled]{opacity:.28;border-color:#666;color:#666}
+  button.skip{font-size:calc(11px + 1.6vw);min-height:3rem;border-width:2px;opacity:.85}
+  button.hidden{display:none}
+  .foot{position:fixed;bottom:.6rem;left:0;right:0;text-align:center;font-size:.8rem;opacity:.65;color:#ff2b2b}
+  .stale{filter:grayscale(1) brightness(.55)}
+  .stale .sep::after{content:" NO LINK"}
+  .dot{display:inline-block;width:.7em;height:.7em;border-radius:50%;background:#4dff62;vertical-align:middle}
+  .stale .dot{background:#888}
+</style>
+</head>
+<body>
+<div class="overlay" id="root">
+  <div class="target" id="targetName">-</div>
+  <div class="grid">
+    <div class="lbl">RA</div>  <div class="tgt" id="tgtRa">--:--:--</div>
+    <div class="lbl">Dec</div> <div class="tgt" id="tgtDec">--:--:--</div>
+    <div class="lbl">Alt</div> <div class="tgt" id="tgtAlt">--:--:--</div>
+    <div class="lbl">Az</div>  <div class="tgt" id="tgtAz">--:--:--</div>
+  </div>
+  <div class="buttons">
+    <button id="btn" disabled>ON TARGET</button>
+    <button id="skip" class="skip hidden">SKIP</button>
+  </div>
+</div>
+<div class="foot"><span class="dot"></span> <span id="foot">connecting...</span></div>
+<script>
+(function () {
+  var token = '__SPECKLE_TOKEN__';
+  var root = document.getElementById('root');
+  var btn = document.getElementById('btn');
+  var skip = document.getElementById('skip');
+  var requestId = 0, misses = 0, sentId = 0;
+
+  function put(id, value) {
+    var node = document.getElementById(id);
+    if (node && node.textContent !== value) { node.textContent = value; }
+  }
+
+  function block(prefix, data) {
+    put(prefix + 'Ra', data ? data.raText : '--:--:--');
+    put(prefix + 'Dec', data ? data.decText : '--:--:--');
+    put(prefix + 'Alt', data ? data.altText : '--:--:--');
+    put(prefix + 'Az', data ? data.azText : '--:--:--');
+  }
+
+  function render(s) {
+    misses = 0;
+    root.classList.remove('stale');
+    var waiting = s.state === 'waiting';
+    root.classList.toggle('waiting', waiting);
+    put('targetName', s.targetName || '-');
+    block('tgt', s.target);
+    requestId = s.id || 0;
+    var sent = sentId !== 0 && sentId === requestId;
+    btn.disabled = !waiting || sent;
+    btn.textContent = waiting ? 'ON TARGET' : 'STANDBY';
+    skip.classList.toggle('hidden', !(waiting && s.canSkip && !sent));
+    put('foot', s.message || (waiting ? '' : 'No target pending'));
+  }
+
+  function poll() {
+    fetch('/api/state', { cache: 'no-store' })
+      .then(function (r) { return r.json(); })
+      .then(render)
+      .catch(function () {
+        misses = misses + 1;
+        if (misses > 2) {
+          root.classList.add('stale');
+          root.classList.remove('waiting');
+          btn.disabled = true;
+          skip.classList.add('hidden');
+        }
+      });
+  }
+
+  function send(endpoint) {
+    if (!requestId || sentId === requestId) { return; }
+    sentId = requestId;
+    btn.disabled = true;
+    skip.classList.add('hidden');
+    fetch(endpoint + '?id=' + encodeURIComponent(requestId), {
+      method: 'POST',
+      cache: 'no-store',
+      headers: { 'X-Speckle-Token': token }
+    }).then(function (r) {
+      return r.json().catch(function () { return { ok: true }; });
+    }).then(function (reply) {
+      if (reply && reply.ok === false) { sentId = 0; }
+      poll();
+    }).catch(function () { sentId = 0; poll(); });
+  }
+
+  btn.addEventListener('click', function () { send('/api/ontarget'); });
+  skip.addEventListener('click', function () { send('/api/skip'); });
+
+  poll();
+  setInterval(poll, 1000);
+  if ('wakeLock' in navigator) { navigator.wakeLock.request('screen').catch(function () { }); }
+})();
+</script>
+</body>
+</html>

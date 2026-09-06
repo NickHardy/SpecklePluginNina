@@ -2,16 +2,24 @@
     x:Class="Speckle.Options"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:ns="clr-namespace:NINA.Core.Locale;assembly=NINA.Core"
     xmlns:ninactrl="clr-namespace:NINA.CustomControlLibrary;assembly=NINA.CustomControlLibrary">
-    <!--  This data template will be displayed in N.I.N.A. on the options->plugin tab with the datacontext of the TestPlugin instance  -->
-    <!--  In order for this datatemplate to be picked correctly, the key has to follow the naming convention of <IPlugin.Name>_Options -->
-    <!--  Furthermore the Resource Dictionary has to be exported via code behind export attributes  -->
+    <Style x:Key="TabIntroText" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="LineHeight" Value="21" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+        <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}" />
+        <Setter Property="Opacity" Value="0.85" />
+    </Style>
+
     <DataTemplate x:Key="SpeckleInterferometry_Options">
-
         <TabControl
-                Style="{StaticResource SecondLevelTabControl}"
-                TabStripPlacement="Left">
+            Style="{StaticResource SecondLevelTabControl}"
+            TabStripPlacement="Left"
+            ToolTipService.BetweenShowDelay="0"
+            ToolTipService.InitialShowDelay="250"
+            ToolTipService.ShowDuration="120000"
+            ToolTipService.ShowOnDisabled="True">
+
             <TabItem>
                 <TabItem.Header>
                     <Grid>
@@ -19,303 +27,481 @@
                             <RowDefinition />
                             <RowDefinition Height="10" />
                         </Grid.RowDefinitions>
-                        <Grid>
-                            <Grid Width="40" Height="40">
-                                <Path
-                                    Margin="5"
-                                    Data="{StaticResource StarSVG}"
-                                    Stretch="Uniform"
-                                    Style="{StaticResource TabItemPath}" />
-                            </Grid>
+                        <Grid Width="40" Height="40">
+                            <Path
+                                Margin="5"
+                                Data="{StaticResource StarSVG}"
+                                Stretch="Uniform"
+                                Style="{StaticResource TabItemPath}" />
                         </Grid>
                         <TextBlock
-                                Grid.Row="1"
-                                Style="{StaticResource SideBarTextBlock}"
-                                Text="Speckle" />
+                            Background="Transparent"
+                            Grid.Row="1"
+                            Style="{StaticResource SideBarTextBlock}"
+                            Text="Targets" />
                     </Grid>
                 </TabItem.Header>
                 <TabItem.Content>
-                    <Grid DataContext="{Binding}">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-
-                        <Grid Grid.Column="0">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Orientation="Vertical">
+                        <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <Grid.RowDefinitions>
-                                <RowDefinition MinHeight="25" />
-                                <RowDefinition MinHeight="25" />
-                                <RowDefinition MinHeight="25" />
-                                <RowDefinition MinHeight="25" />
-                                <RowDefinition MinHeight="25" />
-                                <RowDefinition MinHeight="25" />
-                                <RowDefinition MinHeight="25" />
-                                <RowDefinition MinHeight="25" />
-                            </Grid.RowDefinitions>
-                            <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Text="Minimum image distance from the meridian" />
-                            <ninactrl:UnitTextBox
-                Grid.Row="0"
-                Grid.Column="1"
-                MinWidth="100"
-                Margin="5,0,0,0"
-                HorizontalAlignment="Left"
-                VerticalAlignment="Center"
-                Text="{Binding MDistance}"
-                Unit="°" />
 
-                            <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Text="Minimum image distance from the moon" />
-                            <ninactrl:UnitTextBox
-                Grid.Row="1"
-                Grid.Column="1"
-                MinWidth="100"
-                Margin="5,0,0,0"
-                HorizontalAlignment="Left"
-                VerticalAlignment="Center"
-                Text="{Binding MoonDistance}"
-                Unit="°" />
+                            <StackPanel Grid.Column="0" Orientation="Vertical">
+                                <GroupBox Header="Target selection and limits">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" MinWidth="250" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
 
-                            <TextBlock Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Text="Default Searchradius" />
-                            <ninactrl:UnitTextBox
-                Grid.Row="2"
-                Grid.Column="1"
-                MinWidth="100"
-                Margin="5,0,0,0"
-                HorizontalAlignment="Left"
-                VerticalAlignment="Center"
-                Text="{Binding SearchRadius}"
-                Unit="°" />
+                                        <TextBlock
+                                            Background="Transparent"
+                                            Grid.Row="0"
+                                            Grid.Column="0"
+                                            Margin="0,4,10,4"
+                                            VerticalAlignment="Center"
+                                            Text="Target magnitude range (brightest / faintest)"
+                                            ToolTip="Targets whose primary magnitude falls outside this range are skipped when a target list is loaded. Unit magnitudes." />
+                                        <TextBox
+                                            Grid.Row="0"
+                                            Grid.Column="1"
+                                            MinWidth="90"
+                                            Margin="0,4,5,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            Text="{Binding MinMag}"
+                                            ToolTip="Brightest target magnitude that is still accepted. Unit magnitudes." />
+                                        <TextBox
+                                            Grid.Row="0"
+                                            Grid.Column="2"
+                                            MinWidth="90"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            Text="{Binding MaxMag}"
+                                            ToolTip="Faintest target magnitude that is still accepted. Unit magnitudes." />
 
-                            <TextBlock Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" Text="Altitude between:" />
-                            <ninactrl:UnitTextBox
-                Grid.Row="3"
-                Grid.Column="1"
-                MinWidth="100"
-                Margin="5,0,0,0"
-                HorizontalAlignment="Left"
-                VerticalAlignment="Center"
-                Text="{Binding AltitudeMin}"
-                Unit="°" />
-                            <ninactrl:UnitTextBox
-                Grid.Row="3"
-                Grid.Column="2"
-                MinWidth="100"
-                Margin="5,0,0,0"
-                HorizontalAlignment="Left"
-                VerticalAlignment="Center"
-                Text="{Binding AltitudeMax}"
-                Unit="°" />
+                                        <TextBlock
+                                            Background="Transparent"
+                                            Grid.Row="1"
+                                            Grid.Column="0"
+                                            Margin="0,4,10,4"
+                                            VerticalAlignment="Center"
+                                            Text="Pair separation range (min / max)"
+                                            ToolTip="Targets whose published separation falls outside this range are skipped when a target list is loaded. Unit arcsec." />
+                                        <ninactrl:UnitTextBox
+                                            Grid.Row="1"
+                                            Grid.Column="1"
+                                            MinWidth="90"
+                                            Margin="0,4,5,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            Text="{Binding MinSep}"
+                                            ToolTip="Smallest pair separation that is still accepted. Unit arcsec."
+                                            Unit="arcsec" />
+                                        <ninactrl:UnitTextBox
+                                            Grid.Row="1"
+                                            Grid.Column="2"
+                                            MinWidth="90"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            Text="{Binding MaxSep}"
+                                            ToolTip="Largest pair separation that is still accepted. Unit arcsec."
+                                            Unit="arcsec" />
 
-                            <TextBlock Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" Text="Magnitude between:" />
-                            <TextBox
-                Grid.Row="4"
-                Grid.Column="1"
-                MinWidth="100"
-                Margin="5,0,0,0"
-                HorizontalAlignment="Left"
-                VerticalAlignment="Center"
-                Text="{Binding MinMag}" />
-                            <TextBox
-                Grid.Row="4"
-                Grid.Column="2"
-                MinWidth="100"
-                Margin="5,0,0,0"
-                HorizontalAlignment="Left"
-                VerticalAlignment="Center"
-                Text="{Binding MaxMag}" />
+                                        <TextBlock
+                                            Background="Transparent"
+                                            Grid.Row="2"
+                                            Grid.Column="0"
+                                            Margin="0,4,10,4"
+                                            VerticalAlignment="Center"
+                                            Text="Altitude window (min / max)"
+                                            ToolTip="Imaging times are only chosen while the target is between these two altitudes. Unit deg." />
+                                        <ninactrl:UnitTextBox
+                                            Grid.Row="2"
+                                            Grid.Column="1"
+                                            MinWidth="90"
+                                            Margin="0,4,5,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            Text="{Binding AltitudeMin}"
+                                            ToolTip="Lowest altitude at which a target is imaged. Also used as the minimum altitude for target list rows that do not set one. Unit deg."
+                                            Unit="deg" />
+                                        <ninactrl:UnitTextBox
+                                            Grid.Row="2"
+                                            Grid.Column="2"
+                                            MinWidth="90"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            Text="{Binding AltitudeMax}"
+                                            ToolTip="Highest altitude at which a target is imaged. Unit deg."
+                                            Unit="deg" />
 
-                            <TextBlock Grid.Row="5" Grid.Column="0" VerticalAlignment="Center" Text="Separation between:" />
-                            <ninactrl:UnitTextBox
-                Grid.Row="5"
-                Grid.Column="1"
-                MinWidth="100"
-                Margin="5,0,0,0"
-                HorizontalAlignment="Left"
-                VerticalAlignment="Center"
-                Text="{Binding MinSep}"
-                Unit="&quot;" />
-                            <ninactrl:UnitTextBox
-                Grid.Row="5"
-                Grid.Column="2"
-                MinWidth="100"
-                Margin="5,0,0,0"
-                HorizontalAlignment="Left"
-                VerticalAlignment="Center"
-                Text="{Binding MaxSep}"
-                Unit="&quot;" />
+                                        <TextBlock
+                                            Background="Transparent"
+                                            Grid.Row="3"
+                                            Grid.Column="0"
+                                            Margin="0,4,10,4"
+                                            VerticalAlignment="Center"
+                                            Text="Minimum distance from the meridian"
+                                            ToolTip="Imaging times are kept at least this far in hour angle from the meridian crossing of the target. Unit deg." />
+                                        <ninactrl:UnitTextBox
+                                            Grid.Row="3"
+                                            Grid.Column="1"
+                                            MinWidth="90"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            Text="{Binding MDistance}"
+                                            ToolTip="Imaging times are kept at least this far in hour angle from the meridian crossing of the target. Unit deg."
+                                            Unit="deg" />
 
-                            <TextBlock Grid.Row="6" Grid.Column="0" VerticalAlignment="Center" Text="Reference mag between:" />
-                            <TextBox
-                Grid.Row="6" Grid.Column="1"
-                MinWidth="100"
-                Margin="5,0,0,0"
-                HorizontalAlignment="Left"
-                VerticalAlignment="Center"
-                Text="{Binding MinReferenceMag}" />
-                            <TextBox
-                Grid.Row="6" Grid.Column="2" 
-                MinWidth="100"
-                Margin="5,0,0,0"
-                HorizontalAlignment="Left"
-                VerticalAlignment="Center"
-                Text="{Binding MaxReferenceMag}" />
+                                        <TextBlock
+                                            Background="Transparent"
+                                            Grid.Row="4"
+                                            Grid.Column="0"
+                                            Margin="0,4,10,4"
+                                            VerticalAlignment="Center"
+                                            Text="Minimum distance from the moon"
+                                            ToolTip="Targets closer than this to the moon at the candidate imaging time are not scheduled. Unit deg." />
+                                        <ninactrl:UnitTextBox
+                                            Grid.Row="4"
+                                            Grid.Column="1"
+                                            MinWidth="90"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            Text="{Binding MoonDistance}"
+                                            ToolTip="Targets closer than this to the moon at the candidate imaging time are not scheduled. Unit deg."
+                                            Unit="deg" />
 
+                                        <TextBlock
+                                            Background="Transparent"
+                                            Grid.Row="5"
+                                            Grid.Column="0"
+                                            Margin="0,4,10,4"
+                                            VerticalAlignment="Center"
+                                            Text="Default search radius"
+                                            ToolTip="Radius used for reference star searches and as the default search radius of the star cluster instructions. Unit deg." />
+                                        <ninactrl:UnitTextBox
+                                            Grid.Row="5"
+                                            Grid.Column="1"
+                                            MinWidth="90"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            Text="{Binding SearchRadius}"
+                                            ToolTip="Radius used for reference star searches and as the default search radius of the star cluster instructions. Unit deg."
+                                            Unit="deg" />
+                                    </Grid>
+                                </GroupBox>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1" Orientation="Vertical">
+                                <GroupBox Header="Scheduling">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" MinWidth="250" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+
+                                        <TextBlock
+                                            Background="Transparent"
+                                            Grid.Row="0"
+                                            Grid.Column="0"
+                                            Margin="0,4,10,4"
+                                            VerticalAlignment="Center"
+                                            Text="Default number of cycles per night"
+                                            ToolTip="Imaging runs per night for target list rows that do not set their own cycle count." />
+                                        <TextBox
+                                            Grid.Row="0"
+                                            Grid.Column="1"
+                                            MinWidth="90"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            Text="{Binding Cycles}"
+                                            ToolTip="Imaging runs per night for target list rows that do not set their own cycle count." />
+
+                                        <TextBlock
+                                            Background="Transparent"
+                                            Grid.Row="1"
+                                            Grid.Column="0"
+                                            Margin="0,4,10,4"
+                                            VerticalAlignment="Center"
+                                            Text="Default number of nights per target"
+                                            ToolTip="Nights a target is repeated for target list rows that do not set their own night count." />
+                                        <TextBox
+                                            Grid.Row="1"
+                                            Grid.Column="1"
+                                            MinWidth="90"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            Text="{Binding Nights}"
+                                            ToolTip="Nights a target is repeated for target list rows that do not set their own night count." />
+
+                                        <TextBlock
+                                            Background="Transparent"
+                                            Grid.Row="2"
+                                            Grid.Column="0"
+                                            Margin="0,4,10,4"
+                                            VerticalAlignment="Center"
+                                            Text="Testing: ignore all visibility limits"
+                                            ToolTip="Ignores every visibility rule: the magnitude, separation, altitude, meridian and moon limits, and the night window. Targets can then be selected and imaged at any time, including in daylight. For testing indoors, not for observing." />
+                                        <CheckBox
+                                            Grid.Row="2"
+                                            Grid.Column="1"
+                                            MinWidth="80"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            IsChecked="{Binding IgnoreVisibilityLimits}"
+                                            ToolTip="Ignores every visibility rule: the magnitude, separation, altitude, meridian and moon limits, and the night window. Targets can then be selected and imaged at any time, including in daylight. For testing indoors, not for observing." />
+                                    </Grid>
+                                </GroupBox>
+                            </StackPanel>
                         </Grid>
-                        <Grid Grid.Column="1" Margin="10,0">
+                        <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <Grid.RowDefinitions>
-                                <RowDefinition MinHeight="25" />
-                                <RowDefinition MinHeight="25" />
-                                <RowDefinition MinHeight="25" />
-                                <RowDefinition MinHeight="25" />
-                                <RowDefinition MinHeight="25" />
-                                <RowDefinition MinHeight="25" />
-                                <RowDefinition MinHeight="25" />
-                                <RowDefinition MinHeight="25" />
-                                <RowDefinition MinHeight="25" />
-                                <RowDefinition MinHeight="25" />
-                            </Grid.RowDefinitions>
 
-                            <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Text="Default number of cycles" />
-                            <TextBox
-                Grid.Row="0"
-                Grid.Column="1"
-                MinWidth="100"
-                Margin="5,0,0,0"
-                HorizontalAlignment="Left"
-                VerticalAlignment="Center"
-                Text="{Binding Cycles}" />
+                            <StackPanel Grid.Column="0" Orientation="Vertical">
+                                <GroupBox Header="Reference star sources">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" MinWidth="250" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
 
-                            <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Text="Default number of images" />
-                            <TextBox
-                Grid.Row="1"
-                Grid.Column="1"
-                MinWidth="100"
-                Margin="5,0,0,0"
-                HorizontalAlignment="Left"
-                VerticalAlignment="Center"
-                Text="{Binding Exposures}" />
+                                        <TextBlock
+                                            Background="Transparent"
+                                            Grid.Row="0"
+                                            Grid.Column="0"
+                                            Margin="0,4,10,4"
+                                            VerticalAlignment="Center"
+                                            Text="Reference star list file"
+                                            ToolTip="Full path of the reference star CSV file. It is read once at startup and again after a target list is loaded." />
+                                        <TextBox
+                                            Grid.Row="0"
+                                            Grid.Column="1"
+                                            MinWidth="320"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            IsEnabled="{Binding UseReferenceStarList}"
+                                            Text="{Binding ReferenceStarListLocation}"
+                                            ToolTip="Full path of the reference star CSV file. It is read once at startup and again after a target list is loaded." />
 
-                            <TextBlock Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Text="Default Exposure time" />
-                            <ninactrl:UnitTextBox
-                Grid.Row="2"
-                Grid.Column="1"
-                MinWidth="100"
-                Margin="5,0,0,0"
-                HorizontalAlignment="Left"
-                VerticalAlignment="Center"
-                Text="{Binding ExposureTime}"
-                Unit="s" />
+                                        <Button
+                                            Grid.Row="1"
+                                            Grid.Column="1"
+                                            Width="200"
+                                            Height="25"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            IsEnabled="{Binding UseReferenceStarList}"
+                                            Command="{Binding OpenFileCommand}"
+                                            ToolTip="Open a file picker and set the reference star list file above.">
+                                            <TextBlock
+                                                Background="Transparent"
+                                                Padding="5,0"
+                                                Foreground="{StaticResource ButtonForegroundBrush}"
+                                                Text="Choose reference star list"
+                                                ToolTip="Open a file picker and set the reference star list file above." />
+                                        </Button>
 
-                            <TextBlock Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" Text="Default Template" />
-                            <TextBox
-                Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2"
-                MinWidth="100"
-                Margin="5,0,0,0"
-                HorizontalAlignment="Left"
-                VerticalAlignment="Center"
-                Text="{Binding DefaultTemplate}" />
+                                        <TextBlock
+                                            Background="Transparent"
+                                            Grid.Row="2"
+                                            Grid.Column="0"
+                                            Margin="0,4,10,4"
+                                            VerticalAlignment="Center"
+                                            Text="Use the reference star list file"
+                                            ToolTip="When on, the CSV file above is used as a source of reference star candidates." />
+                                        <CheckBox
+                                            Grid.Row="2"
+                                            Grid.Column="1"
+                                            MinWidth="80"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            IsChecked="{Binding UseReferenceStarList}"
+                                            ToolTip="When on, the CSV file above is used as a source of reference star candidates." />
 
-                            <TextBlock Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" Text="Default Reference Template" />
-                            <TextBox
-                Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="2"
-                MinWidth="100"
-                Margin="5,0,0,0"
-                HorizontalAlignment="Left"
-                VerticalAlignment="Center"
-                Text="{Binding DefaultRefTemplate}" />
+                                        <TextBlock
+                                            Background="Transparent"
+                                            Grid.Row="3"
+                                            Grid.Column="0"
+                                            Margin="0,4,10,4"
+                                            VerticalAlignment="Center"
+                                            Text="Use SIMBAD reference stars"
+                                            ToolTip="When on, SAO stars are queried live from SIMBAD as reference star candidates. Needs an internet connection." />
+                                        <CheckBox
+                                            Grid.Row="3"
+                                            Grid.Column="1"
+                                            MinWidth="80"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            IsChecked="{Binding UseSimbadRefStars}"
+                                            ToolTip="When on, SAO stars are queried live from SIMBAD as reference star candidates. Needs an internet connection." />
 
-                            <TextBlock Grid.Row="5" Grid.Column="0" VerticalAlignment="Center" Text="Default User" />
-                            <TextBox
-                Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="2"
-                MinWidth="100"
-                Margin="5,0,0,0"
-                HorizontalAlignment="Left"
-                VerticalAlignment="Center"
-                Text="{Binding User}" />
+                                        <TextBlock
+                                            Background="Transparent"
+                                            Grid.Row="4"
+                                            Grid.Column="0"
+                                            Margin="0,4,10,4"
+                                            VerticalAlignment="Center"
+                                            Text="Use the USNO single star list"
+                                            ToolTip="When on, the bundled USNO list of bright single stars is used as a source of reference star candidates." />
+                                        <CheckBox
+                                            Grid.Row="4"
+                                            Grid.Column="1"
+                                            MinWidth="80"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            IsChecked="{Binding UseUSNOSingleStarList}"
+                                            ToolTip="When on, the bundled USNO list of bright single stars is used as a source of reference star candidates." />
 
-                            <TextBlock Grid.Row="6" Grid.Column="0" VerticalAlignment="Center" Text="Show every Nth Image" />
-                            <TextBox
-                Grid.Row="6" Grid.Column="1" Grid.ColumnSpan="2"
-                MinWidth="100"
-                Margin="5,0,0,0"
-                HorizontalAlignment="Left"
-                VerticalAlignment="Center"
-                Text="{Binding ShowEveryNthImage}" />
+                                        <TextBlock
+                                            Background="Transparent"
+                                            Grid.Row="5"
+                                            Grid.Column="0"
+                                            Margin="0,4,10,4"
+                                            VerticalAlignment="Center"
+                                            Text="Look one up when the list names none"
+                                            ToolTip="When on, a target whose list row names no reference star gets one looked up from the sources above. When off, only reference stars named in the list are used." />
+                                        <CheckBox
+                                            Grid.Row="5"
+                                            Grid.Column="1"
+                                            MinWidth="80"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            IsChecked="{Binding LookupMissingReferenceStars}"
+                                            ToolTip="When on, a target whose list row names no reference star gets one looked up from the sources above. When off, only reference stars named in the list are used." />
+                                    </Grid>
+                                </GroupBox>
+                            </StackPanel>
 
+                            <StackPanel Grid.Column="1" Orientation="Vertical">
+                                <GroupBox Header="Reference star selection and capture">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" MinWidth="250" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+
+                                        <TextBlock
+                                            Background="Transparent"
+                                            Grid.Row="0"
+                                            Grid.Column="0"
+                                            Margin="0,4,10,4"
+                                            VerticalAlignment="Center"
+                                            Text="Reference star magnitude range (brightest / faintest)"
+                                            ToolTip="Magnitude window requested from the reference star catalogs. The bright end is normally replaced by the target Rp magnitude minus one, and the value here is the fallback when the target has no Rp. Unit magnitudes." />
+                                        <TextBox
+                                            Grid.Row="0"
+                                            Grid.Column="1"
+                                            MinWidth="90"
+                                            Margin="0,4,5,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            Text="{Binding MinReferenceMag}"
+                                            ToolTip="Brightest reference star magnitude that is requested from the catalogs. Unit magnitudes." />
+                                        <TextBox
+                                            Grid.Row="0"
+                                            Grid.Column="2"
+                                            MinWidth="90"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            Text="{Binding MaxReferenceMag}"
+                                            ToolTip="Faintest reference star magnitude that is requested from the catalogs. Unit magnitudes." />
+
+                                        <TextBlock
+                                            Background="Transparent"
+                                            Grid.Row="1"
+                                            Grid.Column="0"
+                                            Margin="0,4,10,4"
+                                            VerticalAlignment="Center"
+                                            Text="Prefer brightness over closeness"
+                                            ToolTip="When on, candidates are ranked by how well their magnitude matches the target. When off, candidates are ranked by how close they are to the target on the sky." />
+                                        <CheckBox
+                                            Grid.Row="1"
+                                            Grid.Column="1"
+                                            MinWidth="80"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            IsChecked="{Binding PreferBrighterReferenceStars}"
+                                            ToolTip="When on, candidates are ranked by how well their magnitude matches the target. When off, candidates are ranked by how close they are to the target on the sky." />
+
+                                        <TextBlock
+                                            Background="Transparent"
+                                            Grid.Row="2"
+                                            Grid.Column="0"
+                                            Margin="0,4,10,4"
+                                            VerticalAlignment="Center"
+                                            Text="Number of exposures per reference star"
+                                            ToolTip="Frames captured in one video exposure run on a reference star. Set 0 to use the frame count of the target instead." />
+                                        <TextBox
+                                            Grid.Row="2"
+                                            Grid.Column="1"
+                                            MinWidth="90"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            Text="{Binding ReferenceExposures}"
+                                            ToolTip="Frames captured in one video exposure run on a reference star. Set 0 to use the frame count of the target instead." />
+                                    </Grid>
+                                </GroupBox>
+                            </StackPanel>
                         </Grid>
-                        <Grid Grid.Column="2" Margin="10,0">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-                            <Grid.RowDefinitions>
-                                <RowDefinition MinHeight="25" />
-                                <RowDefinition MinHeight="25" />
-                                <RowDefinition MinHeight="25" />
-                                <RowDefinition MinHeight="25" />
-                                <RowDefinition MinHeight="25" />
-                                <RowDefinition MinHeight="25" />
-                                <RowDefinition MinHeight="25" />
-                                <RowDefinition MinHeight="25" />
-                            </Grid.RowDefinitions>
-
-                            <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Text="Lock Dome" />
-                            <CheckBox
-                                Grid.Row="0"
-                                Grid.Column="1"
-                                MinWidth="80"
-                                Margin="5,0,0,0"
-                                HorizontalAlignment="Left"
-                                VerticalAlignment="Center"
-                                IsChecked="{Binding DomePositionLock}" />
-
-                            <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Text="Dome Position" />
-                            <ninactrl:UnitTextBox
-                                Grid.Row="1"
-                                Grid.Column="1"
-                                MinWidth="100"
-                                Margin="5,0,0,0"
-                                HorizontalAlignment="Left"
-                                VerticalAlignment="Center"
-                                Text="{Binding DomePosition}"
-                                Unit="°" />
-
-                            <TextBlock Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Text="Dome slit width" />
-                            <ninactrl:UnitTextBox
-                                Grid.Row="2"
-                                Grid.Column="1"
-                                MinWidth="100"
-                                Margin="5,0,0,0"
-                                HorizontalAlignment="Left"
-                                VerticalAlignment="Center"
-                                Text="{Binding DomeSlitWidth}"
-                                Unit="°" />
-
-
-                            <TextBlock Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" Text="Save csv to fitsheader" />
-                            <CheckBox
-                                Grid.Row="3"
-                                Grid.Column="1"
-                                MinWidth="80"
-                                Margin="5,0,0,0"
-                                HorizontalAlignment="Left"
-                                VerticalAlignment="Center"
-                                IsChecked="{Binding SaveCsvToFitsHeader}" />
-                        </Grid>
-                    </Grid>
+                        </StackPanel>
+                    </ScrollViewer>
                 </TabItem.Content>
             </TabItem>
+
             <TabItem>
                 <TabItem.Header>
                     <Grid>
@@ -323,241 +509,1528 @@
                             <RowDefinition />
                             <RowDefinition Height="10" />
                         </Grid.RowDefinitions>
-                        <Grid>
-                            <Grid Width="40" Height="40">
-                                <Path
-                                    Margin="5"
-                                    Data="{StaticResource CalculatorSVG}"
-                                    Stretch="Uniform"
-                                    Style="{StaticResource TabItemPath}" />
-                            </Grid>
+                        <Grid Width="40" Height="40">
+                            <Path
+                                Margin="5"
+                                Data="{StaticResource CameraSVG}"
+                                Stretch="Uniform"
+                                Style="{StaticResource TabItemPath}" />
                         </Grid>
                         <TextBlock
-                                Grid.Row="1"
-                                Style="{StaticResource SideBarTextBlock}"
-                                Text="Calculation" />
+                            Background="Transparent"
+                            Grid.Row="1"
+                            Style="{StaticResource SideBarTextBlock}"
+                            Text="Capture" />
                     </Grid>
                 </TabItem.Header>
                 <TabItem.Content>
-                    <Grid DataContext="{Binding}">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <Grid.RowDefinitions>
-                            <RowDefinition MinHeight="25" />
-                            <RowDefinition MinHeight="25" />
-                        </Grid.RowDefinitions>
-                        <TextBlock Grid.Row="0" Grid.Column="0" MinWidth="70" VerticalAlignment="Center" HorizontalAlignment="Center" Text="Telescope" />
-                        <StackPanel
-                            Grid.Row="0"
-                            Grid.Column="1"
-                            Orientation="Vertical">
-                            <TextBlock Margin="5,0" Text="Name"/>
-                            <TextBox Margin="5,0,0,0" MinWidth="100" VerticalAlignment="Center" HorizontalAlignment="Left" Text="{Binding TelescopeName}" />
-                        </StackPanel>
-                        <StackPanel
-                            Grid.Row="0"
-                            Grid.Column="2"
-                            Orientation="Vertical">
-                            <TextBlock Margin="5,0" Text="Aperture"/>
-                            <ninactrl:UnitTextBox
-                            MinWidth="100"
-                            Margin="5,0,0,0"
-                            HorizontalAlignment="Left"
-                            VerticalAlignment="Center"
-                            Text="{Binding ApertureD}"
-                            Unit="mm" />
-                        </StackPanel>
-                        <StackPanel
-                            Grid.Row="0"
-                            Grid.Column="3"
-                            Orientation="Vertical">
-                            <TextBlock Margin="5,0" Text="Obstruction"/>
-                            <ninactrl:UnitTextBox
-                            MinWidth="100"
-                            Margin="5,0,0,0"
-                            HorizontalAlignment="Left"
-                            VerticalAlignment="Center"
-                            Text="{Binding ObstructionD}"
-                            Unit="mm" />
-                        </StackPanel>
-                        <StackPanel
-                            Grid.Row="0"
-                            Grid.Column="4"
-                            Orientation="Vertical">
-                            <TextBlock Margin="5,0" Text="Focallength"/>
-                            <ninactrl:UnitTextBox
-                            MinWidth="100"
-                            Margin="5,0,0,0"
-                            HorizontalAlignment="Left"
-                            VerticalAlignment="Center"
-                            Text="{Binding Focallength}"
-                            Unit="mm" />
-                        </StackPanel>
-
-                        <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Left" Text="Barlow" />
-                        <StackPanel
-                            Grid.Row="1"
-                            Grid.Column="1"
-                            Orientation="Vertical">
-                            <TextBlock Margin="5,0" Text="Name"/>
-                            <TextBox Margin="5,0,0,0" MinWidth="100" VerticalAlignment="Center" HorizontalAlignment="Left" Text="{Binding BarlowName}" />
-                        </StackPanel>
-                        <StackPanel
-                            Grid.Row="1"
-                            Grid.Column="2"
-                            Orientation="Vertical">
-                            <TextBlock Margin="5,0" Text="Factor"/>
-                            <ninactrl:UnitTextBox
-                                MinWidth="100"
-                                Margin="5,0,0,0"
-                                HorizontalAlignment="Left"
-                                VerticalAlignment="Center"
-                                Text="{Binding BarlowFactor}"
-                                Unit="X" />
-                        </StackPanel>
-
-                    </Grid>
-                </TabItem.Content>
-            </TabItem>
-            <TabItem>
-                <TabItem.Header>
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition />
-                            <RowDefinition Height="10" />
-                        </Grid.RowDefinitions>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Orientation="Vertical">
                         <Grid>
-                            <Grid Width="40" Height="40">
-                                <Path
-                                    Margin="5"
-                                    Data="{StaticResource StarSVG}"
-                                    Stretch="Uniform"
-                                    Style="{StaticResource TabItemPath}" />
-                            </Grid>
-                        </Grid>
-                        <TextBlock
-                                Grid.Row="1"
-                                Style="{StaticResource SideBarTextBlock}"
-                                Text="ReferenceStars" />
-                    </Grid>
-                </TabItem.Header>
-                <TabItem.Content>
-                    <Grid DataContext="{Binding}">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-
-                        <Grid Grid.Column="0" Margin="10,0">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0" Orientation="Vertical">
+                                <GroupBox Header="Capture defaults">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" MinWidth="250" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+
+                                        <TextBlock
+                                            Background="Transparent"
+                                            Grid.Row="0"
+                                            Grid.Column="0"
+                                            Margin="0,4,10,4"
+                                            VerticalAlignment="Center"
+                                            Text="Default exposure time"
+                                            ToolTip="Per frame exposure for target list rows that do not set their own exposure time, and the fallback used when the exposure time calculation cannot run. Unit seconds." />
+                                        <ninactrl:UnitTextBox
+                                            Grid.Row="0"
+                                            Grid.Column="1"
+                                            MinWidth="90"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            Text="{Binding ExposureTime}"
+                                            ToolTip="Per frame exposure for target list rows that do not set their own exposure time, and the fallback used when the exposure time calculation cannot run. Unit seconds."
+                                            Unit="s" />
+
+                                        <TextBlock
+                                            Background="Transparent"
+                                            Grid.Row="1"
+                                            Grid.Column="0"
+                                            Margin="0,4,10,4"
+                                            VerticalAlignment="Center"
+                                            Text="Longest exposure the calculation may pick"
+                                            ToolTip="Upper limit for the automatic exposure time calculation. It steps up from 0.01 s and never goes above this value. Unit seconds." />
+                                        <ninactrl:UnitTextBox
+                                            Grid.Row="1"
+                                            Grid.Column="1"
+                                            MinWidth="90"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            Text="{Binding MaxExposureTime}"
+                                            ToolTip="Upper limit for the automatic exposure time calculation. It steps up from 0.01 s and never goes above this value. Unit seconds."
+                                            Unit="s" />
+
+                                        <TextBlock
+                                            Background="Transparent"
+                                            Grid.Row="2"
+                                            Grid.Column="0"
+                                            Margin="0,4,10,4"
+                                            VerticalAlignment="Center"
+                                            Text="Default number of exposures per run"
+                                            ToolTip="Frames captured in one video exposure run for target list rows that do not set their own frame count." />
+                                        <TextBox
+                                            Grid.Row="2"
+                                            Grid.Column="1"
+                                            MinWidth="90"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            Text="{Binding Exposures}"
+                                            ToolTip="Frames captured in one video exposure run for target list rows that do not set their own frame count." />
+
+                                        <TextBlock
+                                            Background="Transparent"
+                                            Grid.Row="3"
+                                            Grid.Column="0"
+                                            Margin="0,4,10,4"
+                                            VerticalAlignment="Center"
+                                            Text="Saved frame size"
+                                            ToolTip="The square cut from the sensor that is captured and saved, in pixels. Larger keeps more of the field around the star but costs disk space and analysis time." />
+                                        <ComboBox
+                                            Grid.Row="3"
+                                            Grid.Column="1"
+                                            MinWidth="90"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            IsEditable="False"
+                                            ItemsSource="{Binding AvailableRoiSizes}"
+                                            SelectedValue="{Binding RoiSize}"
+                                            ToolTip="The square cut from the sensor that is captured and saved, in pixels. Larger keeps more of the field around the star but costs disk space and analysis time." />
+
+                                        <TextBlock
+                                            Background="Transparent"
+                                            Grid.Row="4"
+                                            Grid.Column="0"
+                                            Margin="0,4,10,4"
+                                            VerticalAlignment="Center"
+                                            Text="Show every Nth image"
+                                            ToolTip="During a video exposure run only the first frame, the last frame and every Nth frame are sent to the imaging tab. Higher values give a slightly higher capture rate on slow computers." />
+                                        <TextBox
+                                            Grid.Row="4"
+                                            Grid.Column="1"
+                                            MinWidth="90"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            Text="{Binding ShowEveryNthImage}"
+                                            ToolTip="During a video exposure run only the first frame, the last frame and every Nth frame are sent to the imaging tab. Higher values give a slightly higher capture rate on slow computers." />
+
+                                        <TextBlock
+                                            Background="Transparent"
+                                            Grid.Row="5"
+                                            Grid.Column="0"
+                                            Margin="0,4,10,4"
+                                            VerticalAlignment="Center"
+                                            Text="Capture method"
+                                            ToolTip="Video mode streams frames from the camera and is much faster. Automatic uses it, because camera drivers report video mode as unavailable even when they support it, and the run falls back to single exposures if the stream cannot start." />
+                                        <ComboBox
+                                            Grid.Row="5"
+                                            Grid.Column="1"
+                                            MinWidth="90"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            IsEditable="False"
+                                            SelectedIndex="{Binding VideoExposuresMode}"
+                                            ToolTip="Video mode streams frames from the camera and is much faster. Automatic uses it, because camera drivers report video mode as unavailable even when they support it, and the run falls back to single exposures if the stream cannot start.">
+                                            <ComboBoxItem Content="Automatic" />
+                                            <ComboBoxItem Content="Single exposures" />
+                                            <ComboBoxItem Content="Video mode" />
+                                        </ComboBox>
+
+                                        <TextBlock
+                                            Background="Transparent"
+                                            Grid.Row="6"
+                                            Grid.Column="0"
+                                            Margin="0,4,10,4"
+                                            VerticalAlignment="Center"
+                                            Text="Locate target with plate solving"
+                                            ToolTip="When on, the target position is confirmed by plate solving after each slew. When off, the reported mount coordinates are used as they are." />
+                                        <CheckBox
+                                            Grid.Row="6"
+                                            Grid.Column="1"
+                                            MinWidth="80"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            IsChecked="{Binding UsePlateSolving}"
+                                            ToolTip="When on, the target position is confirmed by plate solving after each slew. When off, the reported mount coordinates are used as they are." />
+
+                                        <TextBlock
+                                            Background="Transparent"
+                                            Grid.Row="7"
+                                            Grid.Column="0"
+                                            Margin="0,4,10,4"
+                                            VerticalAlignment="Center"
+                                            Text="Filter used while pointing"
+                                            ToolTip="The filter the wheel is put on before each slew, so the centring view is always through the same one. Leave it empty to keep whatever filter is in." />
+                                        <ComboBox
+                                            Grid.Row="7"
+                                            Grid.Column="1"
+                                            MinWidth="140"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            IsEditable="False"
+                                            ItemsSource="{Binding AvailableFilters}"
+                                            SelectedValue="{Binding SlewFilter}"
+                                            ToolTip="The filter the wheel is put on before each slew, so the centring view is always through the same one. Leave it empty to keep whatever filter is in." />
+
+                                        <TextBlock
+                                            Background="Transparent"
+                                            Grid.Row="8"
+                                            Grid.Column="0"
+                                            Margin="0,4,10,4"
+                                            VerticalAlignment="Center"
+                                            Text="Write the full CSV row into the FITS header"
+                                            ToolTip="When on, every column of the target CSV row is written into the FITS header of each frame. When off, only the identification headers are written." />
+                                        <CheckBox
+                                            Grid.Row="8"
+                                            Grid.Column="1"
+                                            MinWidth="80"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            IsChecked="{Binding SaveCsvToFitsHeader}"
+                                            ToolTip="When on, every column of the target CSV row is written into the FITS header of each frame. When off, only the identification headers are written." />
+                                    </Grid>
+                                </GroupBox>
+
+                                <Expander Header="Power spectrum, the fringe display and its tuning" IsExpanded="False">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" MinWidth="250" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+
+                                        <TextBlock
+                                            Background="Transparent"
+                                            Grid.Row="0"
+                                            Grid.Column="0"
+                                            Margin="0,4,10,4"
+                                            VerticalAlignment="Center"
+                                            Text="Show the power spectrum while capturing"
+                                            ToolTip="During a video exposure run the power spectrum of every frame is accumulated and shown beside the frame in the speckle panel. A close double star shows up as a pattern of straight fringes. Turn this off if the computer is too slow to keep up." />
+                                        <CheckBox
+                                            Grid.Row="0"
+                                            Grid.Column="1"
+                                            MinWidth="80"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            IsChecked="{Binding AnalyseFringes}"
+                                            ToolTip="During a video exposure run the power spectrum of every frame is accumulated and shown beside the frame in the speckle panel. A close double star shows up as a pattern of straight fringes. Turn this off if the computer is too slow to keep up." />
+
+                                        <TextBlock
+                                            Background="Transparent"
+                                            Grid.Row="1"
+                                            Grid.Column="0"
+                                            Margin="0,4,10,4"
+                                            VerticalAlignment="Center"
+                                            Text="Analysed area"
+                                            ToolTip="The size in pixels of the square cut from the middle of each frame before the transform. Leave at 0 for 256, or for the largest power of two that fits when the region of interest is smaller. A value entered by hand must be a power of two." />
+                                        <ninactrl:UnitTextBox
+                                            IsEnabled="{Binding AnalyseFringes}"
+                                            Grid.Row="1"
+                                            Grid.Column="1"
+                                            MinWidth="90"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            Text="{Binding FringeFftSize}"
+                                            ToolTip="The size in pixels of the square cut from the middle of each frame before the transform. Leave at 0 for 256, or for the largest power of two that fits when the region of interest is smaller. A value entered by hand must be a power of two."
+                                            Unit="px" />
+
+                                        <TextBlock
+                                            Background="Transparent"
+                                            Grid.Row="2"
+                                            Grid.Column="0"
+                                            Margin="0,4,10,4"
+                                            VerticalAlignment="Center"
+                                            Text="Analyse every Nth frame"
+                                            ToolTip="How many captured frames pass between two analysed ones. The power spectrum needs far fewer frames than the run saves, so analysing every frame only costs time. Frames that are not analysed are still saved to disk." />
+                                        <TextBox
+                                            IsEnabled="{Binding AnalyseFringes}"
+                                            Grid.Row="2"
+                                            Grid.Column="1"
+                                            MinWidth="90"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            Text="{Binding FringeAnalyseEveryNthFrame}"
+                                            ToolTip="How many captured frames pass between two analysed ones. The power spectrum needs far fewer frames than the run saves, so analysing every frame only costs time. Frames that are not analysed are still saved to disk." />
+
+                                        <TextBlock
+                                            Background="Transparent"
+                                            Grid.Row="3"
+                                            Grid.Column="0"
+                                            Margin="0,4,10,4"
+                                            VerticalAlignment="Center"
+                                            Text="Redraw at most every"
+                                            ToolTip="How often the displayed power spectrum is redrawn. The accumulation keeps running between redraws." />
+                                        <ninactrl:UnitTextBox
+                                            IsEnabled="{Binding AnalyseFringes}"
+                                            Grid.Row="3"
+                                            Grid.Column="1"
+                                            MinWidth="90"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            Text="{Binding FringeRefreshMs}"
+                                            ToolTip="How often the displayed power spectrum is redrawn. The accumulation keeps running between redraws."
+                                            Unit="ms" />
+
+                                        <TextBlock
+                                            Background="Transparent"
+                                            Grid.Row="4"
+                                            Grid.Column="0"
+                                            Margin="0,4,10,4"
+                                            VerticalAlignment="Center"
+                                            Text="Pane position"
+                                            ToolTip="Where the power spectrum is drawn relative to the current frame in the speckle panel." />
+                                        <ComboBox
+                                            IsEnabled="{Binding AnalyseFringes}"
+                                            Grid.Row="4"
+                                            Grid.Column="1"
+                                            MinWidth="90"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            IsEditable="False"
+                                            SelectedIndex="{Binding FringePaneOrientation}"
+                                            ToolTip="Where the power spectrum is drawn relative to the current frame in the speckle panel.">
+                                            <ComboBoxItem Content="Beside the frame" />
+                                            <ComboBoxItem Content="Below the frame" />
+                                        </ComboBox>
+
+                                        <Button
+                                            IsEnabled="{Binding AnalyseFringes}"
+                                            Grid.Row="5"
+                                            Grid.Column="0"
+                                            Height="26"
+                                            MinWidth="200"
+                                            Margin="0,8,10,4"
+                                            HorizontalAlignment="Left"
+                                            Command="{Binding ShowFringeDemoCommand}"
+                                            ToolTip="Replays 50 real frames of the double star WDS 17533+2459, taken with the Mt Wilson 100 inch, through the power spectrum in the Speckle panel. No camera needed.">
+                                            <TextBlock Padding="10,0" Foreground="{StaticResource ButtonForegroundBrush}" Text="Show me what fringes look like" />
+                                        </Button>
+
+                                        <TextBlock
+                                            Grid.Row="6"
+                                            Grid.Column="0"
+                                            Margin="0,12,10,4"
+                                            VerticalAlignment="Center"
+                                            FontStyle="Italic"
+                                            Text="The settings below change how the power spectrum is computed and drawn. The defaults suit almost every telescope." />
+
+                                        <TextBlock
+                                            Background="Transparent"
+                                            Grid.Row="7"
+                                            Grid.Column="0"
+                                            Margin="0,4,10,4"
+                                            VerticalAlignment="Center"
+                                            Text="Subtract the frame mean"
+                                            ToolTip="Removes the bright spike at the centre of the power spectrum caused by the average sky level, so the fringes are easier to see." />
+                                        <CheckBox
+                                            IsEnabled="{Binding AnalyseFringes}"
+                                            Grid.Row="7"
+                                            Grid.Column="1"
+                                            MinWidth="80"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            IsChecked="{Binding FringeSubtractFrameMean}"
+                                            ToolTip="Removes the bright spike at the centre of the power spectrum caused by the average sky level, so the fringes are easier to see." />
+
+                                        <TextBlock
+                                            Background="Transparent"
+                                            Grid.Row="8"
+                                            Grid.Column="0"
+                                            Margin="0,4,10,4"
+                                            VerticalAlignment="Center"
+                                            Text="Edge taper"
+                                            ToolTip="Fades the edges of the analysed square so the sharp cut does not add a cross of false structure to the power spectrum." />
+                                        <ComboBox
+                                            IsEnabled="{Binding AnalyseFringes}"
+                                            Grid.Row="8"
+                                            Grid.Column="1"
+                                            MinWidth="90"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            IsEditable="False"
+                                            SelectedIndex="{Binding FringeApodization}"
+                                            ToolTip="Fades the edges of the analysed square so the sharp cut does not add a cross of false structure to the power spectrum.">
+                                            <ComboBoxItem Content="None" />
+                                            <ComboBoxItem Content="Hann" />
+                                            <ComboBoxItem Content="Tukey" />
+                                        </ComboBox>
+
+                                        <TextBlock
+                                            Background="Transparent"
+                                            Grid.Row="9"
+                                            Grid.Column="0"
+                                            Margin="0,4,10,4"
+                                            VerticalAlignment="Center"
+                                            Text="Remove the noise floor"
+                                            ToolTip="Measures the flat read noise level beyond the resolution limit of the telescope and subtracts it, which makes faint fringes stand out." />
+                                        <CheckBox
+                                            IsEnabled="{Binding AnalyseFringes}"
+                                            Grid.Row="9"
+                                            Grid.Column="1"
+                                            MinWidth="80"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            IsChecked="{Binding FringeRemoveNoiseBias}"
+                                            ToolTip="Measures the flat read noise level beyond the resolution limit of the telescope and subtracts it, which makes faint fringes stand out." />
+
+                                        <TextBlock
+                                            Background="Transparent"
+                                            Grid.Row="10"
+                                            Grid.Column="0"
+                                            Margin="0,4,10,4"
+                                            VerticalAlignment="Center"
+                                            Text="Resolution limit radius"
+                                            ToolTip="The radius in the power spectrum beyond which the telescope carries no signal. Leave at 0 to compute it from the aperture, the wavelength and the plate scale." />
+                                        <ninactrl:UnitTextBox
+                                            IsEnabled="{Binding AnalyseFringes}"
+                                            Grid.Row="10"
+                                            Grid.Column="1"
+                                            MinWidth="90"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            Text="{Binding FringeKSpaceRadiusPx}"
+                                            ToolTip="The radius in the power spectrum beyond which the telescope carries no signal. Leave at 0 to compute it from the aperture, the wavelength and the plate scale."
+                                            Unit="px" />
+
+                                        <TextBlock
+                                            Background="Transparent"
+                                            Grid.Row="11"
+                                            Grid.Column="0"
+                                            Margin="0,4,10,4"
+                                            VerticalAlignment="Center"
+                                            Text="Wavelength"
+                                            ToolTip="The wavelength used for the resolution limit and for turning a fringe spacing into a separation in arcseconds. Use the central wavelength of the filter in use." />
+                                        <ninactrl:UnitTextBox
+                                            IsEnabled="{Binding AnalyseFringes}"
+                                            Grid.Row="11"
+                                            Grid.Column="1"
+                                            MinWidth="90"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            Text="{Binding FringeWavelengthNm}"
+                                            ToolTip="The wavelength used for the resolution limit and for turning a fringe spacing into a separation in arcseconds. Use the central wavelength of the filter in use."
+                                            Unit="nm" />
+
+                                        <TextBlock
+                                            Background="Transparent"
+                                            Grid.Row="12"
+                                            Grid.Column="0"
+                                            Margin="0,4,10,4"
+                                            VerticalAlignment="Center"
+                                            Text="Flatten the seeing halo"
+                                            ToolTip="The power spectrum is much brighter at the centre than at the edge. Dividing that fall off out keeps shallow fringes visible all the way to the resolution limit." />
+                                        <CheckBox
+                                            IsEnabled="{Binding AnalyseFringes}"
+                                            Grid.Row="12"
+                                            Grid.Column="1"
+                                            MinWidth="80"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            IsChecked="{Binding FringeRadialFlatten}"
+                                            ToolTip="The power spectrum is much brighter at the centre than at the edge. Dividing that fall off out keeps shallow fringes visible all the way to the resolution limit." />
+
+                                        <TextBlock
+                                            Background="Transparent"
+                                            Grid.Row="13"
+                                            Grid.Column="0"
+                                            Margin="0,4,10,4"
+                                            VerticalAlignment="Center"
+                                            Text="Brightness curve"
+                                            ToolTip="How the computed values are mapped to grey levels on screen. Asinh shows both the bright centre and the faint outer fringes." />
+                                        <ComboBox
+                                            IsEnabled="{Binding AnalyseFringes}"
+                                            Grid.Row="13"
+                                            Grid.Column="1"
+                                            MinWidth="90"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            IsEditable="False"
+                                            SelectedIndex="{Binding FringeStretch}"
+                                            ToolTip="How the computed values are mapped to grey levels on screen. Asinh shows both the bright centre and the faint outer fringes.">
+                                            <ComboBoxItem Content="Asinh" />
+                                            <ComboBoxItem Content="Signed square root" />
+                                            <ComboBoxItem Content="Logarithmic" />
+                                            <ComboBoxItem Content="Linear" />
+                                        </ComboBox>
+                                    </Grid>
+                                </Expander>
+
+                                <GroupBox Header="Templates and observer">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" MinWidth="250" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+
+                                        <TextBlock
+                                            Background="Transparent"
+                                            Grid.Row="0"
+                                            Grid.Column="0"
+                                            Margin="0,4,10,4"
+                                            VerticalAlignment="Center"
+                                            Text="Default target template"
+                                            ToolTip="Name of the saved Speckle Target Container template used for targets that do not name their own. Must match a saved template name exactly." />
+                                        <TextBox
+                                            Grid.Row="0"
+                                            Grid.Column="1"
+                                            MinWidth="220"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            Text="{Binding DefaultTemplate}"
+                                            ToolTip="Name of the saved Speckle Target Container template used for targets that do not name their own. Must match a saved template name exactly." />
+
+                                        <TextBlock
+                                            Background="Transparent"
+                                            Grid.Row="1"
+                                            Grid.Column="0"
+                                            Margin="0,4,10,4"
+                                            VerticalAlignment="Center"
+                                            Text="Default reference star template"
+                                            ToolTip="Name of the saved template used for reference star runs. Must match a saved template name exactly." />
+                                        <TextBox
+                                            Grid.Row="1"
+                                            Grid.Column="1"
+                                            MinWidth="220"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            Text="{Binding DefaultRefTemplate}"
+                                            ToolTip="Name of the saved template used for reference star runs. Must match a saved template name exactly." />
+
+                                        <TextBlock
+                                            Background="Transparent"
+                                            Grid.Row="2"
+                                            Grid.Column="0"
+                                            Margin="0,4,10,4"
+                                            VerticalAlignment="Center"
+                                            Text="Default observer code"
+                                            ToolTip="Observer code used when neither the CSV row nor the target list container supplies one. Written to the Obs header and the $$OBSERVER$$ file pattern." />
+                                        <TextBox
+                                            Grid.Row="2"
+                                            Grid.Column="1"
+                                            MinWidth="220"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            Text="{Binding User}"
+                                            ToolTip="Observer code used when neither the CSV row nor the target list container supplies one. Written to the Obs header and the $$OBSERVER$$ file pattern." />
+                                        <TextBlock
+                                            Background="Transparent"
+                                            Grid.Row="3"
+                                            Grid.Column="0"
+                                            Margin="0,16,10,4"
+                                            VerticalAlignment="Center"
+                                            Text="Default filters"
+                                            ToolTip="Filters to capture when the target list does not name one, separated by commas. One capture entry is made per filter, in the order given. Leave empty to keep the single unnamed entry the list implies." />
+                                        <TextBox
+                                            Grid.Row="3"
+                                            Grid.Column="1"
+                                            MinWidth="220"
+                                            Margin="0,16,0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            Text="{Binding DefaultFilters}"
+                                            ToolTip="Filters to capture when the target list does not name one, separated by commas, for example: SloanR, SloanI" />
+
+                                    </Grid>
+                                </GroupBox>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1" Orientation="Vertical">
+                                <GroupBox Header="Run behaviour">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" MinWidth="250" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+
+                                        <TextBlock
+                                            Background="Transparent"
+                                            Grid.Row="4"
+                                            Grid.Column="0"
+                                            Margin="0,4,10,4"
+                                            VerticalAlignment="Center"
+                                            Text="Show coordinates in decimal degrees"
+                                            ToolTip="Show right ascension and declination as decimal degrees everywhere, instead of hours, minutes and seconds. Affects the confirmation card and the target table." />
+                                        <CheckBox
+                                            Grid.Row="4"
+                                            Grid.Column="1"
+                                            MinWidth="80"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            IsChecked="{Binding ShowDecimalDegrees}"
+                                            ToolTip="Show right ascension and declination as decimal degrees everywhere, instead of hours, minutes and seconds. Affects the confirmation card and the target table." />
+
+                                        <TextBlock
+                                            Background="Transparent"
+                                            Grid.Row="0"
+                                            Grid.Column="0"
+                                            Margin="0,4,10,4"
+                                            VerticalAlignment="Center"
+                                            Text="Run automatically"
+                                            ToolTip="When on and the mount is connected, unparked and able to slew, the plugin slews and images on its own. When off the run is semi-autonomous and the operator confirms each slew and each image." />
+                                        <CheckBox
+                                            Grid.Row="0"
+                                            Grid.Column="1"
+                                            MinWidth="80"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            IsChecked="{Binding AutomaticallyRun}"
+                                            ToolTip="When on and the mount is connected, unparked and able to slew, the plugin slews and images on its own. When off the run is semi-autonomous and the operator confirms each slew and each image." />
+
+                                        <TextBlock
+                                            Background="Transparent"
+                                            Grid.Row="1"
+                                            Grid.Column="0"
+                                            Margin="0,4,10,4"
+                                            VerticalAlignment="Center"
+                                            Text="Manual slew tolerance"
+                                            ToolTip="How close the mount must be to the target coordinates before a manual slew counts as on target. Unit arcmin." />
+                                        <ninactrl:UnitTextBox
+                                            Grid.Row="1"
+                                            Grid.Column="1"
+                                            MinWidth="90"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            Text="{Binding ManualSlewToleranceArcmin}"
+                                            ToolTip="How close the mount must be to the target coordinates before a manual slew counts as on target. Unit arcmin."
+                                            Unit="arcmin" />
+
+                                        <TextBlock
+                                            Background="Transparent"
+                                            Grid.Row="2"
+                                            Grid.Column="0"
+                                            Margin="0,4,10,4"
+                                            VerticalAlignment="Center"
+                                            Text="Skip a target when its reference star fails"
+                                            ToolTip="When on, an automatic run moves straight on to the next target if the reference star of the current target cannot be imaged. Has no effect while running semi-autonomously." />
+                                        <CheckBox
+                                            Grid.Row="2"
+                                            Grid.Column="1"
+                                            MinWidth="80"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            IsEnabled="{Binding AutomaticallyRun}"
+                                            IsChecked="{Binding AutoSkipFailedReference}"
+                                            ToolTip="When on, an automatic run moves straight on to the next target if the reference star of the current target cannot be imaged. Has no effect while running semi-autonomously." />
+
+                                        <TextBlock
+                                            Background="Transparent"
+                                            Grid.Row="3"
+                                            Grid.Column="0"
+                                            Margin="0,4,10,4"
+                                            VerticalAlignment="Center"
+                                            Text="Play a sound when a slew is needed"
+                                            ToolTip="When on, a sound is played every time the run stops and waits for the operator to slew the mount." />
+                                        <StackPanel
+                                            Grid.Row="3"
+                                            Grid.Column="1"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            Orientation="Horizontal">
+                                            <CheckBox
+                                                MinWidth="80"
+                                                VerticalAlignment="Center"
+                                                IsChecked="{Binding PlaySlewSound}"
+                                                ToolTip="When on, a sound is played every time the run stops and waits for the operator to slew the mount." />
+                                            <Button
+                                                Width="28"
+                                                Height="25"
+                                                Margin="6,0,0,0"
+                                                VerticalAlignment="Center"
+                                                Command="{Binding PlaySlewSoundCommand}"
+                                                ToolTip="Play the slew sound now to preview it.">
+                                                <Path
+                                                    Width="12"
+                                                    Height="12"
+                                                    Data="{StaticResource PlaySVG}"
+                                                    Fill="{StaticResource ButtonForegroundBrush}"
+                                                    Stretch="Uniform" />
+                                            </Button>
+                                        </StackPanel>
+                                    </Grid>
+                                </GroupBox>
+                            </StackPanel>
+                        </Grid>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem.Content>
+            </TabItem>
+
+            <TabItem>
+                <TabItem.Header>
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition />
+                            <RowDefinition Height="10" />
+                        </Grid.RowDefinitions>
+                        <Grid Width="40" Height="40">
+                            <Path
+                                Margin="5"
+                                Data="{StaticResource ObservatorySVG}"
+                                Stretch="Uniform"
+                                Style="{StaticResource TabItemPath}" />
+                        </Grid>
+                        <TextBlock
+                            Background="Transparent"
+                            Grid.Row="1"
+                            Style="{StaticResource SideBarTextBlock}"
+                            Text="Advanced" />
+                    </Grid>
+                </TabItem.Header>
+                <TabItem.Content>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Orientation="Vertical">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <Grid.RowDefinitions>
-                                <RowDefinition MinHeight="25" />
-                                <RowDefinition MinHeight="25" />
-                                <RowDefinition MinHeight="25" />
-                                <RowDefinition MinHeight="25" />
-                                <RowDefinition MinHeight="25" />
-                                <RowDefinition MinHeight="25" />
-                                <RowDefinition MinHeight="25" />
-                                <RowDefinition MinHeight="25" />
-                                <RowDefinition MinHeight="25" />
-                                <RowDefinition MinHeight="25" />
-                            </Grid.RowDefinitions>
-                            
-                            <StackPanel Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="0" Margin="5" Orientation="Horizontal">
-                                <Button
-                            Height="25"
-                            Width="200"
-                            Margin="0,0,5,0"
-                            HorizontalAlignment="Left"
-                            VerticalAlignment="Center"
-                            Command="{Binding OpenFileCommand}">
-                                    <TextBlock Padding="5,0" Foreground="{StaticResource ButtonForegroundBrush}" Text="Choose reference star list" />
-                                </Button>
 
-                            </StackPanel> 
-                            <TextBlock Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Text="ReferenceStarList" />
-                            <TextBox
-                Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2"
-                MinWidth="100"
-                Margin="5,0,0,0"
-                HorizontalAlignment="Left"
-                VerticalAlignment="Center"
-                Text="{Binding ReferenceStarListLocation}" />
+                            <StackPanel Grid.Column="0" Orientation="Vertical">
+                                <GroupBox Header="Dome">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" MinWidth="250" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
 
-                            <TextBlock Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Text="Default Reference Template" />
-                            <TextBox
-                Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2"
-                MinWidth="100"
-                Margin="5,0,0,0"
-                HorizontalAlignment="Left"
-                VerticalAlignment="Center"
-                Text="{Binding DefaultRefTemplate}" />
+                                        <TextBlock
+                                            Background="Transparent"
+                                            Grid.Row="0"
+                                            Grid.Column="0"
+                                            Margin="0,4,10,4"
+                                            VerticalAlignment="Center"
+                                            Text="Dome stays parked at a fixed azimuth"
+                                            ToolTip="When on, targets are scheduled for the time they drift through a fixed dome slit instead of for their best altitude, and reference stars are restricted to stars visible through that slit. Uses the slit azimuth and slit width below." />
+                                        <CheckBox
+                                            Grid.Row="0"
+                                            Grid.Column="1"
+                                            MinWidth="80"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            IsChecked="{Binding DomePositionLock}"
+                                            ToolTip="When on, targets are scheduled for the time they drift through a fixed dome slit instead of for their best altitude, and reference stars are restricted to stars visible through that slit. Uses the slit azimuth and slit width below." />
 
-                            <TextBlock Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" Text="Number of images for reference star" />
-                            <TextBox
-                Grid.Row="3"
-                Grid.Column="1"
-                MinWidth="100"
-                Margin="5,0,0,0"
-                HorizontalAlignment="Left"
-                VerticalAlignment="Center"
-                Text="{Binding ReferenceExposures}" />
+                                        <TextBlock
+                                            Background="Transparent"
+                                            Grid.Row="1"
+                                            Grid.Column="0"
+                                            Margin="0,4,10,4"
+                                            VerticalAlignment="Center"
+                                            Text="Dome slit azimuth"
+                                            ToolTip="Center azimuth of the parked dome slit, measured from north through east. Unit deg." />
+                                        <ninactrl:UnitTextBox
+                                            Grid.Row="1"
+                                            Grid.Column="1"
+                                            MinWidth="90"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            Text="{Binding DomePosition}"
+                                            ToolTip="Center azimuth of the parked dome slit, measured from north through east. Unit deg."
+                                            Unit="deg" />
 
-                            <TextBlock Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" Text="Use referencestarlist" />
-                            <CheckBox
-                                Grid.Row="4"
-                                Grid.Column="1"
-                                MinWidth="80"
-                                Margin="5,0,0,0"
-                                HorizontalAlignment="Left"
-                                VerticalAlignment="Center"
-                                IsChecked="{Binding UseReferenceStarList}" />
+                                        <TextBlock
+                                            Background="Transparent"
+                                            Grid.Row="2"
+                                            Grid.Column="0"
+                                            Margin="0,4,10,4"
+                                            VerticalAlignment="Center"
+                                            Text="Dome slit width"
+                                            ToolTip="Full angular width of the dome slit. The usable window runs from the slit azimuth minus half this value to the slit azimuth plus half this value. Unit deg." />
+                                        <ninactrl:UnitTextBox
+                                            Grid.Row="2"
+                                            Grid.Column="1"
+                                            MinWidth="90"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            Text="{Binding DomeSlitWidth}"
+                                            ToolTip="Full angular width of the dome slit. The usable window runs from the slit azimuth minus half this value to the slit azimuth plus half this value. Unit deg."
+                                            Unit="deg" />
 
-                            <TextBlock Grid.Row="5" Grid.Column="0" VerticalAlignment="Center" Text="Use simbad reference stars" />
-                            <CheckBox
-                                Grid.Row="5"
-                                Grid.Column="1"
-                                MinWidth="80"
-                                Margin="5,0,0,0"
-                                HorizontalAlignment="Left"
-                                VerticalAlignment="Center"
-                                IsChecked="{Binding UseSimbadRefStars}" />
+                                        <TextBlock
+                                            Background="Transparent"
+                                            Grid.Row="3"
+                                            Grid.Column="0"
+                                            Margin="0,4,10,4"
+                                            VerticalAlignment="Center"
+                                            Text="Dome slit direction"
+                                            ToolTip="Direction the dome slit is assumed to face when no dome is connected. On means the slit points south, off means the slit points north." />
+                                        <StackPanel
+                                            Grid.Row="3"
+                                            Grid.Column="1"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            Orientation="Horizontal">
+                                            <CheckBox
+                                                MinWidth="80"
+                                                VerticalAlignment="Center"
+                                                IsChecked="{Binding DomeSlitSouth}"
+                                                ToolTip="Direction the dome slit is assumed to face when no dome is connected. On means the slit points south, off means the slit points north." />
+                                            <TextBlock
+                                                Background="Transparent"
+                                                Margin="8,0,0,0"
+                                                VerticalAlignment="Center"
+                                                Text="On is south, off is north"
+                                                ToolTip="Direction the dome slit is assumed to face when no dome is connected. On means the slit points south, off means the slit points north." />
+                                        </StackPanel>
+                                    </Grid>
+                                </GroupBox>
 
-                            <TextBlock Grid.Row="6" Grid.Column="0" VerticalAlignment="Center" Text="Use USNO reference stars" />
-                            <CheckBox
-                                Grid.Row="6"
-                                Grid.Column="1"
-                                MinWidth="80"
-                                Margin="5,0,0,0"
-                                HorizontalAlignment="Left"
-                                VerticalAlignment="Center"
-                                IsChecked="{Binding UseUSNOSingleStarList}" />
+                            </StackPanel>
 
-                            <TextBlock Grid.Row="7" Grid.Column="0" VerticalAlignment="Center" Text="Prefer brightness over closeness" />
-                            <CheckBox
-                                Grid.Row="7"
-                                Grid.Column="1"
-                                MinWidth="80"
-                                Margin="5,0,0,0"
-                                HorizontalAlignment="Left"
-                                VerticalAlignment="Center"
-                                IsChecked="{Binding PreferBrighterReferenceStars}" />
+                            <StackPanel Grid.Column="1" Orientation="Vertical">
+                                <Expander Header="Operator web page" IsExpanded="False">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" MinWidth="250" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+
+                                        <TextBlock
+                                            Background="Transparent"
+                                            Grid.Row="0"
+                                            Grid.Column="0"
+                                            Margin="0,4,10,4"
+                                            VerticalAlignment="Center"
+                                            Text="Serve the operator page"
+                                            ToolTip="Serves a page the telescope operator can open on a phone or tablet, showing the target coordinates and an On Target button. Only needed when a human points the telescope by hand." />
+                                        <CheckBox
+                                            Grid.Row="0"
+                                            Grid.Column="1"
+                                            MinWidth="80"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            IsChecked="{Binding EnableOperatorPage}"
+                                            ToolTip="Serves a page the telescope operator can open on a phone or tablet, showing the target coordinates and an On Target button. Only needed when a human points the telescope by hand." />
+
+                                        <TextBlock
+                                            Background="Transparent"
+                                            Grid.Row="1"
+                                            Grid.Column="0"
+                                            Margin="0,4,10,4"
+                                            VerticalAlignment="Center"
+                                            Text="Allow other devices on the network"
+                                            ToolTip="Off: only this computer can open the page. On: any device on the observatory network can open it. There is no password; anyone who can reach the page can confirm a target." />
+                                        <CheckBox
+                                            IsEnabled="{Binding EnableOperatorPage}"
+                                            Grid.Row="1"
+                                            Grid.Column="1"
+                                            MinWidth="80"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            IsChecked="{Binding OperatorPageLanVisible}"
+                                            ToolTip="Off: only this computer can open the page. On: any device on the observatory network can open it. There is no password; anyone who can reach the page can confirm a target." />
+
+                                        <TextBlock
+                                            Background="Transparent"
+                                            Grid.Row="2"
+                                            Grid.Column="0"
+                                            Margin="0,4,10,4"
+                                            VerticalAlignment="Center"
+                                            Text="Port"
+                                            ToolTip="TCP port for the operator page. If it is already in use the next free port is taken automatically and the address below shows the port actually in use." />
+                                        <TextBox
+                                            IsEnabled="{Binding EnableOperatorPage}"
+                                            Grid.Row="2"
+                                            Grid.Column="1"
+                                            MinWidth="90"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            Text="{Binding OperatorPagePort}"
+                                            ToolTip="TCP port for the operator page. If it is already in use the next free port is taken automatically and the address below shows the port actually in use." />
+
+                                        <TextBlock
+                                            Grid.Row="3"
+                                            Grid.Column="0"
+                                            Margin="0,4,10,4"
+                                            VerticalAlignment="Center"
+                                            Text="Address" />
+                                        <TextBox
+                                            IsEnabled="{Binding EnableOperatorPage}"
+                                            Grid.Row="3"
+                                            Grid.Column="1"
+                                            MinWidth="260"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            FontFamily="Consolas"
+                                            IsReadOnly="True"
+                                            Text="{Binding OperatorPageUrls, Mode=OneWay}"
+                                            TextWrapping="Wrap" />
+
+                                        <WrapPanel
+                                            Grid.Row="4"
+                                            Grid.Column="0"
+                                            Grid.ColumnSpan="2"
+                                            Margin="0,6,0,0">
+                                            <Button
+                                                IsEnabled="{Binding EnableOperatorPage}"
+                                                Height="26"
+                                                MinWidth="120"
+                                                Margin="0,0,6,6"
+                                                Command="{Binding CopyOperatorPageUrlCommand}"
+                                                ToolTip="Copy the address so it can be sent to the operator">
+                                                <TextBlock Padding="10,0" Foreground="{StaticResource ButtonForegroundBrush}" Text="Copy address" />
+                                            </Button>
+                                            <Button
+                                                IsEnabled="{Binding EnableOperatorPage}"
+                                                Height="26"
+                                                MinWidth="120"
+                                                Margin="0,0,6,6"
+                                                Command="{Binding OpenOperatorPageCommand}"
+                                                ToolTip="Open the operator page here to check it works">
+                                                <TextBlock Padding="10,0" Foreground="{StaticResource ButtonForegroundBrush}" Text="Open in browser" />
+                                            </Button>
+                                            <Button
+                                                IsEnabled="{Binding EnableOperatorPage}"
+                                                Height="26"
+                                                MinWidth="150"
+                                                Margin="0,0,6,6"
+                                                Command="{Binding CopyOperatorFirewallRuleCommand}"
+                                                ToolTip="Copy a netsh command an administrator can run once to let other devices reach the page">
+                                                <TextBlock Padding="10,0" Foreground="{StaticResource ButtonForegroundBrush}" Text="Copy firewall rule" />
+                                            </Button>
+                                        </WrapPanel>
+
+                                        <TextBlock
+                                            Grid.Row="5"
+                                            Grid.Column="0"
+                                            Grid.ColumnSpan="2"
+                                            MaxWidth="620"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            Text="Network access needs an inbound firewall rule for the port. Windows shows a security prompt on the first connection and allowing it needs an administrator."
+                                            TextWrapping="Wrap" />
+
+                                        <TextBlock
+                                            Grid.Row="6"
+                                            Grid.Column="0"
+                                            Grid.ColumnSpan="2"
+                                            MaxWidth="620"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            Text="Choose Speckle Manual Telescope as the mount to make every slew wait for the operator to press On Target on that page."
+                                            TextWrapping="Wrap" />
+
+                                    </Grid>
+                                </Expander>
+
+                                <GroupBox Header="Camera diagnostics">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" MinWidth="250" />
+                                        <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+
+                                        <TextBlock
+                                                Background="Transparent"
+                                                Grid.Row="0"
+                                                Grid.Column="0"
+                                                Margin="0,4,10,4"
+                                                VerticalAlignment="Center"
+                                                Text="Benchmark camera performance"
+                                                ToolTip="Measures where the time goes on every frame. Sweeps exposure, region size, binning, USB limit, readout mode and the amount of work done per frame, times every stage and every camera driver call, and writes a report next to the NINA logs. Takes a few minutes, and measures the camera that is connected." />
+                                        <Button
+                                                Grid.Row="0"
+                                                Grid.Column="1"
+                                                Width="36"
+                                                Height="28"
+                                                Margin="0,4"
+                                                HorizontalAlignment="Left"
+                                                VerticalAlignment="Center"
+                                                Command="{Binding RunCameraBenchmarkCommand}"
+                                                ToolTip="Run the benchmark on the camera that is connected now. Progress shows in the Speckle panel and in the log.">
+                                                <Path
+                                                    Width="12"
+                                                    Height="14"
+                                                    Data="M 0,0 L 12,7 L 0,14 Z"
+                                                    Fill="{StaticResource ButtonForegroundBrush}"
+                                                    Stretch="Uniform" />
+                                        </Button>
+                                    </Grid>
+                                </GroupBox>
+
+                                <GroupBox Header="Optics for exposure calculation">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" MinWidth="250" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+
+                                        <TextBlock
+                                            Background="Transparent"
+                                            Grid.Row="0"
+                                            Grid.Column="0"
+                                            Margin="0,4,10,4"
+                                            VerticalAlignment="Center"
+                                            Text="Telescope name"
+                                            ToolTip="Name of the telescope. Used by the speckle exposure time calculation instruction and recorded with its result." />
+                                        <TextBox
+                                            Grid.Row="0"
+                                            Grid.Column="1"
+                                            MinWidth="200"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            Text="{Binding TelescopeName}"
+                                            ToolTip="Name of the telescope. Used by the speckle exposure time calculation instruction and recorded with its result." />
+
+                                        <TextBlock
+                                            Background="Transparent"
+                                            Grid.Row="1"
+                                            Grid.Column="0"
+                                            Margin="0,4,10,4"
+                                            VerticalAlignment="Center"
+                                            Text="Telescope aperture"
+                                            ToolTip="Clear aperture diameter of the telescope, used by the speckle exposure time calculation. Unit mm." />
+                                        <ninactrl:UnitTextBox
+                                            Grid.Row="1"
+                                            Grid.Column="1"
+                                            MinWidth="90"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            Text="{Binding ApertureD}"
+                                            ToolTip="Clear aperture diameter of the telescope, used by the speckle exposure time calculation. Unit mm."
+                                            Unit="mm" />
+
+                                        <TextBlock
+                                            Background="Transparent"
+                                            Grid.Row="2"
+                                            Grid.Column="0"
+                                            Margin="0,4,10,4"
+                                            VerticalAlignment="Center"
+                                            Text="Telescope central obstruction"
+                                            ToolTip="Diameter of the central obstruction, normally the secondary mirror, used by the speckle exposure time calculation. Unit mm." />
+                                        <ninactrl:UnitTextBox
+                                            Grid.Row="2"
+                                            Grid.Column="1"
+                                            MinWidth="90"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            Text="{Binding ObstructionD}"
+                                            ToolTip="Diameter of the central obstruction, normally the secondary mirror, used by the speckle exposure time calculation. Unit mm."
+                                            Unit="mm" />
+
+                                        <TextBlock
+                                            Background="Transparent"
+                                            Grid.Row="3"
+                                            Grid.Column="0"
+                                            Margin="0,4,10,4"
+                                            VerticalAlignment="Center"
+                                            Text="Telescope focal length"
+                                            ToolTip="Focal length of the telescope before any barlow, used by the speckle exposure time calculation. Unit mm." />
+                                        <ninactrl:UnitTextBox
+                                            Grid.Row="3"
+                                            Grid.Column="1"
+                                            MinWidth="90"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            Text="{Binding Focallength}"
+                                            ToolTip="Focal length of the telescope before any barlow, used by the speckle exposure time calculation. Unit mm."
+                                            Unit="mm" />
+
+                                        <TextBlock
+                                            Background="Transparent"
+                                            Grid.Row="4"
+                                            Grid.Column="0"
+                                            Margin="0,4,10,4"
+                                            VerticalAlignment="Center"
+                                            Text="Barlow name"
+                                            ToolTip="Name of the barlow or focal extender in the light path. Recorded with the speckle exposure time calculation." />
+                                        <TextBox
+                                            Grid.Row="4"
+                                            Grid.Column="1"
+                                            MinWidth="200"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            Text="{Binding BarlowName}"
+                                            ToolTip="Name of the barlow or focal extender in the light path. Recorded with the speckle exposure time calculation." />
+
+                                        <TextBlock
+                                            Background="Transparent"
+                                            Grid.Row="5"
+                                            Grid.Column="0"
+                                            Margin="0,4,10,4"
+                                            VerticalAlignment="Center"
+                                            Text="Barlow factor"
+                                            ToolTip="Magnification of the barlow or focal extender. Set 1 when no barlow is fitted. Unit x." />
+                                        <ninactrl:UnitTextBox
+                                            Grid.Row="5"
+                                            Grid.Column="1"
+                                            MinWidth="90"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            Text="{Binding BarlowFactor}"
+                                            ToolTip="Magnification of the barlow or focal extender. Set 1 when no barlow is fitted. Unit x."
+                                            Unit="x" />
+                                    </Grid>
+                                </GroupBox>
+                            </StackPanel>
                         </Grid>
+                            <TextBlock
+                                Margin="6,22,6,0"
+                                HorizontalAlignment="Left"
+                                FontSize="17"
+                                FontWeight="SemiBold"
+                                Foreground="{StaticResource PrimaryBrush}"
+                                Text="Two cameras" />
+                            <TextBlock
+                                MaxWidth="720"
+                                Margin="6,10,6,16"
+                                HorizontalAlignment="Left"
+                                Style="{StaticResource TabIntroText}"
+                                Text="A wide field camera and a science camera behind a flip mirror that NINA drives as a focuser, one focuser position per camera." />
+                            <StackPanel Orientation="Vertical">
+                                        <GroupBox Header="Two camera setup">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto" MinWidth="250" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                                                            <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+                                                <TextBlock
+                                                    Background="Transparent"
+                                                    Grid.Row="0"
+                                                    Grid.Column="0"
+                                                    Margin="0,4,10,4"
+                                                    VerticalAlignment="Center"
+                                                    Text="Two camera setup"
+                                                    ToolTip="When on, the run switches between a wide field camera and the science camera using the profiles and flip mirror positions below." />
+                                                <CheckBox
+                                                    Grid.Row="0"
+                                                    Grid.Column="1"
+                                                    MinWidth="80"
+                                                    Margin="0,4"
+                                                    HorizontalAlignment="Left"
+                                                    VerticalAlignment="Center"
+                                                    IsChecked="{Binding DualCameraSetup}"
+                                                    ToolTip="When on, the run switches between a wide field camera and the science camera using the profiles and flip mirror positions below." />
+
+                                                <TextBlock
+                                                    Background="Transparent"
+                                                    Grid.Row="1"
+                                                    Grid.Column="0"
+                                                    Margin="0,4,10,4"
+                                                    VerticalAlignment="Center"
+                                                    Text="Wide field camera name"
+                                                    ToolTip="The camera this light path always uses. Connect that camera, then press the button. The run refuses to image if a different camera is connected." />
+                                                <StackPanel
+                                                    Grid.Row="1"
+                                                    Grid.Column="1"
+                                                    Margin="0,4"
+                                                    Orientation="Horizontal">
+                                                    <TextBox
+                                                        IsEnabled="{Binding DualCameraSetup}"
+                                                        Width="220"
+                                                        Height="26"
+                                                        Padding="6,0"
+                                                        Margin="0,0,10,0"
+                                                        VerticalContentAlignment="Center"
+                                                        Text="{Binding WideCameraName, UpdateSourceTrigger=LostFocus}"
+                                                        ToolTip="Type the camera name exactly as NINA shows it, or press the button with that camera connected." />
+                                                    <Button
+                                                        IsEnabled="{Binding DualCameraSetup}"
+                                                        Height="26"
+                                                        MinWidth="200"
+                                                        Command="{Binding UseConnectedWideCameraCommand}"
+                                                        ToolTip="Pin this light path to the camera that is connected right now">
+                                                        <TextBlock Padding="10,0" Foreground="{StaticResource ButtonForegroundBrush}" Text="Use the camera connected now" />
+                                                    </Button>
+                                                </StackPanel>
+
+                                                <TextBlock
+                                                    Background="Transparent"
+                                                    Grid.Row="2"
+                                                    Grid.Column="0"
+                                                    Margin="0,4,10,4"
+                                                    VerticalAlignment="Center"
+                                                    Text="Science camera name"
+                                                    ToolTip="The camera this light path always uses. Connect that camera, then press the button. The run refuses to image if a different camera is connected." />
+                                                <StackPanel
+                                                    Grid.Row="2"
+                                                    Grid.Column="1"
+                                                    Margin="0,4"
+                                                    Orientation="Horizontal">
+                                                    <TextBox
+                                                        IsEnabled="{Binding DualCameraSetup}"
+                                                        Width="220"
+                                                        Height="26"
+                                                        Padding="6,0"
+                                                        Margin="0,0,10,0"
+                                                        VerticalContentAlignment="Center"
+                                                        Text="{Binding ScienceCameraName, UpdateSourceTrigger=LostFocus}"
+                                                        ToolTip="Type the camera name exactly as NINA shows it, or press the button with that camera connected." />
+                                                    <Button
+                                                        IsEnabled="{Binding DualCameraSetup}"
+                                                        Height="26"
+                                                        MinWidth="200"
+                                                        Command="{Binding UseConnectedScienceCameraCommand}"
+                                                        ToolTip="Pin this light path to the camera that is connected right now">
+                                                        <TextBlock Padding="10,0" Foreground="{StaticResource ButtonForegroundBrush}" Text="Use the camera connected now" />
+                                                    </Button>
+                                                </StackPanel>
+
+                                                    <TextBlock
+                                                    Background="Transparent"
+                                                    Grid.Row="3"
+                                                    Grid.Column="0"
+                                                    Margin="0,4,10,4"
+                                                    VerticalAlignment="Center"
+                                                    Text="Wide field north angle"
+                                                    ToolTip="Degrees to turn the compass so that north on the wide field image points the right way. Mirrored puts east on the right, which happens when the light path flips the field." />
+                                                <StackPanel
+                                                    Grid.Row="3"
+                                                    Grid.Column="1"
+                                                    Margin="0,4"
+                                                    Orientation="Horizontal">
+                                                    <ninactrl:UnitTextBox
+                                                        MinWidth="90"
+                                                        Margin="0,0,10,0"
+                                                        VerticalAlignment="Center"
+                                                        Text="{Binding WideCompassAngle}"
+                                                        Unit="deg" />
+                                                    <CheckBox
+                                                        VerticalAlignment="Center"
+                                                        Content="Mirrored"
+                                                        IsChecked="{Binding WideCompassMirrored}" />
+                                                </StackPanel>
+
+                                                <TextBlock
+                                                    Background="Transparent"
+                                                    Grid.Row="4"
+                                                    Grid.Column="0"
+                                                    Margin="0,4,10,4"
+                                                    VerticalAlignment="Center"
+                                                    Text="Science north angle"
+                                                    ToolTip="Degrees to turn the compass so that north on the science image points the right way. Mirrored puts east on the right, which happens when the light path flips the field." />
+                                                <StackPanel
+                                                    Grid.Row="4"
+                                                    Grid.Column="1"
+                                                    Margin="0,4"
+                                                    Orientation="Horizontal">
+                                                    <ninactrl:UnitTextBox
+                                                        IsEnabled="{Binding DualCameraSetup}"
+                                                        MinWidth="90"
+                                                        Margin="0,0,10,0"
+                                                        VerticalAlignment="Center"
+                                                        Text="{Binding ScienceCompassAngle}"
+                                                        Unit="deg" />
+                                                    <CheckBox
+                                                        IsEnabled="{Binding DualCameraSetup}"
+                                                        VerticalAlignment="Center"
+                                                        Content="Mirrored"
+                                                        IsChecked="{Binding ScienceCompassMirrored}" />
+                                                </StackPanel>
+
+                                                <TextBlock
+                                                    Background="Transparent"
+                                                    Grid.Row="5"
+                                                    Grid.Column="0"
+                                                    Margin="0,4,10,4"
+                                                    VerticalAlignment="Center"
+                                                    Text="Wide field camera profile id"
+                                                    ToolTip="Id of the NINA profile that is activated for the wide field camera. Leave empty to stay on the current profile." />
+                                                <TextBox
+                                                    IsEnabled="{Binding DualCameraSetup}"
+                                                    Grid.Row="5"
+                                                    Grid.Column="1"
+                                                    MinWidth="280"
+                                                    Margin="0,4"
+                                                    HorizontalAlignment="Left"
+                                                    VerticalAlignment="Center"
+                                                    Text="{Binding WideProfileId}"
+                                                    ToolTip="Id of the NINA profile that is activated for the wide field camera. Leave empty to stay on the current profile." />
+
+                                                <TextBlock
+                                                    Background="Transparent"
+                                                    Grid.Row="6"
+                                                    Grid.Column="0"
+                                                    Margin="0,4,10,4"
+                                                    VerticalAlignment="Center"
+                                                    Text="Wide field flip mirror position"
+                                                    ToolTip="Focuser position that puts the flip mirror into the wide field light path. Unit focuser steps." />
+                                                <ninactrl:UnitTextBox
+                                                    IsEnabled="{Binding DualCameraSetup}"
+                                                    Grid.Row="6"
+                                                    Grid.Column="1"
+                                                    MinWidth="90"
+                                                    Margin="0,4"
+                                                    HorizontalAlignment="Left"
+                                                    VerticalAlignment="Center"
+                                                    Text="{Binding WideMirrorPosition}"
+                                                    ToolTip="Focuser position that puts the flip mirror into the wide field light path. Unit focuser steps."
+                                                    Unit="steps" />
+
+                                                <TextBlock
+                                                    Background="Transparent"
+                                                    Grid.Row="7"
+                                                    Grid.Column="0"
+                                                    Margin="0,4,10,4"
+                                                    VerticalAlignment="Center"
+                                                    Text="Science camera profile id"
+                                                    ToolTip="Id of the NINA profile that is activated for the science camera. Leave empty to stay on the current profile." />
+                                                <TextBox
+                                                    IsEnabled="{Binding DualCameraSetup}"
+                                                    Grid.Row="7"
+                                                    Grid.Column="1"
+                                                    MinWidth="280"
+                                                    Margin="0,4"
+                                                    HorizontalAlignment="Left"
+                                                    VerticalAlignment="Center"
+                                                    Text="{Binding ScienceProfileId}"
+                                                    ToolTip="Id of the NINA profile that is activated for the science camera. Leave empty to stay on the current profile." />
+
+                                                <TextBlock
+                                                    Background="Transparent"
+                                                    Grid.Row="8"
+                                                    Grid.Column="0"
+                                                    Margin="0,4,10,4"
+                                                    VerticalAlignment="Center"
+                                                    Text="Science flip mirror position"
+                                                    ToolTip="Focuser position that puts the flip mirror into the science light path. Unit focuser steps." />
+                                                <ninactrl:UnitTextBox
+                                                    IsEnabled="{Binding DualCameraSetup}"
+                                                    Grid.Row="8"
+                                                    Grid.Column="1"
+                                                    MinWidth="90"
+                                                    Margin="0,4"
+                                                    HorizontalAlignment="Left"
+                                                    VerticalAlignment="Center"
+                                                    Text="{Binding ScienceMirrorPosition}"
+                                                    ToolTip="Focuser position that puts the flip mirror into the science light path. Unit focuser steps."
+                                                    Unit="steps" />
+                                            </Grid>
+                                        </GroupBox>
+                            </StackPanel>
+
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem.Content>
+            </TabItem>
+
+            <TabItem>
+                <TabItem.Header>
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition />
+                            <RowDefinition Height="10" />
+                        </Grid.RowDefinitions>
+                        <Grid Width="40" Height="40">
+                            <Path
+                                Margin="5"
+                                Data="{StaticResource NotepadSVG}"
+                                Stretch="Uniform"
+                                Style="{StaticResource TabItemPath}" />
+                        </Grid>
+                        <TextBlock
+                            Background="Transparent"
+                            Grid.Row="1"
+                            Style="{StaticResource SideBarTextBlock}"
+                            Text="Documentation" />
+                    </Grid>
+                </TabItem.Header>
+                <TabItem.Content>
+                    <Grid Margin="0,4,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" MinWidth="220" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <ListBox
+                            Grid.Column="0"
+                            Margin="0,0,10,0"
+                            Background="Transparent"
+                            BorderBrush="{StaticResource BorderBrush}"
+                            BorderThickness="0,0,1,0"
+                            DisplayMemberPath="Title"
+                            Foreground="{StaticResource PrimaryBrush}"
+                            ItemsSource="{Binding DocSections}"
+                            ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                            ScrollViewer.VerticalScrollBarVisibility="Auto"
+                            SelectedItem="{Binding SelectedDocSection, Mode=TwoWay}"
+                            ToolTip="Chapters of the manual. Select one to read it on the right.">
+                            <ListBox.ItemContainerStyle>
+                                <Style TargetType="{x:Type ListBoxItem}">
+                                    <Setter Property="Padding" Value="8,6" />
+                                    <Setter Property="Background" Value="Transparent" />
+                                    <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}" />
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                    <Setter Property="ToolTip" Value="Read this chapter of the manual." />
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                                                <Border
+                                                    x:Name="ItemBorder"
+                                                    Padding="{TemplateBinding Padding}"
+                                                    Background="{TemplateBinding Background}">
+                                                    <ContentPresenter />
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="ItemBorder" Property="Background" Value="{StaticResource SecondaryBackgroundBrush}" />
+                                                    </Trigger>
+                                                    <Trigger Property="IsSelected" Value="True">
+                                                        <Setter TargetName="ItemBorder" Property="Background" Value="{StaticResource TertiaryBackgroundBrush}" />
+                                                        <Setter Property="FontWeight" Value="SemiBold" />
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </ListBox.ItemContainerStyle>
+                        </ListBox>
+
+                        <ScrollViewer
+                            Grid.Column="1"
+                            HorizontalScrollBarVisibility="Disabled"
+                            VerticalScrollBarVisibility="Auto">
+                            <TextBox
+                                Padding="4,0,10,10"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                FontFamily="Consolas"
+                                Foreground="{StaticResource PrimaryBrush}"
+                                IsReadOnly="True"
+                                Text="{Binding SelectedDocSection.Content, Mode=OneWay}"
+                                TextWrapping="Wrap" />
+                        </ScrollViewer>
                     </Grid>
                 </TabItem.Content>
             </TabItem>
         </TabControl>
-
-
     </DataTemplate>
 </ResourceDictionary>

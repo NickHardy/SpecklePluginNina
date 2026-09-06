@@ -1,7 +1,7 @@
 #region "copyright"
 
 /*
-    Copyright © 2016 - 2021 Stefan Berg <isbeorn86+NINA@googlemail.com> and the N.I.N.A. contributors
+    Copyright Â© 2016 - 2021 Stefan Berg <isbeorn86+NINA@googlemail.com> and the N.I.N.A. contributors
 
     This file is part of N.I.N.A. - Nighttime Imaging 'N' Astronomy.
 
@@ -23,7 +23,6 @@ using System.Windows.Data;
 
 namespace NINA.Plugin.Speckle.Locale {
 
-    // This is not in use yet. I was hoping to make it intenational, but Nina is not ready for that yet.
 
     [Export(typeof(ILoc))]
     [JsonObject(MemberSerialization.OptIn)]

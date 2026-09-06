@@ -12,39 +12,25 @@
 
 #endregion "copyright"
 
-using Dasync.Collections;
 using Newtonsoft.Json;
-using NINA.Astrometry;
 using NINA.Core.Locale;
 using NINA.Core.Model;
 using NINA.Core.Model.Equipment;
-using NINA.Core.Utility;
 using NINA.Equipment.Equipment.MyCamera;
-using NINA.Equipment.Equipment.MyFilterWheel;
-using NINA.Equipment.Equipment.MyFocuser;
-using NINA.Equipment.Equipment.MyRotator;
 using NINA.Equipment.Equipment.MyTelescope;
-using NINA.Equipment.Equipment.MyWeatherData;
 using NINA.Equipment.Interfaces.Mediator;
 using NINA.Equipment.Model;
-using NINA.Equipment.Utility;
-using NINA.Image.FileFormat;
-using NINA.Image.ImageData;
 using NINA.Plugin.Speckle.Sequencer.Utility;
+using NINA.Plugin.Speckle.Services;
 using NINA.Profile.Interfaces;
-using NINA.Sequencer.Container;
 using NINA.Sequencer.Interfaces;
 using NINA.Sequencer.SequenceItem;
 using NINA.Sequencer.Validations;
-using NINA.WPF.Base.Interfaces.Mediator;
-using NINA.WPF.Base.Interfaces.ViewModel;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel.Composition;
-using System.Diagnostics;
 using System.IO;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -56,59 +42,30 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
     [ExportMetadata("Category", "Speckle Interferometry")]
     [Export(typeof(ISequenceItem))]
     [JsonObject(MemberSerialization.OptIn)]
-    public class TakeLiveExposures : NINA.Sequencer.SequenceItem.SequenceItem, IExposureItem, IValidatable, ICameraConsumer, ITelescopeConsumer, IFilterWheelConsumer, IFocuserConsumer, IRotatorConsumer, IWeatherDataConsumer {
+    public class TakeLiveExposures : NINA.Sequencer.SequenceItem.SequenceItem, IExposureItem, IValidatable {
         private ICameraMediator cameraMediator;
-        private IImagingMediator imagingMediator;
-        private IImageSaveMediator imageSaveMediator;
-        private IImageHistoryVM imageHistoryVM;
         private IProfileService profileService;
-        private IFilterWheelMediator filterWheelMediator;
-        private FilterWheelInfo filterWheelInfo;
-        private IFocuserMediator focuserMediator;
-        private FocuserInfo focuserInfo;
         private ITelescopeMediator telescopeMediator;
-        private IRotatorMediator rotatorMediator;
-        private RotatorInfo rotatorInfo;
-        private WeatherDataInfo weatherDataInfo;
-        private IWeatherDataMediator weatherDataMediator;
-        private IOptionsVM options;
+        private ISpeckleOptionsProvider optionsProvider;
+        private ISpeckleAcquisitionService acquisitionService;
         private Speckle speckle;
 
         [ImportingConstructor]
-        public TakeLiveExposures(IProfileService profileService, ICameraMediator cameraMediator, IImagingMediator imagingMediator, IImageSaveMediator imageSaveMediator, IImageHistoryVM imageHistoryVM, IFilterWheelMediator filterWheelMediator, IOptionsVM options, ITelescopeMediator telescopeMediator, IFocuserMediator focuserMediator, IRotatorMediator rotatorMediator, IWeatherDataMediator weatherDataMediator) {
+        public TakeLiveExposures(IProfileService profileService, ICameraMediator cameraMediator, ITelescopeMediator telescopeMediator, ISpeckleOptionsProvider optionsProvider, ISpeckleAcquisitionService acquisitionService) {
             Gain = -1;
             Offset = -1;
             ExposureTimeMultiplier = 1;
             AutoUpdate = true;
             ImageType = CaptureSequence.ImageTypes.LIGHT;
-            this.imagingMediator = imagingMediator;
-            this.imageSaveMediator = imageSaveMediator;
-            this.imageHistoryVM = imageHistoryVM;
             this.profileService = profileService;
-
             this.cameraMediator = cameraMediator;
-            this.cameraMediator.RegisterConsumer(this);
-
             this.telescopeMediator = telescopeMediator;
-            this.telescopeMediator.RegisterConsumer(this);
-
-            this.filterWheelMediator = filterWheelMediator;
-            this.filterWheelMediator.RegisterConsumer(this);
-
-            this.focuserMediator = focuserMediator;
-            this.focuserMediator.RegisterConsumer(this);
-
-            this.rotatorMediator = rotatorMediator;
-            this.rotatorMediator.RegisterConsumer(this);
-
-            this.weatherDataMediator = weatherDataMediator;
-            this.weatherDataMediator.RegisterConsumer(this);
-
-            this.options = options;
-            speckle = new Speckle(profileService);
+            this.optionsProvider = optionsProvider;
+            this.acquisitionService = acquisitionService;
+            speckle = optionsProvider.Current;
         }
 
-        private TakeLiveExposures(TakeLiveExposures cloneMe) : this(cloneMe.profileService, cloneMe.cameraMediator, cloneMe.imagingMediator, cloneMe.imageSaveMediator, cloneMe.imageHistoryVM, cloneMe.filterWheelMediator, cloneMe.options, cloneMe.telescopeMediator, cloneMe.focuserMediator, cloneMe.rotatorMediator, cloneMe.weatherDataMediator) {
+        private TakeLiveExposures(TakeLiveExposures cloneMe) : this(cloneMe.profileService, cloneMe.cameraMediator, cloneMe.telescopeMediator, cloneMe.optionsProvider, cloneMe.acquisitionService) {
             CopyMetaData(cloneMe);
         }
 
@@ -227,9 +184,9 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
                     _imageTypes = new ObservableCollection<string>();
 
                     Type type = typeof(CaptureSequence.ImageTypes);
-                    foreach (var p in type.GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)) {
-                        var v = p.GetValue(null);
-                        _imageTypes.Add(v.ToString());
+                    foreach (var field in type.GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)) {
+                        var imageType = field.GetValue(null);
+                        _imageTypes.Add(imageType.ToString());
                     }
                 }
                 return _imageTypes;
@@ -243,220 +200,63 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
         public override async Task Execute(IProgress<ApplicationStatus> progress, CancellationToken token) {
             var targetContainer = ItemUtility.RetrieveSpeckleContainer(Parent);
             ExposureCount = 1;
-            var capture = new CaptureSequence() {
+            var speckleTarget = ItemUtility.RetrieveSpeckleTarget(Parent);
+            var genericHeaders = SpeckleMetadataBuilder.ResolveGenericHeaders(speckleTarget, targetContainer.IsRef, speckle);
+            TelescopeInfo = this.telescopeMediator.GetInfo();
+
+            var request = new RoiSeriesRequest {
+                Mode = RoiSeriesMode.Video,
                 ExposureTime = ExposureTime * ExposureTimeMultiplier,
-                Binning = Binning,
+                TotalExposureCount = TotalExposureCount,
                 Gain = Gain,
                 Offset = Offset,
+                Binning = Binning,
                 ImageType = ImageType,
-                ProgressExposureCount = ExposureCount,
-                TotalExposureCount = TotalExposureCount,
                 EnableSubSample = targetContainer.EnableSubSample,
-                SubSambleRectangle = ItemUtility.RetrieveSpeckleTargetRoi(Parent),
+                SubSampleRectangle = ItemUtility.RetrieveSpeckleTargetRoi(Parent),
+                Target = targetContainer.Target,
+                Title = targetContainer.Title,
+                SpeckleRun = targetContainer.SpeckleRun,
+                GenericHeaders = genericHeaders,
+                OnFrame = count => ExposureCount = count
             };
 
-            var imageParams = new PrepareImageParameters(null, false);
-            if (IsLightSequence()) {
-                imageParams = new PrepareImageParameters(true, false);
-            }
-
-            List<ImagePattern> customPatterns = new List<ImagePattern>();
-            customPatterns.Add(new ImagePattern(speckle.notePattern.Key, speckle.notePattern.Description, speckle.notePattern.Category) {
-                Value = string.Empty
-            });
-            customPatterns.Add(new ImagePattern(speckle.speckleRunPattern.Key, speckle.speckleRunPattern.Description, speckle.speckleRunPattern.Category) {
-                Value = $"{targetContainer.SpeckleRun}"
-            });
-
-            var target = targetContainer.Target;
-            var title = targetContainer.Title;
-            var speckleTarget = ItemUtility.RetrieveSpeckleTarget(Parent);
-            var genericHeaders = targetContainer.IsRef ? speckleTarget.ReferenceStar.GenericHeaders() : speckleTarget?.GenericHeaders(speckle.SaveCsvToFitsHeader);
-            if (genericHeaders != null)
-                ItemUtility.AddImagePatterns(customPatterns, speckle, genericHeaders);
-
-            bool _firstImage = true;
-
-            var localCTS = CancellationTokenSource.CreateLinkedTokenSource(token);
-
-            var liveViewEnumerable = cameraMediator.LiveView(capture, localCTS.Token);
-            Stopwatch seqDuration = Stopwatch.StartNew();
-            await liveViewEnumerable.ForEachAsync(async exposureData => {
-                token.ThrowIfCancellationRequested();
-                if (exposureData != null) {
-                    if (_firstImage) { 
-                        _firstImage = false;
-                        seqDuration = Stopwatch.StartNew();
-                        return; 
-                    }
-                    var imageData = await exposureData.ToImageData(progress, localCTS.Token);
-
-                    imageData.MetaData.Sequence.Title = title;
-                    imageData.MetaData.GenericHeaders.Add(new StringMetaDataHeader("SPECRUN", $"{targetContainer.SpeckleRun}", "Speckle run"));
-                    AddMetaData(imageData.MetaData, target, ItemUtility.RetrieveSpeckleTargetRoi(Parent));
-                    if (genericHeaders != null)
-                        imageData.MetaData.GenericHeaders.AddRange(genericHeaders);
-
-                    // Only show first and last image in Imaging window and every nth image
-                    if (ExposureCount == 1 || ExposureCount % speckle.ShowEveryNthImage == 0 || ExposureCount == TotalExposureCount) {
-                        _ = Task.Run(async () => {
-                            _ = imagingMediator.PrepareImage(imageData, imageParams, token);
-                        });
-                    }
-
-                    _ = Task.Run(async () => {
-                        //var result = imageData.SaveToDisk(new FileSaveInfo(profileService), token);
-                        FileSaveInfo fileSaveInfo = new FileSaveInfo(profileService);
-                        string tempPath = await imageData.PrepareSave(fileSaveInfo);
-                        _ = imageData.FinalizeSave(tempPath, fileSaveInfo.FilePattern, customPatterns);
-                    });
-
-                    if (ExposureCount >= TotalExposureCount) {
-                        double fps = ExposureCount / (((double)seqDuration.ElapsedMilliseconds) / 1000);
-                        Logger.Info("Captured " + ExposureCount + " times " + ExposureTime * ExposureTimeMultiplier + "s live images in " + seqDuration.ElapsedMilliseconds + " ms. : " + Math.Round(fps, 2) + " fps");
-                        localCTS.Cancel();
-                    } else { ExposureCount++; }
-                }
-            });
-
-            // wait till camera reconnects. Specifically for QHY camera's
-            Thread.Sleep(100);
-            while (!cameraInfo.Connected) {
-                token.ThrowIfCancellationRequested();
-                Thread.Sleep(100);
-            }
-        }
-
-        private void AddMetaData(
-            ImageMetaData metaData,
-            InputTarget target,
-            ObservableRectangle subSambleRectangle) {
-
-            if (target != null) {
-                metaData.Target.Name = target.DeepSkyObject?.NameAsAscii;
-                metaData.Target.Coordinates = target.InputCoordinates.Coordinates;
-                metaData.Target.PositionAngle = target.PositionAngle;
-            }
-            metaData.Image.ExposureStart = DateTime.Now - TimeSpan.FromSeconds(ExposureTime * ExposureTimeMultiplier);
-            metaData.Image.ExposureNumber = ExposureCount;
-            metaData.Image.ExposureTime = ExposureTime * ExposureTimeMultiplier;
-
-            metaData.Image.ImageType = ImageType;
-
-            // Fill all available info from profile
-            metaData.FromProfile(profileService.ActiveProfile);
-            metaData.FromCameraInfo(CameraInfo);
-            metaData.FromTelescopeInfo(telescopeInfo);
-            metaData.FromFilterWheelInfo(filterWheelInfo);
-            metaData.FromRotatorInfo(rotatorInfo);
-            metaData.FromFocuserInfo(focuserInfo);
-            metaData.FromWeatherDataInfo(weatherDataInfo);
-
-            if (metaData.Target.Coordinates == null || double.IsNaN(metaData.Target.Coordinates.RA))
-                metaData.Target.Coordinates = metaData.Telescope.Coordinates;
-
-            Assembly assembly = Assembly.GetExecutingAssembly();
-            metaData.GenericHeaders.Add(new StringMetaDataHeader("PLCREATE", "Speckle-" + assembly.GetName().Version.ToString(), "The plugin used to create this file."));
-
-            metaData.GenericHeaders.Add(new StringMetaDataHeader("CAMERA", CameraInfo.Name));
-
-            metaData.GenericHeaders.Add(new DoubleMetaDataHeader("ROIX", subSambleRectangle.X, "X-position of the ROI"));
-            metaData.GenericHeaders.Add(new DoubleMetaDataHeader("ROIY", subSambleRectangle.Y, "Y-position of the ROI"));
-            metaData.GenericHeaders.Add(new DoubleMetaDataHeader("XORGSUBF", subSambleRectangle.X, "X-position of the ROI"));
-            metaData.GenericHeaders.Add(new DoubleMetaDataHeader("YORGSUBF", subSambleRectangle.Y, "Y-position of the ROI"));
-
-            metaData.GenericHeaders.Add(new DoubleMetaDataHeader("JD-END", AstroUtil.GetJulianDate(DateTime.Now), "Julian exposure end date"));
-            metaData.GenericHeaders.Add(new DoubleMetaDataHeader("JD-BEG", AstroUtil.GetJulianDate(metaData.Image.ExposureStart), "Julian exposure start date"));
-            metaData.GenericHeaders.Add(new DoubleMetaDataHeader("JD-OBS", AstroUtil.GetJulianDate(metaData.Image.ExposureStart.AddSeconds(ExposureTime * ExposureTimeMultiplier / 2)), "Julian exposure mid date"));
-        }
-        private bool IsLightSequence() {
-            return ImageType == CaptureSequence.ImageTypes.SNAPSHOT || ImageType == CaptureSequence.ImageTypes.LIGHT;
+            var result = await acquisitionService.RunRoiSeriesAsync(request, progress, token);
+            ExposureCount = result.FramesCaptured;
+            await result.PendingSaves;
         }
 
         public override void AfterParentChanged() {
             Validate();
         }
 
-        private InputTarget RetrieveTarget(ISequenceContainer parent) {
-            if (parent != null) {
-                var container = parent as IDeepSkyObjectContainer;
-                if (container != null) {
-                    return container.Target;
-                } else {
-                    return RetrieveTarget(parent.Parent);
-                }
-            } else {
-                return null;
-            }
-        }
-
         public bool Validate() {
-            var i = new List<string>();
+            var issues = new List<string>();
             CameraInfo = this.cameraMediator.GetInfo();
             if (!CameraInfo.Connected) {
-                i.Add(Loc.Instance["LblCameraNotConnected"]);
+                issues.Add(Loc.Instance["LblCameraNotConnected"]);
             } else {
                 if (CameraInfo.CanSetGain && Gain > -1 && (Gain < CameraInfo.GainMin || Gain > CameraInfo.GainMax)) {
-                    i.Add(string.Format(Loc.Instance["Lbl_SequenceItem_Imaging_TakeExposure_Validation_Gain"], CameraInfo.GainMin, CameraInfo.GainMax, Gain));
+                    issues.Add(string.Format(Loc.Instance["Lbl_SequenceItem_Imaging_TakeExposure_Validation_Gain"], CameraInfo.GainMin, CameraInfo.GainMax, Gain));
                 }
                 if (CameraInfo.CanSetOffset && Offset > -1 && (Offset < CameraInfo.OffsetMin || Offset > CameraInfo.OffsetMax)) {
-                    i.Add(string.Format(Loc.Instance["Lbl_SequenceItem_Imaging_TakeExposure_Validation_Offset"], CameraInfo.OffsetMin, CameraInfo.OffsetMax, Offset));
+                    issues.Add(string.Format(Loc.Instance["Lbl_SequenceItem_Imaging_TakeExposure_Validation_Offset"], CameraInfo.OffsetMin, CameraInfo.OffsetMax, Offset));
                 }
             }
             if (ItemUtility.RetrieveSpeckleContainer(Parent) == null && ItemUtility.RetrieveSpeckleListContainer(Parent) == null) {
-                i.Add("This instruction only works within a SpeckleTargetContainer.");
+                issues.Add("This instruction only works within a SpeckleTargetContainer.");
             }
 
             var fileSettings = profileService.ActiveProfile.ImageFileSettings;
 
             if (string.IsNullOrWhiteSpace(fileSettings.FilePath)) {
-                i.Add(Loc.Instance["Lbl_SequenceItem_Imaging_TakeExposure_Validation_FilePathEmpty"]);
+                issues.Add(Loc.Instance["Lbl_SequenceItem_Imaging_TakeExposure_Validation_FilePathEmpty"]);
             } else if (!Directory.Exists(fileSettings.FilePath)) {
-                i.Add(Loc.Instance["Lbl_SequenceItem_Imaging_TakeExposure_Validation_FilePathInvalid"]);
+                issues.Add(Loc.Instance["Lbl_SequenceItem_Imaging_TakeExposure_Validation_FilePathInvalid"]);
             }
 
-            Issues = i;
-            return i.Count == 0;
-        }
-        public void UpdateDeviceInfo(CameraInfo cameraStatus) {
-            CameraInfo = cameraStatus;
-        }
-
-        public void UpdateDeviceInfo(TelescopeInfo deviceInfo) {
-            this.telescopeInfo = deviceInfo;
-        }
-
-        public void UpdateDeviceInfo(FilterWheelInfo deviceInfo) {
-            this.filterWheelInfo = deviceInfo;
-        }
-
-        public void UpdateDeviceInfo(FocuserInfo deviceInfo) {
-            this.focuserInfo = deviceInfo;
-        }
-
-        public void UpdateDeviceInfo(RotatorInfo deviceInfo) {
-            this.rotatorInfo = deviceInfo;
-        }
-
-        public void UpdateDeviceInfo(WeatherDataInfo deviceInfo) {
-            this.weatherDataInfo = deviceInfo;
-        }
-
-        public void UpdateEndAutoFocusRun(AutoFocusInfo info) {
-            ;
-        }
-
-        public void UpdateUserFocused(FocuserInfo info) {
-            ;
-        }
-
-        public void Dispose() {
-            this.cameraMediator.RemoveConsumer(this);
-            this.telescopeMediator.RemoveConsumer(this);
-            this.filterWheelMediator.RemoveConsumer(this);
-            this.focuserMediator.RemoveConsumer(this);
-            this.rotatorMediator.RemoveConsumer(this);
-            this.weatherDataMediator.RemoveConsumer(this);
+            Issues = issues;
+            return issues.Count == 0;
         }
 
         public override TimeSpan GetEstimatedDuration() {

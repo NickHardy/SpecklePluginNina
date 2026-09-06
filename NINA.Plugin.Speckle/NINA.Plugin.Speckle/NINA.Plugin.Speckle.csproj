@@ -6,17 +6,33 @@
     <TargetFramework>net8.0-windows</TargetFramework>
     <OutputType>Library</OutputType>
     <AssemblyName>SpeckleInterferometry</AssemblyName>
+    <Version>3.1.0.31</Version>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <UseWindowsForms>true</UseWindowsForms>
     <UseWPF>true</UseWPF>
     <ImportWindowsDesktopTargets>true</ImportWindowsDesktopTargets>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CsvHelper" Version="31.0.2" />
-    <PackageReference Include="NINA.Plugin" Version="3.0.0.9001" />
+    <PackageReference Include="CsvHelper" Version="33.1.0" />
+    <PackageReference Include="NINA.Plugin" Version="3.2.0.9001" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="ReachFramework" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Dockables\Sounds\slew.wav">
+      <LogicalName>SpeckleSlew.wav</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Web\operator.html">
+      <LogicalName>SpeckleOperator.html</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Web\background.jpg">
+      <LogicalName>SpeckleOperator.jpg</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Documentation\*.txt" />
+    <EmbeddedResource Include="Demo\*.spk" />
   </ItemGroup>
   <ItemGroup>
     <Compile Update="Properties\Settings.Designer.cs">

@@ -193,7 +193,7 @@
                                     <TextBlock
                                         VerticalAlignment="Center"
                                         Foreground="{StaticResource ButtonForegroundBrush}"
-                                        Text="°" />
+                                        Text="deg" />
                                     <StackPanel.Style>
                                         <Style TargetType="StackPanel">
                                             <Style.Triggers>
@@ -454,7 +454,7 @@
                                         </Binding>
                                     </TextBox.Text>
                                 </TextBox>
-                                <TextBlock VerticalAlignment="Center">°</TextBlock>
+                                <TextBlock VerticalAlignment="Center">deg</TextBlock>
                             </StackPanel>
                             
                             <StackPanel
@@ -599,7 +599,6 @@
 
     <DataTemplate DataType="{x:Type local:SpeckleTargetListContainer}">
         <DataTemplate.Resources>
-            <!-- This is not working yet -->
             <ContextMenu  x:Key="RowMenu" DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
                 <MenuItem Header="Load target" CommandParameter="{Binding}" Command="{Binding LoadTargetCommand}" />
                 <MenuItem Header="Delete target" CommandParameter="{Binding}" Command="{Binding DeleteTargetCommand}" />

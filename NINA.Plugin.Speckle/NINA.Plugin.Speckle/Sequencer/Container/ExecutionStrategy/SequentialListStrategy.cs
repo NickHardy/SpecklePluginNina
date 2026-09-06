@@ -75,8 +75,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container.ExecutionStrategy {
                     }
                 }
 
-                //Mark rest of items as skipped
-                foreach (var item in context.GetItemsSnapshot().Where(x => x.Status == SequenceEntityStatus.CREATED)) {
+                foreach (var item in context.GetItemsSnapshot().Where(entry => entry.Status == SequenceEntityStatus.CREATED)) {
                     item.Skip();
                 }
             } finally {
@@ -124,7 +123,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container.ExecutionStrategy {
 
         private (ISequenceItem, bool) GetNextItem(ISequenceContainer context, ISequenceItem previous) {
             var items = context.GetItemsSnapshot();
-            var next = items.FirstOrDefault(x => x.Status == SequenceEntityStatus.CREATED);
+            var next = items.FirstOrDefault(entry => entry.Status == SequenceEntityStatus.CREATED);
 
             var listContainer = context as SpeckleTargetListContainer;
             if (next == null && listContainer != null) {
@@ -206,7 +205,7 @@ namespace NINA.Plugin.Speckle.Sequencer.Container.ExecutionStrategy {
         private bool CanContinue(ISequenceContainer container, ISequenceItem previousItem, ISequenceItem nextItem) {
             var conditionable = container as IConditionable;
             var canContinue = false;
-            var conditions = conditionable?.GetConditionsSnapshot()?.Where(x => x.Status != SequenceEntityStatus.DISABLED).ToList();
+            var conditions = conditionable?.GetConditionsSnapshot()?.Where(entry => entry.Status != SequenceEntityStatus.DISABLED).ToList();
             if (conditions != null && conditions.Count > 0) {
                 canContinue = conditionable.CheckConditions(previousItem, nextItem);
             } else {

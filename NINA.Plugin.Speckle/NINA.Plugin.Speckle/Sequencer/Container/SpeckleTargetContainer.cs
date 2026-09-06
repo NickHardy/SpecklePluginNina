@@ -60,7 +60,6 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
         private readonly IApplicationMediator applicationMediator;
         private INighttimeCalculator nighttimeCalculator;
         private InputTarget target;
-        private Speckle speckle;
 
         [ImportingConstructor]
         public SpeckleTargetContainer(
@@ -77,7 +76,6 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
             this.framingAssistantVM = framingAssistantVM;
             this.planetariumFactory = planetariumFactory;
             cameraMediator.RegisterConsumer(this);
-            speckle = new Speckle(profileService);
             EnableSubSample = true;
             SubSampleRectangle = new ObservableRectangle(0, 0, 512, 512);
             Task.Run(() => NighttimeData = nighttimeCalculator.Calculate());
@@ -107,9 +105,9 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
         }
 
         private void DropTarget(object obj) {
-            var p = obj as NINA.Sequencer.DragDrop.DropIntoParameters;
-            if (p != null) {
-                var con = p.Source as TargetSequenceContainer;
+            var dropParameters = obj as NINA.Sequencer.DragDrop.DropIntoParameters;
+            if (dropParameters != null) {
+                var con = dropParameters.Source as TargetSequenceContainer;
                 if (con != null) {
                     var dropTarget = con.Container.Target;
                     if (dropTarget != null) {
@@ -264,9 +262,9 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
                 Name = Name,
                 Category = Category,
                 Description = Description,
-                Items = new ObservableCollection<ISequenceItem>(Items.Select(i => i.Clone() as ISequenceItem)),
-                Triggers = new ObservableCollection<ISequenceTrigger>(Triggers.Select(t => t.Clone() as ISequenceTrigger)),
-                Conditions = new ObservableCollection<ISequenceCondition>(Conditions.Select(t => t.Clone() as ISequenceCondition)),
+                Items = new ObservableCollection<ISequenceItem>(Items.Select(item => item.Clone() as ISequenceItem)),
+                Triggers = new ObservableCollection<ISequenceTrigger>(Triggers.Select(item => item.Clone() as ISequenceTrigger)),
+                Conditions = new ObservableCollection<ISequenceCondition>(Conditions.Select(item => item.Clone() as ISequenceCondition)),
                 Target = new InputTarget(Angle.ByDegree(profileService.ActiveProfile.AstrometrySettings.Latitude), Angle.ByDegree(profileService.ActiveProfile.AstrometrySettings.Longitude), profileService.ActiveProfile.AstrometrySettings.Horizon),
                 Title = Title
             };

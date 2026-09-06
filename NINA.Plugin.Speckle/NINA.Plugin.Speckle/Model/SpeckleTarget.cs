@@ -39,6 +39,22 @@ namespace NINA.Plugin.Speckle.Model {
             get => Name1 + (string.IsNullOrWhiteSpace(Name2) ? "" : "_" + Name2);
         }
 
+        public bool IsComplete {
+            get => Cycles > 0 && Completed_cycles >= Cycles;
+        }
+
+        public string CyclesDisplay {
+            get => Completed_cycles + "/" + Cycles;
+        }
+
+        public string RaText {
+            get => CoordinateFormat.RaHours(RA2000 / 15d);
+        }
+
+        public string DecText {
+            get => CoordinateFormat.DecDegrees(Dec2000);
+        }
+
         [JsonProperty]
         public double Orientation { get; set; }
         [JsonProperty]
@@ -60,6 +76,10 @@ namespace NINA.Plugin.Speckle.Model {
         [JsonProperty]
         public double AirmassMax { get; set; } = 4d;
         public bool RegisterTarget { get; set; } = true;
+
+        public string SourceList { get; set; }
+
+        public int PlanNumber { get; set; }
         [JsonProperty]
         public double MinAltitude { get; set; } = 0d;
 
@@ -83,9 +103,6 @@ namespace NINA.Plugin.Speckle.Model {
             get => Bp != 0 && Rp != 0 ? Bp - Rp : 0;
         }
 
-        public Coordinates Coordinates() {
-            return new Coordinates(Angle.ByDegree(RA2000), Angle.ByDegree(Dec2000), Epoch.J2000);
-        }
 
         public DateTime ImageTime { get; set; }
         public DateTime? ImagedAt { get; set; }
@@ -133,50 +150,48 @@ namespace NINA.Plugin.Speckle.Model {
     public sealed class SpeckleTargetMap : ClassMap<SpeckleTarget> {
 
         public SpeckleTargetMap() {
-            // StarMap
-            Map(m => m.Proj).Name(["Proj", "Proj~"]).Optional().Default("");
-            Map(m => m.Obs).Name(["Obs", "Obs~"]).Optional().Default("");
-            Map(m => m.Type).Name(["Type", "Type~"]).Optional().Default("M");
-            Map(m => m.Name1).Name(["Name1", "Name1*"]).Optional().Default("");
-            Map(m => m.Name2).Name(["Name2", "Name2*"]).Optional().Default("");
-            Map(m => m.Priority).Name(["Priority", "Priority~"]).Optional().Default(1);
-            Map(m => m.Template).Name(["Template", "Temp"]).Optional().Default("");
-            Map(m => m.RA2000).Name(["RA2000", "RA2000*"]).Optional().Default(0);
-            Map(m => m.Dec2000).Name(["D2000", "D2000*", "Dec2000"]).Optional().Default(0);
-            Map(m => m.Bp).Name(["Bp", "Bp~", "BP", "BP~"]).Optional().Default(0);
-            Map(m => m.Rp).Name(["Rp", "Rp~", "RP", "RP~"]).Optional().Default(0);
-            Map(m => m.Gmag).Name(["Gmag", "Gmag~"]).Optional().Default(0);
-            Map(m => m.GaiaNum).Name(["GaiaNum", "GaiaNum~"]).Optional().Default("0");
-            Map(m => m.Sep).Name(["Sep", "Sep~"]).Optional().Default(0);
-            Map(m => m.PA).Name(["PA", "Pa"]).Optional().Default(0);
-            Map(m => m.Parallax).Name("Parallax").Optional().Default(0);
-            Map(m => m.Spectrum).Name("Spectrum").Optional().Default("");
-            Map(m => m.Pmag).Name(["Pmag", "Pmag~", "PMag"]).Optional().Default(0);
-            Map(m => m.Smag).Name(["Smag", "Smag~", "SMag"]).Optional().Default(0);
-            Map(m => m.Exp).Name(["Exp", "Exp~"]).Optional().Default(0);
-            Map(m => m.NExp).Name(["NExp", "Nexp", "NExp~", "Nexp~"]).Optional().Default(0);
-            Map(m => m.NoEC).Name("NoEC").Optional().Default(0);
-            Map(m => m.GetRef).Name("GetRef").Optional().Default(1);
-            Map(m => m.GPrime).Name("GPrime").Optional().Default(0);
-            Map(m => m.RPrime).Name("RPrime").Optional().Default(0);
-            Map(m => m.IPrime).Name("IPrime").Optional().Default(0);
-            Map(m => m.ZPrime).Name("ZPrime").Optional().Default(0);
-            Map(m => m.RUWE).Name("RUWE").Optional().Default(0);
-            Map(m => m.FDBL).Name("FDBL").Optional().Default(0);
-            Map(m => m.Note1).Name("Note1").Optional().Default("");
-            Map(m => m.Note2).Name("Note2").Optional().Default("");
+            Map(column => column.Proj).Name(["Proj", "Proj~"]).Optional().Default("");
+            Map(column => column.Obs).Name(["Obs", "Obs~"]).Optional().Default("");
+            Map(column => column.Type).Name(["Type", "Type~"]).Optional().Default("M");
+            Map(column => column.Name1).Name(["Name1", "Name1*"]).Optional().Default("");
+            Map(column => column.Name2).Name(["Name2", "Name2*", "Name3"]).Optional().Default("");
+            Map(column => column.Priority).Name(["Priority", "Priority~"]).Optional().Default(1);
+            Map(column => column.Template).Name(["Template", "Temp"]).Optional().Default("");
+            Map(column => column.RA2000).Name(["RA2000", "RA2000*"]).Optional().Default(0);
+            Map(column => column.Dec2000).Name(["D2000", "D2000*", "Dec2000"]).Optional().Default(0);
+            Map(column => column.Bp).Name(["Bp", "Bp~", "BP", "BP~"]).Optional().Default(0);
+            Map(column => column.Rp).Name(["Rp", "Rp~", "RP", "RP~"]).Optional().Default(0);
+            Map(column => column.Gmag).Name(["Gmag", "Gmag~"]).Optional().Default(0);
+            Map(column => column.GaiaNum).Name(["GaiaNum", "GaiaNum~"]).Optional().Default("0");
+            Map(column => column.Sep).Name(["Sep", "Sep~"]).Optional().Default(0);
+            Map(column => column.PA).Name(["PA", "Pa"]).Optional().Default(0);
+            Map(column => column.Parallax).Name("Parallax").Optional().Default(0);
+            Map(column => column.Spectrum).Name(["Spectrum", "Spec", "Spec~"]).Optional().Default("");
+            Map(column => column.Pmag).Name(["Pmag", "Pmag~", "PMag"]).Optional().Default(0);
+            Map(column => column.Smag).Name(["Smag", "Smag~", "SMag"]).Optional().Default(0);
+            Map(column => column.Filter).Name(["Filter", "Filter~"]).Optional().Default("");
+            Map(column => column.Exp).Name(["Exp", "Exp~"]).Optional().Default(0);
+            Map(column => column.NExp).Name(["NExp", "Nexp", "NExp~", "Nexp~"]).Optional().Default(0);
+            Map(column => column.NoEC).Name("NoEC").Optional().Default(0);
+            Map(column => column.GetRef).Name("GetRef").Optional().Default(1);
+            Map(column => column.GPrime).Name("GPrime").Optional().Default(0);
+            Map(column => column.RPrime).Name("RPrime").Optional().Default(0);
+            Map(column => column.IPrime).Name("IPrime").Optional().Default(0);
+            Map(column => column.ZPrime).Name("ZPrime").Optional().Default(0);
+            Map(column => column.RUWE).Name("RUWE").Optional().Default(0);
+            Map(column => column.FDBL).Name("FDBL").Optional().Default(0);
+            Map(column => column.Note1).Name("Note1").Optional().Default("");
+            Map(column => column.Note2).Name("Note2").Optional().Default("");
 
-            // SpeckleTarget
-            Map(m => m.Nights).Name("Nights").Optional().Default(1);
-            Map(m => m.Cycles).Name("Cycles").Optional().Default(1);
-            Map(m => m.AirmassMin).Name(["Airmass", "AirmassMin"]).Optional().Default(0);
-            Map(m => m.AirmassMax).Name("AirmassMax").Optional().Default(4);
-            Map(m => m.MinAltitude).Name("MinAltitude").Optional().Default(0);
-            Map(m => m.GetRef).Name("GetRef").Optional().Default(1);
-            Map(m => m.RefGaiaNum).Name(["RefGaiaNum","RefGaiaNum~"]).Optional().Default("");
-            Map(m => m.Completed_cycles).Name("Completed_cycles").Optional().Default(0);
-            Map(m => m.Completed_ref_cycles).Name("Completed_ref_cycles").Optional().Default(0);
-            Map(m => m.Completed_nights).Name("Completed_nights").Optional().Default(0);
+            Map(column => column.Nights).Name("Nights").Optional().Default(1);
+            Map(column => column.Cycles).Name("Cycles").Optional().Default(1);
+            Map(column => column.AirmassMin).Name(["Airmass", "AirmassMin"]).Optional().Default(0);
+            Map(column => column.AirmassMax).Name("AirmassMax").Optional().Default(4);
+            Map(column => column.MinAltitude).Name("MinAltitude").Optional().Default(0);
+            Map(column => column.RefGaiaNum).Name(["RefGaiaNum","RefGaiaNum~"]).Optional().Default("");
+            Map(column => column.Completed_cycles).Name("Completed_cycles").Optional().Default(0);
+            Map(column => column.Completed_ref_cycles).Name("Completed_ref_cycles").Optional().Default(0);
+            Map(column => column.Completed_nights).Name("Completed_nights").Optional().Default(0);
         }
     }
 }

@@ -1,0 +1,185 @@
+{
+  "$id": "1",
+  "$type": "NINA.Plugin.Speckle.Sequencer.Container.SpeckleTargetContainer, SpeckleInterferometry",
+  "SpeckleRun": 0,
+  "Title": "",
+  "IsRef": true,
+  "SpeckleTarget": null,
+  "Target": {
+    "$id": "2",
+    "$type": "NINA.Astrometry.InputTarget, NINA.Astrometry",
+    "Expanded": true,
+    "TargetName": "",
+    "PositionAngle": 0.0,
+    "InputCoordinates": {
+      "$id": "3",
+      "$type": "NINA.Astrometry.InputCoordinates, NINA.Astrometry",
+      "RAHours": 0,
+      "RAMinutes": 0,
+      "RASeconds": 0.0,
+      "NegativeDec": false,
+      "DecDegrees": 0,
+      "DecMinutes": 0,
+      "DecSeconds": 0.0
+    }
+  },
+  "EnableSubSample": true,
+  "SubSampleRectangle": {
+    "$id": "4",
+    "$type": "NINA.Core.Utility.ObservableRectangle, NINA.Core",
+    "X": 0.0,
+    "Y": 0.0,
+    "Width": 512.0,
+    "Height": 512.0
+  },
+  "Strategy": {
+    "$type": "NINA.Sequencer.Container.ExecutionStrategy.SequentialStrategy, NINA.Sequencer"
+  },
+  "Name": "Speckle Reference (single camera)",
+  "Conditions": {
+    "$id": "5",
+    "$type": "System.Collections.ObjectModel.ObservableCollection`1[[NINA.Sequencer.Conditions.ISequenceCondition, NINA.Sequencer]], System.ObjectModel",
+    "$values": []
+  },
+  "IsExpanded": true,
+  "Items": {
+    "$id": "6",
+    "$type": "System.Collections.ObjectModel.ObservableCollection`1[[NINA.Sequencer.SequenceItem.ISequenceItem, NINA.Sequencer]], System.ObjectModel",
+    "$values": [
+      {
+        "$id": "7",
+        "$type": "NINA.Sequencer.SequenceItem.Platesolving.Center, NINA.Sequencer",
+        "Inherited": true,
+        "Coordinates": {
+          "$id": "8",
+          "$type": "NINA.Astrometry.InputCoordinates, NINA.Astrometry",
+          "RAHours": 0,
+          "RAMinutes": 0,
+          "RASeconds": 0.0,
+          "NegativeDec": false,
+          "DecDegrees": 0,
+          "DecMinutes": 0,
+          "DecSeconds": 0.0
+        },
+        "Parent": {
+          "$ref": "1"
+        },
+        "ErrorBehavior": 0,
+        "Attempts": 1
+      },
+      {
+        "$id": "9",
+        "$type": "NINA.Plugin.Speckle.Sequencer.SequenceItem.CalculateRoiPosition, SpeckleInterferometry",
+        "ImageFlippedX": false,
+        "ImageFlippedY": false,
+        "PlatesolveFirst": true,
+        "ExposureTime": 5.0,
+        "Parent": {
+          "$ref": "1"
+        },
+        "ErrorBehavior": 0,
+        "Attempts": 1
+      },
+      {
+        "$id": "10",
+        "$type": "NINA.Sequencer.SequenceItem.FilterWheel.SwitchFilter, NINA.Sequencer",
+        "Filter": {
+          "$id": "11",
+          "$type": "NINA.Core.Model.Equipment.FilterInfo, NINA.Core",
+          "_name": "I",
+          "_focusOffset": 0,
+          "_position": 1,
+          "_autoFocusExposureTime": -1.0,
+          "_autoFocusFilter": false,
+          "FlatWizardFilterSettings": {
+            "$id": "12",
+            "$type": "NINA.Core.Model.Equipment.FlatWizardFilterSettings, NINA.Core",
+            "FlatWizardMode": 0,
+            "HistogramMeanTarget": 0.5,
+            "HistogramTolerance": 0.1,
+            "MaxFlatExposureTime": 30.0,
+            "MinFlatExposureTime": 0.01,
+            "MaxAbsoluteFlatDeviceBrightness": 32767,
+            "MinAbsoluteFlatDeviceBrightness": 0,
+            "Gain": -1,
+            "Offset": -1,
+            "Binning": {
+              "$id": "13",
+              "$type": "NINA.Core.Model.Equipment.BinningMode, NINA.Core",
+              "X": 1,
+              "Y": 1
+            }
+          },
+          "_autoFocusBinning": {
+            "$id": "14",
+            "$type": "NINA.Core.Model.Equipment.BinningMode, NINA.Core",
+            "X": 1,
+            "Y": 1
+          },
+          "_autoFocusGain": -1,
+          "_autoFocusOffset": -1
+        },
+        "Parent": {
+          "$ref": "1"
+        },
+        "ErrorBehavior": 0,
+        "Attempts": 1
+      },
+      {
+        "$id": "15",
+        "$type": "NINA.Plugin.Speckle.Sequencer.SequenceItem.CalculateRoiExposureTime, SpeckleInterferometry",
+        "ExposureTime": 0.01,
+        "ExposureTimeMax": 0.5,
+        "ExposureStepTime": 0.01,
+        "TargetADU": 0.2,
+        "Gain": -1,
+        "Offset": -1,
+        "Binning": {
+          "$id": "16",
+          "$type": "NINA.Core.Model.Equipment.BinningMode, NINA.Core",
+          "X": 1,
+          "Y": 1
+        },
+        "ImageType": "LIGHT",
+        "ExposureCount": 0,
+        "TotalExposureCount": 0,
+        "Parent": {
+          "$ref": "1"
+        },
+        "ErrorBehavior": 0,
+        "Attempts": 1
+      },
+      {
+        "$id": "17",
+        "$type": "NINA.Plugin.Speckle.Sequencer.SequenceItem.TakeRoiExposures, SpeckleInterferometry",
+        "ExposureTime": 0.05,
+        "ExposureTimeMultiplier": 1.0,
+        "AutoUpdate": true,
+        "Gain": -1,
+        "Offset": -1,
+        "Binning": {
+          "$id": "18",
+          "$type": "NINA.Core.Model.Equipment.BinningMode, NINA.Core",
+          "X": 1,
+          "Y": 1
+        },
+        "ImageType": "LIGHT",
+        "ExposureCount": 0,
+        "TotalExposureCount": 1000,
+        "Parent": {
+          "$ref": "1"
+        },
+        "ErrorBehavior": 0,
+        "Attempts": 1
+      }
+    ]
+  },
+  "Triggers": {
+    "$id": "19",
+    "$type": "System.Collections.ObjectModel.ObservableCollection`1[[NINA.Sequencer.Trigger.ISequenceTrigger, NINA.Sequencer]], System.ObjectModel",
+    "$values": []
+  },
+  "Parent": null,
+  "ErrorBehavior": 0,
+  "Attempts": 1
+}

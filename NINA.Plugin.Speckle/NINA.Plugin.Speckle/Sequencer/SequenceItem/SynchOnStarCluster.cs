@@ -13,34 +13,23 @@
 #endregion "copyright"
 
 using Newtonsoft.Json;
+using NINA.Astrometry;
+using NINA.Core.Locale;
 using NINA.Core.Model;
+using NINA.Core.Utility.WindowService;
+using NINA.Equipment.Interfaces.Mediator;
 using NINA.PlateSolving;
-using NINA.Profile.Interfaces;
-using NINA.Sequencer.Container;
+using NINA.Plugin.Speckle.Model;
+using NINA.Plugin.Speckle.Services;
+using NINA.Sequencer.SequenceItem;
 using NINA.Sequencer.Utility;
 using NINA.Sequencer.Validations;
-using NINA.Astrometry;
-using NINA.Equipment.Interfaces.Mediator;
-using NINA.Core.Utility.WindowService;
-using NINA.ViewModel;
+using NINA.WPF.Base.ViewModel;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.ComponentModel.Composition;
-using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using NINA.Equipment.Model;
-using NINA.Core.Model.Equipment;
-using NINA.Core.Locale;
-using NINA.WPF.Base.ViewModel;
-using NINA.PlateSolving.Interfaces;
-using NINA.Core.Utility.Notification;
-using NINA.Core.Utility;
-using NINA.Equipment.Interfaces;
-using NINA.Sequencer.SequenceItem;
-using NINA.Plugin.Speckle.Model;
 
 namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
 
@@ -51,53 +40,33 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
     [Export(typeof(ISequenceItem))]
     [JsonObject(MemberSerialization.OptIn)]
     public class SynchOnStarCluster : NINA.Sequencer.SequenceItem.SequenceItem, IValidatable {
-        protected IProfileService profileService;
         protected ITelescopeMediator telescopeMediator;
-        protected IImagingMediator imagingMediator;
-        protected IFilterWheelMediator filterWheelMediator;
-        protected IGuiderMediator guiderMediator;
-        protected IDomeMediator domeMediator;
-        protected IDomeFollower domeFollower;
-        protected IPlateSolverFactory plateSolverFactory;
         protected IWindowServiceFactory windowServiceFactory;
+        protected ISpeckleOptionsProvider optionsProvider;
+        protected IClusterCenteringService clusterCenteringService;
         public PlateSolvingStatusVM PlateSolveStatusVM { get; } = new PlateSolvingStatusVM();
         private Speckle speckle;
 
         [ImportingConstructor]
-        public SynchOnStarCluster(IProfileService profileService,
-                      ITelescopeMediator telescopeMediator,
-                      IImagingMediator imagingMediator,
-                      IFilterWheelMediator filterWheelMediator,
-                      IGuiderMediator guiderMediator,
-                      IDomeMediator domeMediator,
-                      IDomeFollower domeFollower,
-                      IPlateSolverFactory plateSolverFactory,
-                      IWindowServiceFactory windowServiceFactory) {
-            this.profileService = profileService;
+        public SynchOnStarCluster(ITelescopeMediator telescopeMediator,
+                      IWindowServiceFactory windowServiceFactory,
+                      ISpeckleOptionsProvider optionsProvider,
+                      IClusterCenteringService clusterCenteringService) {
             this.telescopeMediator = telescopeMediator;
-            this.imagingMediator = imagingMediator;
-            this.filterWheelMediator = filterWheelMediator;
-            this.guiderMediator = guiderMediator;
-            this.domeMediator = domeMediator;
-            this.domeFollower = domeFollower;
-            this.plateSolverFactory = plateSolverFactory;
             this.windowServiceFactory = windowServiceFactory;
+            this.optionsProvider = optionsProvider;
+            this.clusterCenteringService = clusterCenteringService;
             Coordinates = new InputCoordinates();
-            speckle = new Speckle(profileService);
+            speckle = optionsProvider.Current;
 
             SearchRadius = speckle.SearchRadius;
             SlewBackToTarget = true;
         }
 
-        private SynchOnStarCluster(SynchOnStarCluster cloneMe) : this(cloneMe.profileService,
-                                              cloneMe.telescopeMediator,
-                                              cloneMe.imagingMediator,
-                                              cloneMe.filterWheelMediator,
-                                              cloneMe.guiderMediator,
-                                              cloneMe.domeMediator,
-                                              cloneMe.domeFollower,
-                                              cloneMe.plateSolverFactory,
-                                              cloneMe.windowServiceFactory) {
+        private SynchOnStarCluster(SynchOnStarCluster cloneMe) : this(cloneMe.telescopeMediator,
+                                              cloneMe.windowServiceFactory,
+                                              cloneMe.optionsProvider,
+                                              cloneMe.clusterCenteringService) {
             CopyMetaData(cloneMe);
         }
 
@@ -144,98 +113,27 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
             }
         }
 
-        protected virtual async Task<PlateSolveResult> DoCenter(IProgress<ApplicationStatus> progress, CancellationToken token) {
-            Logger.Debug("Searching for nearby StarCluster.");
-            Utility.SimbadUtils simUtils = new Utility.SimbadUtils();
-            StarClusterList = await simUtils.FindSimbadStarClusters(progress, token, Coordinates.Coordinates, SearchRadius);
-            StarCluster = StarClusterList.FirstOrDefault();
-            if (StarCluster == null)
-                throw new SequenceEntityFailedException("Couldn't find nearby star cluster.");
-            
+        public override async Task Execute(IProgress<ApplicationStatus> progress, CancellationToken token) {
             var speckleTarget = Utility.ItemUtility.RetrieveSpeckleTarget(Parent);
-            if (speckleTarget != null) {
-                speckleTarget.StarClusterList = StarClusterList;
-                speckleTarget.StarCluster = StarCluster;
-            }
-
-            foreach (var sc in StarClusterList) {
-                StarCluster = sc;
-                speckleTarget.StarCluster = StarCluster;
-                Logger.Debug("Slewing to StarCluster.");
-                await telescopeMediator.SlewToCoordinatesAsync(StarCluster.Coordinates(), token);
-
-                var domeInfo = domeMediator.GetInfo();
-                if (domeInfo.Connected && domeInfo.CanSetAzimuth && !domeFollower.IsFollowing) {
-                    progress.Report(new ApplicationStatus() { Status = Loc.Instance["LblSynchronizingDome"] });
-                    Logger.Info($"Centering Solver - Synchronize dome to scope since dome following is not enabled");
-                    if (!await domeFollower.TriggerTelescopeSync()) {
-                        Notification.ShowWarning(Loc.Instance["LblDomeSyncFailureDuringCentering"]);
-                        Logger.Warning("Centering Solver - Synchronize dome operation didn't complete successfully. Moving on");
+            var request = new ClusterCenteringRequest {
+                Mode = ClusterCenteringMode.SynchLoop,
+                TargetCoordinates = Coordinates?.Coordinates,
+                SearchRadius = SearchRadius,
+                SlewBackToTarget = SlewBackToTarget,
+                ClusterSelected = selection => {
+                    StarClusterList = selection.Candidates;
+                    StarCluster = selection.Chosen;
+                    if (speckleTarget != null) {
+                        speckleTarget.StarClusterList = selection.Candidates;
+                        speckleTarget.StarCluster = selection.Chosen;
                     }
                 }
+            };
 
-                var plateSolver = plateSolverFactory.GetPlateSolver(profileService.ActiveProfile.PlateSolveSettings);
-
-                var parameter = new CenterSolveParameter() {
-                    Attempts = 1,
-                    Binning = profileService.ActiveProfile.PlateSolveSettings.Binning,
-                    Coordinates = Coordinates?.Coordinates ?? telescopeMediator.GetCurrentPosition(),
-                    DownSampleFactor = profileService.ActiveProfile.PlateSolveSettings.DownSampleFactor,
-                    FocalLength = profileService.ActiveProfile.TelescopeSettings.FocalLength,
-                    MaxObjects = profileService.ActiveProfile.PlateSolveSettings.MaxObjects,
-                    PixelSize = profileService.ActiveProfile.CameraSettings.PixelSize,
-                    ReattemptDelay = TimeSpan.FromMinutes(profileService.ActiveProfile.PlateSolveSettings.ReattemptDelay),
-                    Regions = profileService.ActiveProfile.PlateSolveSettings.Regions,
-                    SearchRadius = profileService.ActiveProfile.PlateSolveSettings.SearchRadius,
-                    Threshold = profileService.ActiveProfile.PlateSolveSettings.Threshold,
-                    NoSync = profileService.ActiveProfile.TelescopeSettings.NoSync,
-                    BlindFailoverEnabled = profileService.ActiveProfile.PlateSolveSettings.BlindFailoverEnabled
-                };
-
-                var seq = new CaptureSequence(
-                    profileService.ActiveProfile.PlateSolveSettings.ExposureTime,
-                    CaptureSequence.ImageTypes.SNAPSHOT,
-                    profileService.ActiveProfile.PlateSolveSettings.Filter,
-                    new BinningMode(profileService.ActiveProfile.PlateSolveSettings.Binning, profileService.ActiveProfile.PlateSolveSettings.Binning),
-                    1
-                );
-
-                Logger.Debug("Capturing image for platesolve.");
-                var exposureData = await imagingMediator.CaptureImage(seq, token, progress);
-                var imageData = await exposureData.ToImageData(progress, token);
-
-                var prepareTask = imagingMediator.PrepareImage(imageData, new PrepareImageParameters(true, true), token);
-                var image = prepareTask.Result;
-
-                var imageSolver = new ImageSolver(plateSolver, null);
-
-                Logger.Debug("Solving image");
-                var plateSolveResult = await imageSolver.Solve(image.RawImageData, parameter, progress, token);
-                if (plateSolveResult.Success)
-                    return plateSolveResult;
-            }
-            return new PlateSolveResult();
-        }
-
-        public override async Task Execute(IProgress<ApplicationStatus> progress, CancellationToken token) {
             var service = windowServiceFactory.Create();
             service.Show(PlateSolveStatusVM, PlateSolveStatusVM.Title, System.Windows.ResizeMode.CanResize, System.Windows.WindowStyle.ToolWindow);
             try {
-                var stoppedGuiding = await guiderMediator.StopGuiding(token);
-                PlateSolveResult result = new PlateSolveResult();
-                result.Success = false;
-                try {
-                    result = await DoCenter(progress, token);
-                } finally {
-                    if (SlewBackToTarget) {
-                        // Hopefully centered on Star cluster. Now return to the target.
-                        Logger.Debug("Slewing back to target.");
-                        await telescopeMediator.SlewToCoordinatesAsync(Coordinates.Coordinates, token);
-                    }
-                }
-                if (stoppedGuiding) {
-                    await guiderMediator.StartGuiding(false, progress, token);
-                }
+                var result = await clusterCenteringService.CenterViaStarClusterAsync(request, progress, PlateSolveStatusVM.Progress, token);
                 if (result.Success == false) {
                     throw new SequenceEntityFailedException(Loc.Instance["LblPlatesolveFailed"]);
                 }
@@ -256,16 +154,16 @@ namespace NINA.Plugin.Speckle.Sequencer.SequenceItem {
         }
 
         public virtual bool Validate() {
-            var i = new List<string>();
+            var issues = new List<string>();
             if (!telescopeMediator.GetInfo().Connected) {
-                i.Add(Loc.Instance["LblTelescopeNotConnected"]);
+                issues.Add(Loc.Instance["LblTelescopeNotConnected"]);
             }
             if (Utility.ItemUtility.RetrieveSpeckleContainer(Parent) == null && Utility.ItemUtility.RetrieveSpeckleListContainer(Parent) == null) {
-                i.Add("This instruction only works within a SpeckleTargetContainer.");
+                issues.Add("This instruction only works within a SpeckleTargetContainer.");
             }
 
-            Issues = i;
-            return i.Count == 0;
+            Issues = issues;
+            return issues.Count == 0;
         }
 
         public override string ToString() {

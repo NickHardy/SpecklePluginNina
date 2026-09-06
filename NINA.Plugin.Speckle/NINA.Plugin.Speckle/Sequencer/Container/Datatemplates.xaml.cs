@@ -38,18 +38,14 @@ namespace NINA.Plugin.Speckle.Sequencer.Container {
         }
 
         private void DataGridCell_Selected(object sender, RoutedEventArgs e) {
-            // Lookup for the source to be DataGridCell
             if (e.OriginalSource.GetType() == typeof(System.Windows.Controls.DataGridCell)) {
-                // Starts the Edit on the row;
                 System.Windows.Controls.DataGrid grd = (System.Windows.Controls.DataGrid)sender;
                 grd.BeginEdit(e);
             }
         }
 
         private void DataGridRow_Selected(object sender, RoutedEventArgs e) {
-            // Lookup for the source to be DataGridCell
             if (e.OriginalSource.GetType() == typeof(DataGridRow)) {
-                // Starts the Edit on the row;
                 System.Windows.Controls.DataGrid grd = (System.Windows.Controls.DataGrid)sender;
                 grd.BeginEdit(e);
             }

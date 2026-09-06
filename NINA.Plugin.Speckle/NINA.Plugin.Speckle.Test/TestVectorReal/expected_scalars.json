@@ -1,0 +1,86 @@
+{
+ "source": {
+  "object": "WDS 17533+2459",
+  "filter": "R",
+  "exposure_s": 0.02,
+  "camera": "QHY600M",
+  "telescope": "MWO 100 inch Hooker",
+  "date_obs": "2024-06-28T07:09:51.879",
+  "frames": 32,
+  "size": 128,
+  "crop_origin_x": 306,
+  "crop_origin_y": 142,
+  "cropped_from": "the 512x512 ROI subframes 0001..0032, centred on the star",
+  "note": "real sensor data: real read noise, sky offset near 490 ADU, hot pixels, no simulation"
+ },
+ "pipeline": {
+  "preprocess": "widen ushort to double, subtract the frame mean, no window",
+  "transform": "forward 2-D FFT, unscaled (numpy convention)",
+  "accumulate": "psdSum[i] += re*re + im*im, unshifted, then divide by frame count",
+  "layout": "little-endian, row-major, index = y * 128 + x, frame index slowest"
+ },
+ "optics": {
+  "arcsec_per_pixel": 0.025000206305202756,
+  "lambda_m_assumed": 6.4e-07,
+  "k_space_radius_px": 23.0,
+  "k_space_radius_px_at_512": 92.0,
+  "exclusion_radius_px": 5.565217391304348
+ },
+ "frames_checksum": {
+  "sum_u64": 260751211,
+  "min": 419,
+  "max": 594,
+  "mean": 497.3434658050537
+ },
+ "psd_mean_unshifted": {
+  "sum": 21112715140.406254,
+  "max": 1916368740.0882728,
+  "argmax_flat": 1,
+  "at_0_0": 0.0,
+  "at_0_1": 1916368740.0882728,
+  "at_1_0": 394374146.1872721,
+  "at_64_64": 3222695.71875,
+  "at_10_20": 897285.7898518696
+ },
+ "parseval_frame0": {
+  "sum_pixels_squared": 1078431.1669311523,
+  "sum_psd_over_n2": 1078431.1669311526
+ },
+ "photon_bias": {
+  "k_space_radius_px": 23.0,
+  "pedestal": 752068.4826545528,
+  "sum_after": 8802305267.66215,
+  "max_after": 1915616671.6056182
+ },
+ "autocorrelation": {
+  "at_center": 537250.0773719574,
+  "max": 537250.0773719574
+ },
+ "metrics": {
+  "d_px": 61.000006172760386,
+  "dx": 0.027442244890863776,
+  "dy": -61.0,
+  "period_px": 2.0983604433987506,
+  "pa_det_deg": 90.02577581486129,
+  "lobe_snr": 6.21813609277917,
+  "visibility": 0.4308872456446348,
+  "fv": 0.2154436228223174,
+  "rho_arcsec": 1.5250127389376513,
+  "high_pass_radius": 3.0,
+  "low_pass_radius": 23.0
+ },
+ "full_stack_reference": {
+  "frames": 1000,
+  "size": 512,
+  "k_space_radius_px": 92.0,
+  "d_px": 30.484883346405127,
+  "period_px": 16.795209421733826,
+  "pa_det_deg": 171.01698828108735,
+  "rho_arcsec": 0.762128372850168,
+  "lobe_snr": 4.7892261189911505,
+  "visibility": 0.9444253198725553
+ },
+ "tolerance": {
+  "psd_relative": 1e-09
+ }
+}

@@ -80,7 +80,6 @@
             SelectedItem="{Binding Binning, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
             SelectedValuePath="Name" />
 
-        <!--  List of Gain  -->
         <WrapPanel Orientation="Horizontal">
             <WrapPanel.Visibility>
                 <PriorityBinding>
@@ -130,7 +129,6 @@
             </ComboBox>
         </WrapPanel>
 
-        <!--  Free Gain  -->
         <WrapPanel Orientation="Horizontal">
             <WrapPanel.Visibility>
                 <PriorityBinding FallbackValue="Visible">
@@ -180,7 +178,6 @@
             </ninactrl:HintTextBox>
         </WrapPanel>
 
-        <!--  Offset  -->
         <WrapPanel Orientation="Horizontal">
             <WrapPanel.Visibility>
                 <MultiBinding Converter="{StaticResource BooleanOrToVisibilityCollapsedMultiConverter}" FallbackValue="Visible">
@@ -422,7 +419,7 @@
                         VerticalContentAlignment="Center"
                         Text="{Binding SearchRadius}"
                         TextAlignment="Right"
-                        Unit="°" />
+                        Unit="deg" />
 
                     <TextBlock
                         Margin="7.5,0,7.5,0"
@@ -489,7 +486,7 @@
                         VerticalContentAlignment="Center"
                         Text="{Binding SearchRadius}"
                         TextAlignment="Right"
-                        Unit="°" />
+                        Unit="deg" />
 
                     <TextBlock
                         Margin="7.5,0,7.5,0"
