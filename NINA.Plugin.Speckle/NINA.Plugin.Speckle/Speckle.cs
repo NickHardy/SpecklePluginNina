@@ -391,11 +391,6 @@ namespace NINA.Plugin.Speckle {
             set => SetOption(value);
         }
 
-        public bool ShowKeplerSky {
-            get => GetOption(false);
-            set => SetOption(value);
-        }
-
         public string RecentTargetLists {
             get => GetOption("");
             set => SetOption(value);

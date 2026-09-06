@@ -258,7 +258,7 @@ namespace NINA.Plugin.Speckle.Workflow {
             var astrometry = profileService.ActiveProfile.AstrometrySettings;
             var slitAzimuth = speckle == null
                 ? 0d
-                : speckle.DomePositionLock ? Dockables.Kepler.KeplerProjection.Mod360(speckle.DomePosition)
+                : speckle.DomePositionLock ? ObservingSite.Mod360(speckle.DomePosition)
                 : speckle.DomeSlitSouth ? 180d : 0d;
             var slit = new InputTopocentricCoordinates(Angle.ByDegree(astrometry.Latitude), Angle.ByDegree(astrometry.Longitude)) {
                 AltDegrees = (int)SlitSearchAltitude,

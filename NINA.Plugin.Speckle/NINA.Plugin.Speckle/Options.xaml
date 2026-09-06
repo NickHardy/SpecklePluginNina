@@ -1917,44 +1917,6 @@
                                         </GroupBox>
                             </StackPanel>
 
-                            <TextBlock
-                                Margin="6,22,6,0"
-                                HorizontalAlignment="Left"
-                                FontSize="17"
-                                FontWeight="SemiBold"
-                                Foreground="{StaticResource PrimaryBrush}"
-                                Text="Experimental" />
-                            <StackPanel Orientation="Vertical">
-                                    <GroupBox Header="Sky view">
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="Auto" MinWidth="250" />
-                                                <ColumnDefinition Width="Auto" />
-                                            </Grid.ColumnDefinitions>
-                                            <Grid.RowDefinitions>
-                                                <RowDefinition Height="Auto" />
-                                            </Grid.RowDefinitions>
-
-                                            <TextBlock
-                                                Background="Transparent"
-                                                Grid.Row="0"
-                                                Grid.Column="0"
-                                                Margin="0,4,10,4"
-                                                VerticalAlignment="Center"
-                                                Text="Show the Kepler sky view"
-                                                ToolTip="Adds a Kepler button to the imaging panel. It opens a sky view showing the dome slit and tonight's targets in observation order." />
-                                            <CheckBox
-                                                Grid.Row="0"
-                                                Grid.Column="1"
-                                                MinWidth="80"
-                                                Margin="0,4"
-                                                HorizontalAlignment="Left"
-                                                VerticalAlignment="Center"
-                                                IsChecked="{Binding ShowKeplerSky}"
-                                                ToolTip="Adds a Kepler button to the imaging panel. It opens a sky view showing the dome slit and tonight's targets in observation order." />
-                                        </Grid>
-                                    </GroupBox>
-                            </StackPanel>
                         </StackPanel>
                     </ScrollViewer>
                 </TabItem.Content>

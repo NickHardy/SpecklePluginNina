@@ -6,7 +6,7 @@
     <TargetFramework>net8.0-windows</TargetFramework>
     <OutputType>Library</OutputType>
     <AssemblyName>SpeckleInterferometry</AssemblyName>
-    <Version>3.1.0.29</Version>
+    <Version>3.1.0.30</Version>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <UseWindowsForms>true</UseWindowsForms>
     <UseWPF>true</UseWPF>

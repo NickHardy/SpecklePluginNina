@@ -12,7 +12,6 @@ using NINA.Equipment.Interfaces.Mediator;
 using NINA.Equipment.Interfaces.ViewModel;
 using NINA.Equipment.Model;
 using NINA.Image.Interfaces;
-using NINA.Plugin.Speckle.Dockables.Kepler;
 using NINA.Plugin.Speckle.Imaging;
 using NINA.Plugin.Speckle.ManualMount;
 using NINA.Plugin.Speckle.Model;
@@ -82,7 +81,6 @@ namespace NINA.Plugin.Speckle.Dockables {
         private bool isRunning;
         private bool isDrawerOpen;
         private bool isMoreOpen;
-        private bool isKeplerOpen;
         private bool stopArmed;
         private DispatcherTimer stopArmTimer;
         private bool isLoadingList;
@@ -154,7 +152,6 @@ namespace NINA.Plugin.Speckle.Dockables {
             ReferenceSteps = new ObservableCollection<ChainStepVM>();
             BuildChains();
 
-            Kepler = new KeplerSkyVM(profileService, coordinator, optionsProvider, telescopeMediator, domeMediator, ImageNext);
 
             LoadListCommand = new RelayCommand(() => { LogClick("Load list"); _ = LoadListAsync(null); }, () => ListToolsEnabled);
             RemoveListCommand = new StringCommand(RemoveList, path => ListToolsEnabled);
@@ -273,8 +270,6 @@ namespace NINA.Plugin.Speckle.Dockables {
         public ObservableCollection<ChainStepVM> TargetSteps { get; }
 
         public ObservableCollection<ChainStepVM> ReferenceSteps { get; }
-
-        public KeplerSkyVM Kepler { get; }
 
         public ICommand LoadListCommand { get; }
 
@@ -410,34 +405,6 @@ namespace NINA.Plugin.Speckle.Dockables {
                 RaiseImageRegionState();
             }
         }
-
-        public bool IsKeplerOpen {
-            get => isKeplerOpen;
-            set {
-                if (isKeplerOpen == value) {
-                    return;
-                }
-                if (value && !optionsProvider.Current.ShowKeplerSky) {
-                    return;
-                }
-                Logger.Info("UI: Kepler sky view " + (value ? "opened" : "closed"));
-                isKeplerOpen = value;
-                if (value) {
-                    CloseFringeDemo();
-                    Kepler.Start();
-                } else {
-                    Kepler.Stop();
-                }
-                RaisePropertyChanged();
-                RaisePropertyChanged(nameof(KeplerVisible));
-                RaiseImageRegionState();
-            }
-        }
-
-        public bool KeplerVisible => isKeplerOpen;
-
-        public bool KeplerButtonVisible => optionsProvider.Current.ShowKeplerSky
-            && (!IsRunning || IsDrawerOpen || isKeplerOpen);
 
         public bool IsMoreOpen {
             get => isMoreOpen;
@@ -716,13 +683,13 @@ namespace NINA.Plugin.Speckle.Dockables {
             }
         }
 
-        public bool MainRegionShowsImage => PreparedImage != null && !PlanningPanelVisible && !isKeplerOpen;
+        public bool MainRegionShowsImage => PreparedImage != null && !PlanningPanelVisible;
 
-        public bool ImageRegionVisible => !PlanningPanelVisible && !isKeplerOpen;
+        public bool ImageRegionVisible => !PlanningPanelVisible;
 
-        public bool PointingOverlayVisible => IsSlewGate && !isKeplerOpen;
+        public bool PointingOverlayVisible => IsSlewGate;
 
-        public bool PointingPulseVisible => IsSlewGate && !PlanningPanelVisible && !isKeplerOpen;
+        public bool PointingPulseVisible => IsSlewGate && !PlanningPanelVisible;
 
         public bool ShowCompass {
             get => showCompass;
@@ -737,7 +704,7 @@ namespace NINA.Plugin.Speckle.Dockables {
             }
         }
 
-        public bool CompassVisible => showCompass && !PlanningPanelVisible && !isKeplerOpen;
+        public bool CompassVisible => showCompass && !PlanningPanelVisible;
 
         public string CompassLabel => IsSciencePath ? "Science camera" : "Wide camera";
 
@@ -799,7 +766,6 @@ namespace NINA.Plugin.Speckle.Dockables {
             && coordinator.Gate.Pending != null
             && Session.Phase != WorkflowPhase.RunningVideoExposures
             && !PlanningPanelVisible
-            && !isKeplerOpen
             && PreparedImage != null;
 
         public string PointingOverlayRa => GateRaNowText;
@@ -818,7 +784,7 @@ namespace NINA.Plugin.Speckle.Dockables {
             }
         }
 
-        public bool FringeVisible => FringePaneEnabled && FringeImage != null && !PlanningPanelVisible && !isKeplerOpen;
+        public bool FringeVisible => FringePaneEnabled && FringeImage != null && !PlanningPanelVisible;
 
         public bool FringeSideBySide => (FringePaneOrientation)optionsProvider.Current.FringePaneOrientation == FringePaneOrientation.SideBySide;
 
@@ -830,15 +796,15 @@ namespace NINA.Plugin.Speckle.Dockables {
 
         public bool StartVisible => !IsRunning && Targets.Count > 0 && (Session.Phase == WorkflowPhase.ListLoaded || Session.Phase == WorkflowPhase.Stopped);
 
-        public bool PlanningPanelVisible => ((!IsRunning && !IsFocusing && !IsFringeDemoRunning) || IsDrawerOpen) && !isKeplerOpen;
+        public bool PlanningPanelVisible => ((!IsRunning && !IsFocusing && !IsFringeDemoRunning) || IsDrawerOpen);
 
-        public bool ImagePlaceholderVisible => (IsRunning || IsFocusing) && PreparedImage == null && !FringeVisible && !IsDrawerOpen && !isKeplerOpen;
+        public bool ImagePlaceholderVisible => (IsRunning || IsFocusing) && PreparedImage == null && !FringeVisible && !IsDrawerOpen;
 
         public bool ChainVisible => IsRunning && RunChromeVisible;
 
-        public bool RunChromeVisible => !isKeplerOpen && !(IsRunning && IsDrawerOpen);
+        public bool RunChromeVisible => !(IsRunning && IsDrawerOpen);
 
-        public bool StatusLineVisible => !isKeplerOpen;
+        public bool StatusLineVisible => true;
 
         public bool ReferenceLegVisible => IsRunning && Session.CurrentTarget != null
             && (Session.CurrentTarget.GetRef > 0 || Session.CurrentReference != null || ReferenceStarService.HasGaiaNumber(Session.CurrentTarget.RefGaiaNum));
@@ -989,7 +955,7 @@ namespace NINA.Plugin.Speckle.Dockables {
 
         public bool ProgressIndeterminate => Session.Phase != WorkflowPhase.RunningVideoExposures;
 
-        public bool PrimaryActionVisible => !isKeplerOpen && (IsRunning ? IsActionNeeded : StartVisible);
+        public bool PrimaryActionVisible => IsRunning ? IsActionNeeded : StartVisible;
 
         public string PrimaryActionLabel {
             get {
@@ -1260,7 +1226,6 @@ namespace NINA.Plugin.Speckle.Dockables {
             cameraMediator.RemoveConsumer(this);
             telescopeMediator.RemoveConsumer(this);
             focuserMediator.RemoveConsumer(this);
-            Kepler.Dispose();
             cooling.Dispose();
             StopAndDisposeSource(ref runCts);
             StopAndDisposeSource(ref focusCts);
@@ -1861,7 +1826,6 @@ namespace NINA.Plugin.Speckle.Dockables {
 
         private void OnPhaseChanged(object sender, WorkflowPhaseChangedEventArgs e) {
             EnsureFocusAllowed();
-            Kepler.Refresh();
             UiThread.Post(() => {
                 if (!IsRunning) {
                     DisarmStop();
@@ -1885,7 +1849,6 @@ namespace NINA.Plugin.Speckle.Dockables {
             if (pending != null) {
                 GateCardCollapsed = false;
                 IsDrawerOpen = false;
-                IsKeplerOpen = false;
             }
             if (pending != null && pending.Kind == GateKind.ImageConfirmation) {
                 coordinator.RefreshAvailableFilters();
@@ -1909,13 +1872,11 @@ namespace NINA.Plugin.Speckle.Dockables {
 
         private void OnTargetsChanged(object sender, EventArgs e) {
             RebuildTargets();
-            Kepler.Refresh();
             UiThread.Post(() => { RaiseAll(); RequeryCommands(); });
         }
 
         private void OnQueueChanged(object sender, EventArgs e) {
             RebuildQueue();
-            Kepler.Refresh();
             UiThread.Post(RaiseAll);
         }
 
@@ -1925,8 +1886,7 @@ namespace NINA.Plugin.Speckle.Dockables {
                 return;
             }
             if (e.PropertyName == nameof(SpeckleWorkflowSession.CurrentTarget)) {
-                Kepler.Refresh();
-            }
+                }
             if (e.PropertyName == nameof(SpeckleWorkflowSession.CurrentLightPath) && Session.CurrentLightPath == LightPath.Wide) {
                 FitImageInView("the light path is back on the wide camera");
             }
@@ -2203,7 +2163,6 @@ namespace NINA.Plugin.Speckle.Dockables {
             RaisePropertyChanged(nameof(CrosshairThickness));
             RaisePropertyChanged(nameof(CrosshairLeft));
             RaisePropertyChanged(nameof(CrosshairTop));
-            RaisePropertyChanged(nameof(KeplerVisible));
             RaisePropertyChanged(nameof(RunChromeVisible));
             RaisePropertyChanged(nameof(StatusLineVisible));
             RaisePropertyChanged(nameof(ChainVisible));
