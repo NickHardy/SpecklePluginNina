@@ -38,6 +38,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Input;
+using System.Windows.Threading;
 using System.Windows.Media.Imaging;
 using PointCommand = GalaSoft.MvvmLight.Command.RelayCommand<System.Windows.Point>;
 using RelayCommand = GalaSoft.MvvmLight.Command.RelayCommand;
@@ -62,6 +63,7 @@ namespace NINA.Plugin.Speckle.Dockables {
         private readonly ISpeckleOptionsProvider optionsProvider;
         private readonly IFringeAnalysisService fringeAnalysis;
         private static readonly TimeSpan LightPathSwitchTimeout = TimeSpan.FromMinutes(6);
+        private static readonly TimeSpan StopConfirmWindow = TimeSpan.FromSeconds(5);
         private readonly CameraCoolingService cooling;
         private readonly ITargetListService targetListService;
         private readonly IProgress<ApplicationStatus> progress;
@@ -81,6 +83,8 @@ namespace NINA.Plugin.Speckle.Dockables {
         private bool isDrawerOpen;
         private bool isMoreOpen;
         private bool isKeplerOpen;
+        private bool stopArmed;
+        private DispatcherTimer stopArmTimer;
         private bool isLoadingList;
         private bool isConnectingEquipment;
         private bool cameraReleasedForHold;
@@ -1164,7 +1168,15 @@ namespace NINA.Plugin.Speckle.Dockables {
 
         public bool StopRunVisible => IsRunning;
 
-        public string StopRunTooltip => "Stop the run immediately - the current target is abandoned and the run ends";
+        public bool StopConfirmPending => stopArmed;
+
+        public string StopRunLabel => stopArmed ? "Confirm stop" : "Stop";
+
+        public bool DangerZoneVisible => IsRunning;
+
+        public string StopRunTooltip => stopArmed
+            ? "Press again to end the run. The current target is abandoned and nothing further is imaged."
+            : "End the run. Asks for a second press first.";
 
         public void UpdateDeviceInfo(CameraInfo deviceInfo) {
             cameraInfo = deviceInfo;
@@ -1503,8 +1515,43 @@ namespace NINA.Plugin.Speckle.Dockables {
         }
 
         private void StopRun() {
-            Logger.Info("UI: Stop clicked - ending the run immediately (phase " + Session.Phase + ", target " + (Session.CurrentTarget?.Name ?? "none") + ")");
+            if (!stopArmed) {
+                Logger.Info("UI: Stop clicked once, waiting for confirmation (phase " + Session.Phase
+                    + ", target " + (Session.CurrentTarget?.Name ?? "none") + ")");
+                ArmStop();
+                return;
+            }
+            DisarmStop();
+            Logger.Info("UI: Stop confirmed - ending the run immediately (phase " + Session.Phase + ", target " + (Session.CurrentTarget?.Name ?? "none") + ")");
             coordinator.RequestStop();
+        }
+
+        private void ArmStop() {
+            stopArmed = true;
+            RaiseStopState();
+            stopArmTimer?.Stop();
+            stopArmTimer = new DispatcherTimer { Interval = StopConfirmWindow };
+            stopArmTimer.Tick += (sender, args) => {
+                Logger.Info("UI: Stop confirmation expired without a second click");
+                DisarmStop();
+            };
+            stopArmTimer.Start();
+        }
+
+        private void DisarmStop() {
+            stopArmTimer?.Stop();
+            stopArmTimer = null;
+            if (!stopArmed) {
+                return;
+            }
+            stopArmed = false;
+            RaiseStopState();
+        }
+
+        private void RaiseStopState() {
+            RaisePropertyChanged(nameof(StopRunLabel));
+            RaisePropertyChanged(nameof(StopRunTooltip));
+            RaisePropertyChanged(nameof(StopConfirmPending));
         }
 
         private void SkipTarget() {
@@ -1802,6 +1849,9 @@ namespace NINA.Plugin.Speckle.Dockables {
             EnsureFocusAllowed();
             Kepler.Refresh();
             UiThread.Post(() => {
+                if (!IsRunning) {
+                    DisarmStop();
+                }
                 LogTemplateEdits();
                 UpdateChain();
                 RaiseAll();

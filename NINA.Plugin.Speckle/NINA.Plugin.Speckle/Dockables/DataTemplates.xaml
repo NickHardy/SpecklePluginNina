@@ -137,6 +137,19 @@
     </Style>
 
     <Style
+        x:Key="SpeckleDangerButton"
+        BasedOn="{StaticResource SpeckleQuietButton}"
+        TargetType="Button">
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding StopConfirmPending}" Value="True">
+                <Setter Property="Foreground" Value="{StaticResource NotificationErrorTextBrush}" />
+                <Setter Property="BorderBrush" Value="{StaticResource NotificationErrorTextBrush}" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style
         x:Key="SpeckleQuietToggle"
         BasedOn="{StaticResource SpeckleQuietBase}"
         TargetType="ToggleButton">
@@ -1888,15 +1901,14 @@
                 </Grid>
             </Grid>
 
+            <StackPanel Grid.Row="4" Visibility="{Binding IsMoreOpen, Converter={StaticResource VisibilityConverter}}">
             <Border
-                Grid.Row="4"
                 Margin="0,8,0,0"
                 Padding="10,10,10,4"
                 Background="{StaticResource BackgroundBrush}"
                 BorderBrush="{StaticResource BorderBrush}"
                 BorderThickness="1"
-                CornerRadius="3"
-                Visibility="{Binding IsMoreOpen, Converter={StaticResource VisibilityConverter}}">
+                CornerRadius="3">
                 <WrapPanel>
                     <ToggleButton
                         Content="Crosshair"
@@ -1949,21 +1961,9 @@
                         ToolTip="Show the accumulated power spectrum beside the frame" />
                     <Button
                         Command="{Binding SlewWithMountCommand}"
-                        Content="Slew with mount"
+                        Content="Slew mount to these coordinates"
                         Style="{StaticResource SpeckleQuietButton}"
-                        ToolTip="Slew the mount to the coordinates of the pending step" />
-                    <Button
-                        Command="{Binding SkipTargetCommand}"
-                        Content="Skip target"
-                        Style="{StaticResource SpeckleQuietButton}"
-                        ToolTip="Drop this target for the rest of the night and go to the next one in the plan"
-                        Visibility="{Binding IsRunning, Converter={StaticResource VisibilityConverter}}" />
-                    <Button
-                        Command="{Binding StopRunCommand}"
-                        Content="Stop"
-                        Style="{StaticResource SpeckleQuietButton}"
-                        ToolTip="{Binding StopRunTooltip}"
-                        Visibility="{Binding StopRunVisible, Converter={StaticResource VisibilityConverter}}" />
+                        ToolTip="Let N.I.N.A. slew the mount to the coordinates shown on the card" />
                     <StackPanel
                         Height="32"
                         Margin="0,0,6,6"
@@ -1988,6 +1988,36 @@
                     </StackPanel>
                 </WrapPanel>
             </Border>
+
+            <Border
+                Margin="0,6,0,0"
+                Padding="10,10,10,4"
+                Background="{StaticResource BackgroundBrush}"
+                BorderBrush="{StaticResource BorderBrush}"
+                BorderThickness="1"
+                CornerRadius="3"
+                Visibility="{Binding DangerZoneVisible, Converter={StaticResource VisibilityConverter}}">
+                <WrapPanel>
+                    <TextBlock
+                        Margin="0,0,10,6"
+                        VerticalAlignment="Center"
+                        Style="{StaticResource SpeckleMicroLabel}"
+                        Text="ends imaging" />
+                    <Button
+                        Command="{Binding SkipTargetCommand}"
+                        Content="Skip target"
+                        Style="{StaticResource SpeckleQuietButton}"
+                        ToolTip="Drop this target for the rest of the night and go to the next one in the plan"
+                        Visibility="{Binding IsRunning, Converter={StaticResource VisibilityConverter}}" />
+                    <Button
+                        Command="{Binding StopRunCommand}"
+                        Content="{Binding StopRunLabel}"
+                        Style="{StaticResource SpeckleDangerButton}"
+                        ToolTip="{Binding StopRunTooltip}"
+                        Visibility="{Binding StopRunVisible, Converter={StaticResource VisibilityConverter}}" />
+                </WrapPanel>
+            </Border>
+            </StackPanel>
         </Grid>
     </DataTemplate>
 </ResourceDictionary>
