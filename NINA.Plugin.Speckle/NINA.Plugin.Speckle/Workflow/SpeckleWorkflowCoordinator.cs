@@ -266,7 +266,8 @@ namespace NINA.Plugin.Speckle.Workflow {
             };
             var centre = slit.Coordinates.Transform(Epoch.J2000);
             Logger.Info("Looking for bright stars within " + SlitSearchRadius + " degrees of altitude "
-                + SlitSearchAltitude + " azimuth " + slitAzimuth);
+                + SlitSearchAltitude + " azimuth " + slitAzimuth
+                + (speckle != null && speckle.DomePositionLock ? " (the parked dome slit)" : " (no parked dome slit, using the default direction)"));
             return FindBrightStarsAsync(centre, ct);
         }
 
@@ -275,7 +276,7 @@ namespace NINA.Plugin.Speckle.Workflow {
                                                                SlitSearchRadius, SlitSearchMinMagnitude, SlitSearchMaxMagnitude)
                 .ConfigureAwait(false);
             var brightest = found.OrderBy(star => star.Rp).Take(SlitSearchCount).ToList();
-            Logger.Info("Found " + found.Count + " bright stars near the dome slit; offering the brightest " + brightest.Count);
+            Logger.Info("Found " + found.Count + " bright stars in that direction, offering the brightest " + brightest.Count);
             return brightest;
         }
 

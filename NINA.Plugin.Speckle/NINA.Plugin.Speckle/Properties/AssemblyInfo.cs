@@ -42,7 +42,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyMetadata("ChangelogURL", "https://github.com/NickHardy/SpecklePluginNina")]
 
 //[Optional] The url to a featured logo that will be displayed in the plugin list next to the name
-[assembly: AssemblyMetadata("FeaturedImageURL", "pack://application:,,,/SpeckleInterferometry;component/Resources/SpeckleThumb.png")]
+[assembly: AssemblyMetadata("FeaturedImageURL", "https://raw.githubusercontent.com/NickHardy/SpecklePluginNina/version3/NINA.Plugin.Speckle/NINA.Plugin.Speckle/Resources/SpeckleThumb.png")]
 //[Optional] A url to an example screenshot of your plugin in action
 [assembly: AssemblyMetadata("ScreenshotURL", "https://github.com/NickHardy/SpecklePluginNina/blob/net8version/NINA.Plugin.Speckle/NINA.Plugin.Speckle/Resources/SpeckleOrbits.png?raw=true")]
 //[Optional] An additional url to an example example screenshot of your plugin in action

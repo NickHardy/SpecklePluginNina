@@ -470,6 +470,19 @@ namespace NINA.Plugin.Speckle.Dockables {
 
         public AsyncObservableCollection<ReferenceStar> BrightStars { get; } = new AsyncObservableCollection<ReferenceStar>();
 
+        public string BrightStarsLabel {
+            get {
+                var speckle = optionsProvider.Current;
+                if (speckle == null) {
+                    return "bright stars up now";
+                }
+                if (speckle.DomePositionLock) {
+                    return "bright stars in the dome slit";
+                }
+                return speckle.DomeSlitSouth ? "bright stars near the meridian" : "bright stars due north";
+            }
+        }
+
         public bool AddStarOpen {
             get => addStarOpen;
             set {
@@ -479,6 +492,7 @@ namespace NINA.Plugin.Speckle.Dockables {
                 addStarOpen = value;
                 Logger.Info("UI: add star panel " + (value ? "opened" : "closed"));
                 if (value) {
+                    RaisePropertyChanged(nameof(BrightStarsLabel));
                     _ = LoadBrightStarsAsync();
                 }
                 RaisePropertyChanged();
