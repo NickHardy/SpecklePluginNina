@@ -652,7 +652,7 @@
                                             Margin="0,4,10,4"
                                             VerticalAlignment="Center"
                                             Text="Capture method"
-                                            ToolTip="Video mode streams frames from the camera and is much faster, but only some cameras offer it (QHY, ZWO, Altair, Touptek). Automatic uses video mode when the connected camera reports it and single exposures otherwise." />
+                                            ToolTip="Video mode streams frames from the camera and is much faster. Automatic uses it, because camera drivers report video mode as unavailable even when they support it, and the run falls back to single exposures if the stream cannot start." />
                                         <ComboBox
                                             Grid.Row="5"
                                             Grid.Column="1"
@@ -662,7 +662,7 @@
                                             VerticalAlignment="Center"
                                             IsEditable="False"
                                             SelectedIndex="{Binding VideoExposuresMode}"
-                                            ToolTip="Video mode streams frames from the camera and is much faster, but only some cameras offer it (QHY, ZWO, Altair, Touptek). Automatic uses video mode when the connected camera reports it and single exposures otherwise.">
+                                            ToolTip="Video mode streams frames from the camera and is much faster. Automatic uses it, because camera drivers report video mode as unavailable even when they support it, and the run falls back to single exposures if the stream cannot start.">
                                             <ComboBoxItem Content="Automatic" />
                                             <ComboBoxItem Content="Single exposures" />
                                             <ComboBoxItem Content="Video mode" />
@@ -794,7 +794,7 @@
                                             Margin="0,4,10,4"
                                             VerticalAlignment="Center"
                                             Text="Analyse every Nth frame"
-                                            ToolTip="1 analyses every frame, which gives the best result. Raise it only if the analysis cannot keep up with the camera. Frames that are dropped are still saved to disk." />
+                                            ToolTip="How many captured frames pass between two analysed ones. The power spectrum needs far fewer frames than the run saves, so analysing every frame only costs time. Frames that are not analysed are still saved to disk." />
                                         <TextBox
                                             IsEnabled="{Binding AnalyseFringes}"
                                             Grid.Row="2"
@@ -804,7 +804,7 @@
                                             HorizontalAlignment="Left"
                                             VerticalAlignment="Center"
                                             Text="{Binding FringeAnalyseEveryNthFrame}"
-                                            ToolTip="1 analyses every frame, which gives the best result. Raise it only if the analysis cannot keep up with the camera. Frames that are dropped are still saved to disk." />
+                                            ToolTip="How many captured frames pass between two analysed ones. The power spectrum needs far fewer frames than the run saves, so analysing every frame only costs time. Frames that are not analysed are still saved to disk." />
 
                                         <TextBlock
                                             Background="Transparent"
@@ -1118,7 +1118,26 @@
                                             <RowDefinition Height="Auto" />
                                             <RowDefinition Height="Auto" />
                                             <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
                                         </Grid.RowDefinitions>
+
+                                        <TextBlock
+                                            Background="Transparent"
+                                            Grid.Row="4"
+                                            Grid.Column="0"
+                                            Margin="0,4,10,4"
+                                            VerticalAlignment="Center"
+                                            Text="Show coordinates in decimal degrees"
+                                            ToolTip="Show right ascension and declination as decimal degrees everywhere, instead of hours, minutes and seconds. Affects the confirmation card and the target table." />
+                                        <CheckBox
+                                            Grid.Row="4"
+                                            Grid.Column="1"
+                                            MinWidth="80"
+                                            Margin="0,4"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            IsChecked="{Binding ShowDecimalDegrees}"
+                                            ToolTip="Show right ascension and declination as decimal degrees everywhere, instead of hours, minutes and seconds. Affects the confirmation card and the target table." />
 
                                         <TextBlock
                                             Background="Transparent"

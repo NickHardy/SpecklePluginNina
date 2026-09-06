@@ -23,9 +23,9 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyMetadata("MinimumApplicationVersion", "3.0.0.3005")]
 
 // The license your plugin code is using
-[assembly: AssemblyMetadata("License", "MIT")]
+[assembly: AssemblyMetadata("License", "MPL-2.0")]
 // The url to the license
-[assembly: AssemblyMetadata("LicenseURL", "https://opensource.org/licenses/MIT")]
+[assembly: AssemblyMetadata("LicenseURL", "https://www.mozilla.org/en-US/MPL/2.0/")]
 // The repository where your pluggin is hosted
 [assembly: AssemblyMetadata("Repository", "https://github.com/NickHardy/SpecklePluginNina")]
 
@@ -44,13 +44,57 @@ using System.Runtime.InteropServices;
 //[Optional] The url to a featured logo that will be displayed in the plugin list next to the name
 [assembly: AssemblyMetadata("FeaturedImageURL", "https://raw.githubusercontent.com/NickHardy/SpecklePluginNina/version3/NINA.Plugin.Speckle/NINA.Plugin.Speckle/Resources/SpeckleThumb.png")]
 //[Optional] A url to an example screenshot of your plugin in action
-[assembly: AssemblyMetadata("ScreenshotURL", "https://github.com/NickHardy/SpecklePluginNina/blob/net8version/NINA.Plugin.Speckle/NINA.Plugin.Speckle/Resources/SpeckleOrbits.png?raw=true")]
+[assembly: AssemblyMetadata("ScreenshotURL", "https://raw.githubusercontent.com/NickHardy/SpecklePluginNina/version3/screenshots/plan.png")]
 //[Optional] An additional url to an example example screenshot of your plugin in action
-[assembly: AssemblyMetadata("AltScreenshotURL", "https://github.com/NickHardy/SpecklePluginNina/blob/net8version/NINA.Plugin.Speckle/NINA.Plugin.Speckle/Resources/ListSequence.png?raw=true")]
+[assembly: AssemblyMetadata("AltScreenshotURL", "https://raw.githubusercontent.com/NickHardy/SpecklePluginNina/version3/screenshots/fringes.png")]
 //[Optional] An in-depth description of your plugin
 [assembly: AssemblyMetadata("LongDescription", @"#Speckle Interferometry data acquisition plugin#
 
-Automated acquisition of speckle interferometry data: many very short exposures of a small region of interest, no guiding, no dithering, and moonlight does not matter. Resolves pairs below the seeing limit. Almost any telescope works; more aperture and focal length reach fainter pairs at smaller separations.
+Acquisition of speckle interferometry data. This plugin supports loading target lists with many targets to be worked through over one or more nights. When observing, the plugin handles target scheduling, slews to the next best target, places a region of interest, and takes many short exposures to resolve features below the seeing limit. 
+
+Built around automatic capture with the highest possible cadence, and includes a manual mode with as little input required as possible to be used on large manual telescopes, such as the 2.5-meter on Mt. Wilson. Use of two cameras, so that a dedicated science camera can improve sensitivity in bandpasses of interest, is also supported.
+
+## Plugin Dockable ##
+
+Everything runs from a dockable panel on the Imaging tab. Add it from the panel menu:
+
+![Adding the panel](https://raw.githubusercontent.com/NickHardy/SpecklePluginNina/version3/screenshots/panel-add.png)
+
+Drag its title bar to pop it out into its own window to use the full screen, as the rest of the NINA UI, notably the sequencer, does not have to be used for operation.
+
+## Planning ##
+
+The plan page holds the loaded target lists, the observation order, and a queue. Pin what runs next, reorder it, drop a target, or add a star by hand.
+
+![The plan page](https://raw.githubusercontent.com/NickHardy/SpecklePluginNina/version3/screenshots/plan.png)
+
+## Running ##
+
+The run page works through one target at a time: pick it, slew, place the region of interest on the star, calibrate the exposure, capture the frames, then do the same on a nearby reference star.
+
+When using this plugin in manual mode, configurable in the options, the flow stops at each point that needs operator judgement. With a mount N.I.N.A. can slew, a toggle in the plugin options lets the whole chain run through completely unattended, observing up to typically around 300 targets a night depending on hardware capability.
+
+![Slewing to a target](https://raw.githubusercontent.com/NickHardy/SpecklePluginNina/version3/screenshots/slewing.png)
+
+Filters, exposure time and frame counts can be changed at the confirmation card, for the capture that is about to start.
+
+![Confirming the capture settings](https://raw.githubusercontent.com/NickHardy/SpecklePluginNina/version3/screenshots/capture.png)
+
+## Fringes ##
+
+The mean power spectrum and its autocorrelation build up beside the frames as a run captures, so a resolved pair can be confirmed while the data is still being taken. Both are written as JPEG files alongside the saved frames.
+
+![The power spectrum beside the frames](https://raw.githubusercontent.com/NickHardy/SpecklePluginNina/version3/screenshots/fringes.png)
+
+## Additionally ##
+
+* Video mode capture on QHY, ZWO, Altair and Touptek cameras. A sustained 108 fps on a 1024 x 1024 region with an ASI585, and 49.8 of a possible 50 fps at 20 ms exposures.
+* Since this relies on high framerate capture, this plugin includes a camera benchmark to time capture, with every driver call and a report being written to the N.I.N.A. log directory.
+
+Advanced:
+* An operator webpage the plugin serves itself, for manual large telescopes such as on Mt. Wilson. Off by default.
+* Two camera setups behind a flip mirror, and scheduling around a parked dome slit.
+* Legacy advanced sequencer instructions for special edge cases.
 
 ## Getting started ##
 
@@ -58,9 +102,7 @@ Automated acquisition of speckle interferometry data: many very short exposures 
 2. Set your telescope and camera under Options > Plugins > SpeckleInterferometry.
 3. Load a target list, then press Start.
 
-The panel works through the night on its own: pick a target, slew, place the region of interest, calibrate the exposure, capture, then do the same on a nearby reference star. With a mount N.I.N.A. can slew it needs no one present; pointed by hand it asks you to confirm each slew. Progress is written to a nightly CSV, so a run can be stopped and picked up later.
-
-The full manual is inside the plugin, under the **Documentation** tab in the plugin options. No internet needed. The old Advanced Sequencer instructions still work, but the panel does everything they did.
+Progress is written to a nightly CSV, so a run can be stopped and picked up again later. Further docmentation is inside the plugin, under the Documentation tab in the plugin options.
 
 ## Links ##
 

@@ -1,4 +1,4 @@
-using NINA.Core.Utility;
+﻿using NINA.Core.Utility;
 using NINA.Plugin.Speckle.Imaging;
 using System;
 
@@ -21,6 +21,8 @@ namespace NINA.Plugin.Speckle.Services {
         void Push(ushort[] pixels, int width, int height, ObservableRectangle roi);
 
         void EndRun();
+
+        void SetOutputFolder(string folder);
 
         void Reset();
     }

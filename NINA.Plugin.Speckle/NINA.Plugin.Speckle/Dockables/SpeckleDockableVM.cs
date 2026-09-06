@@ -189,6 +189,8 @@ namespace NINA.Plugin.Speckle.Dockables {
                 fringeAnalysis.Updated += OnFringeUpdated;
             }
             FringeDemoRequest.Requested += OnFringeDemoRequested;
+            Model.CoordinateFormat.Changed += OnCoordinateFormatChanged;
+            Model.CoordinateFormat.UseDecimalDegrees = optionsProvider.Current?.ShowDecimalDegrees ?? false;
 
             coordinator.PhaseChanged += OnPhaseChanged;
             coordinator.PendingChanged += OnPendingChanged;
@@ -836,6 +838,34 @@ namespace NINA.Plugin.Speckle.Dockables {
             }
         }
 
+        public bool NowImagingVisible => IsRunning && Session.CurrentTarget != null;
+
+        public string NowImagingName {
+            get {
+                var target = Session.CurrentTarget;
+                if (target == null) {
+                    return string.Empty;
+                }
+                var name = TargetLabel.Of(target);
+                if (!Session.ImagingReference) {
+                    return name;
+                }
+                var referenceName = Session.CurrentReference?.Name;
+                return name + ", on " + (string.IsNullOrWhiteSpace(referenceName) ? "its reference star" : referenceName);
+            }
+        }
+
+        public string NextUpCaption => IsRunning ? "next up" : "first up";
+
+        public bool NextUpVisible => NextUpTarget != null;
+
+        public string NextUpName {
+            get {
+                var target = NextUpTarget;
+                return target == null ? string.Empty : TargetLabel.Of(target);
+            }
+        }
+
         public SpeckleTarget NextUpTarget {
             get {
                 if (UpNext.Count > 0) {
@@ -872,9 +902,6 @@ namespace NINA.Plugin.Speckle.Dockables {
 
         private string CaptureSettingsLine() {
             var line = string.Empty;
-            if (Session.CaptureEntryCount > 1) {
-                line += " - filter " + Session.CaptureEntryNumber + " of " + Session.CaptureEntryCount;
-            }
             var filter = Session.ActiveFilter;
             if (!string.IsNullOrWhiteSpace(filter)) {
                 line += " - " + filter;
@@ -954,6 +981,10 @@ namespace NINA.Plugin.Speckle.Dockables {
         public bool ProgressBarVisible => IsRunning && !IsActionNeeded && !Session.IsHolding;
 
         public bool ProgressIndeterminate => Session.Phase != WorkflowPhase.RunningVideoExposures;
+
+        public bool ProgressSpinnerVisible => ProgressBarVisible && ProgressIndeterminate;
+
+        public bool CaptureBarsVisible => ProgressBarVisible && !ProgressIndeterminate;
 
         public bool PrimaryActionVisible => IsRunning ? IsActionNeeded : StartVisible;
 
@@ -1221,6 +1252,7 @@ namespace NINA.Plugin.Speckle.Dockables {
                 fringeAnalysis.Updated -= OnFringeUpdated;
             }
             FringeDemoRequest.Requested -= OnFringeDemoRequested;
+            Model.CoordinateFormat.Changed -= OnCoordinateFormatChanged;
             BenchmarkRequest.Requested -= OnBenchmarkRequested;
             PreparedFrameRelay.Published -= OnPreparedFramePublished;
             cameraMediator.RemoveConsumer(this);
@@ -2054,6 +2086,13 @@ namespace NINA.Plugin.Speckle.Dockables {
         }
 
         public bool IsFringeDemoRunning => fringeDemoActive;
+
+        private void OnCoordinateFormatChanged(object sender, EventArgs e) {
+            UiThread.Post(() => {
+                targetsView?.Refresh();
+                RaiseAll();
+            });
+        }
 
         private void OnFringeDemoRequested(object sender, EventArgs e) {
             UiThread.Post(() => {

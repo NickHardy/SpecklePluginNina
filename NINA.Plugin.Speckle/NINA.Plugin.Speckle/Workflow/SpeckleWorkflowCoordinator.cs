@@ -70,6 +70,8 @@ namespace NINA.Plugin.Speckle.Workflow {
         private static readonly TimeSpan WindowLeadTime = TimeSpan.FromSeconds(60);
 
         private readonly object cancellationSync = new object();
+        private readonly List<CancellationTokenSource> retiredSources = new List<CancellationTokenSource>();
+        private int cancelsInFlight;
         private CancellationTokenSource runCts;
         private CancellationTokenSource targetCts;
         private CancellationTokenSource legCts;
@@ -385,12 +387,6 @@ namespace NINA.Plugin.Speckle.Workflow {
             };
         }
 
-        private static bool LooksLikeZwo(string cameraName) {
-            return !string.IsNullOrWhiteSpace(cameraName)
-                && (cameraName.IndexOf("ZWO", StringComparison.OrdinalIgnoreCase) >= 0
-                    || cameraName.IndexOf("ASI", StringComparison.OrdinalIgnoreCase) >= 0);
-        }
-
         private RoiSeriesMode ResolveVideoExposuresMode(Speckle speckle) {
             var info = cameraMediator.GetInfo();
             var canLiveView = info != null && info.Connected && info.CanShowLiveView;
@@ -407,14 +403,10 @@ namespace NINA.Plugin.Speckle.Workflow {
                     return RoiSeriesMode.Video;
 
                 default:
-                    if (!canLiveView && LooksLikeZwo(info?.Name)) {
-                        Logger.Info("Video exposures will use single exposures, chosen automatically. The camera " + info.Name
-                            + " does support video mode, but its driver reports otherwise. Set video exposures to Force video mode in the plugin options to stream instead, which is far faster for small regions.");
-                        return RoiSeriesMode.Sequenced;
-                    }
-                    Logger.Info("Video exposures will use " + (canLiveView ? "video mode" : "single exposures")
-                        + ", chosen automatically (camera " + (info?.Name ?? "none") + ", video mode available " + canLiveView + ")");
-                    return canLiveView ? RoiSeriesMode.Video : RoiSeriesMode.Sequenced;
+                    Logger.Info("Video exposures will use video mode, chosen automatically" + readFrom
+                        + ". The driver reports video mode as " + (canLiveView ? "available" : "unavailable")
+                        + ". Single exposures are used if the stream cannot be started.");
+                    return RoiSeriesMode.Video;
             }
         }
 
@@ -699,7 +691,7 @@ namespace NINA.Plugin.Speckle.Workflow {
                 Notification.ShowWarning("There is no reference star to image for " + TargetLabel.Of(target));
                 return;
             }
-            if (legCts == null) {
+            if (ReadSource(ref legCts) == null) {
                 Logger.Info("Jump to the " + LegName(toReferenceLeg) + " leg of " + TargetLabel.Of(target)
                     + " refused; no leg is running at phase " + Session.Phase);
                 Notification.ShowWarning("Wait until " + TargetLabel.Of(target) + " is under way before changing step");
@@ -1186,7 +1178,7 @@ namespace NINA.Plugin.Speckle.Workflow {
         }
 
         private async Task StopPreviewAsync(string reason) {
-            if (previewCts == null) {
+            if (ReadSource(ref previewCts) == null) {
                 return;
             }
             previewWillResume = true;
@@ -1911,18 +1903,45 @@ namespace NINA.Plugin.Speckle.Workflow {
                 if (ReferenceEquals(field, source)) {
                     field = null;
                 }
-                source.Dispose();
+                if (cancelsInFlight > 0) {
+                    retiredSources.Add(source);
+                    return;
+                }
             }
+            source.Dispose();
         }
 
         private void CancelSource(ref CancellationTokenSource field) {
             CancellationTokenSource source;
             lock (cancellationSync) {
                 source = field;
+                if (source == null) {
+                    return;
+                }
+                cancelsInFlight++;
             }
             try {
-                source?.Cancel();
-            } catch (ObjectDisposedException) {
+                source.Cancel();
+            } finally {
+                CancellationTokenSource[] drained = null;
+                lock (cancellationSync) {
+                    cancelsInFlight--;
+                    if (cancelsInFlight == 0 && retiredSources.Count > 0) {
+                        drained = retiredSources.ToArray();
+                        retiredSources.Clear();
+                    }
+                }
+                if (drained != null) {
+                    foreach (var retired in drained) {
+                        retired.Dispose();
+                    }
+                }
+            }
+        }
+
+        private CancellationTokenSource ReadSource(ref CancellationTokenSource field) {
+            lock (cancellationSync) {
+                return field;
             }
         }
 

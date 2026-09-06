@@ -8,6 +8,7 @@
     xmlns:view="clr-namespace:NINA.WPF.Base.View;assembly=NINA.WPF.Base">
 
     <dk:ReferenceEqualityMultiConverter x:Key="RefEq" />
+    <dk:CaptureEntryProgressConverter x:Key="CaptureBar" />
     <dk:ZeroBlankConverter x:Key="ZeroBlank" />
     <dk:ZeroToVisibilityConverter x:Key="ZeroHint" />
     <dk:FileNameConverter x:Key="FileNameConverter" />
@@ -106,8 +107,8 @@
         BasedOn="{StaticResource SpeckleQuietButton}"
         TargetType="Button">
         <Setter Property="Height" Value="40" />
-        <Setter Property="MinWidth" Value="160" />
-        <Setter Property="Padding" Value="16,0" />
+        <Setter Property="MinWidth" Value="230" />
+        <Setter Property="Padding" Value="24,0" />
         <Setter Property="FontSize" Value="16" />
         <Setter Property="FontWeight" Value="SemiBold" />
         <Style.Triggers>
@@ -744,7 +745,7 @@
                 <Border
                     Background="{StaticResource BackgroundBrush}"
                     Visibility="{Binding PlanningPanelVisible, Converter={StaticResource VisibilityConverter}}">
-                    <Grid>
+                    <Grid x:Name="PlanLayout">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
@@ -918,6 +919,10 @@
                                     <ColumnDefinition Width="Auto" />
                                     <ColumnDefinition Width="*" />
                                 </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
                                 <StackPanel
                                     Grid.Column="0"
                                     Margin="2,0,16,0"
@@ -948,6 +953,43 @@
                                     Opacity="0.8"
                                     Text="Drag a target here"
                                     Visibility="{Binding QueueEmpty, Converter={StaticResource VisibilityConverter}}" />
+                                <StackPanel
+                                    Grid.Row="1"
+                                    Grid.Column="0"
+                                    Grid.ColumnSpan="2"
+                                    Margin="2,8,0,0"
+                                    Orientation="Horizontal">
+                                    <TextBlock
+                                        Margin="0,0,8,0"
+                                        VerticalAlignment="Center"
+                                        Style="{StaticResource SpeckleMicroLabel}"
+                                        Text="imaging now"
+                                        Visibility="{Binding NowImagingVisible, Converter={StaticResource VisibilityConverter}}" />
+                                    <TextBlock
+                                        Margin="0,0,20,0"
+                                        VerticalAlignment="Center"
+                                        FontSize="15"
+                                        FontWeight="SemiBold"
+                                        Foreground="{StaticResource PrimaryBrush}"
+                                        Text="{Binding NowImagingName}"
+                                        TextTrimming="CharacterEllipsis"
+                                        Visibility="{Binding NowImagingVisible, Converter={StaticResource VisibilityConverter}}" />
+                                    <TextBlock
+                                        Margin="0,0,8,0"
+                                        VerticalAlignment="Center"
+                                        Style="{StaticResource SpeckleMicroLabel}"
+                                        Text="{Binding NextUpCaption}"
+                                        Visibility="{Binding NextUpVisible, Converter={StaticResource VisibilityConverter}}" />
+                                    <TextBlock
+                                        VerticalAlignment="Center"
+                                        FontSize="15"
+                                        Foreground="{StaticResource PrimaryBrush}"
+                                        Opacity="0.85"
+                                        Text="{Binding NextUpName}"
+                                        TextTrimming="CharacterEllipsis"
+                                        Visibility="{Binding NextUpVisible, Converter={StaticResource VisibilityConverter}}" />
+                                </StackPanel>
+
                                 <ScrollViewer Grid.Column="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Disabled">
                                     <ItemsControl
                                         MinHeight="60"
@@ -1056,6 +1098,8 @@
 
                         <DataGrid
                             Grid.Row="4"
+                            Width="{Binding ActualWidth, ElementName=PlanLayout}"
+                            HorizontalAlignment="Stretch"
                             AlternationCount="{Binding Items.Count, RelativeSource={RelativeSource Self}}"
                             AutoGenerateColumns="False"
                             CanUserAddRows="False"
@@ -1070,6 +1114,8 @@
                             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                             RowHeaderStyle="{StaticResource StandardDataGridRowHeader}"
                             SelectionMode="Single"
+                            Loaded="OnTargetTableLoaded"
+                            SizeChanged="OnTargetTableSizeChanged"
                             Style="{StaticResource StandardDataGrid}">
                             <DataGrid.RowStyle>
                                 <Style BasedOn="{StaticResource StandardDataGridRow}" TargetType="DataGridRow">
@@ -1153,7 +1199,7 @@
                                 </DataGridTemplateColumn>
                                 <DataGridTextColumn
                                     Width="2.2*"
-                                    MinWidth="70"
+                                    MinWidth="56"
                                     Binding="{Binding Name}"
                                     ElementStyle="{StaticResource SpeckleCellText}"
                                     Header="name"
@@ -1166,7 +1212,7 @@
                                 </DataGridTextColumn>
                                 <DataGridTextColumn
                                     Width="0.9*"
-                                    MinWidth="42"
+                                    MinWidth="32"
                                     Binding="{Binding Obs}"
                                     ElementStyle="{StaticResource SpeckleCellText}"
                                     Header="obs"
@@ -1179,7 +1225,7 @@
                                 </DataGridTextColumn>
                                 <DataGridTextColumn
                                     Width="1.2*"
-                                    MinWidth="64"
+                                    MinWidth="52"
                                     Binding="{Binding RaText}"
                                     ElementStyle="{StaticResource SpeckleCellNumber}"
                                     Header="ra"
@@ -1192,7 +1238,7 @@
                                 </DataGridTextColumn>
                                 <DataGridTextColumn
                                     Width="1.2*"
-                                    MinWidth="66"
+                                    MinWidth="54"
                                     Binding="{Binding DecText}"
                                     ElementStyle="{StaticResource SpeckleCellNumber}"
                                     Header="dec"
@@ -1205,7 +1251,7 @@
                                 </DataGridTextColumn>
                                 <DataGridTextColumn
                                     Width="0.7*"
-                                    MinWidth="42"
+                                    MinWidth="32"
                                     Binding="{Binding Gmag, StringFormat=F1}"
                                     ElementStyle="{StaticResource SpeckleCellNumber}"
                                     Header="gmag"
@@ -1283,7 +1329,8 @@
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>
                                 <DataGridTemplateColumn
-                                    Width="110"
+                                    Width="1.4*"
+                                    MinWidth="68"
                                     Header=""
                                     IsReadOnly="True">
                                     <DataGridTemplateColumn.CellTemplate>
@@ -1300,7 +1347,8 @@
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>
                                 <DataGridTemplateColumn
-                                    Width="132"
+                                    Width="1.4*"
+                                    MinWidth="68"
                                     Header=""
                                     IsReadOnly="True">
                                     <DataGridTemplateColumn.CellTemplate>
@@ -1724,11 +1772,38 @@
                     Visibility="{Binding RunChromeVisible, Converter={StaticResource VisibilityConverter}}">
                     <ProgressBar
                         Foreground="{StaticResource ButtonForegroundBrush}"
-                        IsIndeterminate="{Binding ProgressIndeterminate}"
-                        Maximum="{Binding Session.FrameTotal}"
-                        Minimum="0"
-                        Value="{Binding Session.FrameCount}"
-                        Visibility="{Binding ProgressBarVisible, Converter={StaticResource VisibilityConverter}}" />
+                        IsIndeterminate="True"
+                        Visibility="{Binding ProgressSpinnerVisible, Converter={StaticResource VisibilityConverter}}" />
+                    <ItemsControl
+                        AlternationCount="99"
+                        ItemsSource="{Binding Session.CaptureEntries}"
+                        Visibility="{Binding CaptureBarsVisible, Converter={StaticResource VisibilityConverter}}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <UniformGrid Rows="1" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <ProgressBar
+                                    Height="4"
+                                    Margin="0,0,2,0"
+                                    Foreground="{StaticResource ButtonForegroundBrush}"
+                                    Maximum="1"
+                                    Minimum="0"
+                                    ToolTip="{Binding}">
+                                    <ProgressBar.Value>
+                                        <MultiBinding Converter="{StaticResource CaptureBar}">
+                                            <Binding Path="(ItemsControl.AlternationIndex)" RelativeSource="{RelativeSource AncestorType=ContentPresenter}" />
+                                            <Binding Path="Data.Session.CaptureEntryNumber" Source="{StaticResource PlanProxy}" />
+                                            <Binding Path="Data.Session.FrameCount" Source="{StaticResource PlanProxy}" />
+                                            <Binding Path="Data.Session.FrameTotal" Source="{StaticResource PlanProxy}" />
+                                        </MultiBinding>
+                                    </ProgressBar.Value>
+                                </ProgressBar>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
                 </Grid>
 
                 <StackPanel

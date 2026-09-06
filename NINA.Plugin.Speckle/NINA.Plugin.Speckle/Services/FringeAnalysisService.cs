@@ -7,6 +7,7 @@ using System.Collections.Concurrent;
 using System.ComponentModel.Composition;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Threading;
 using System.Windows.Media.Imaging;
 
@@ -58,6 +59,7 @@ namespace NINA.Plugin.Speckle.Services {
         private int capturedFrames;
         private int dropReported;
         private FringePaneMode paneMode = FringePaneMode.Average;
+        private string outputFolder;
 
         private FringeRunContext context;
         private FringeOptions options = FringeOptions.Defaults;
@@ -176,6 +178,13 @@ namespace NINA.Plugin.Speckle.Services {
                     Logger.Warning("Fringe analysis cannot keep up with the camera; analysis frames are being dropped. Capture and saving are unaffected.");
                 }
             }
+        }
+
+        public void SetOutputFolder(string folder) {
+            if (string.IsNullOrWhiteSpace(folder)) {
+                return;
+            }
+            Volatile.Write(ref outputFolder, folder);
         }
 
         public void EndRun() {
@@ -362,6 +371,7 @@ namespace NINA.Plugin.Speckle.Services {
                 Logger.Warning("Fringe analysis finished with no frames analysed for " + (context?.Label ?? "unknown"));
                 Publish(BuildResult(null, true));
             }
+            SavePanes();
             var dropped = Volatile.Read(ref droppedFrames);
             var captured = Volatile.Read(ref capturedFrames);
             var analysed = accumulator?.FrameCount ?? 0;
@@ -407,6 +417,48 @@ namespace NINA.Plugin.Speckle.Services {
             }
             renderClock.Restart();
             dirty = false;
+        }
+
+        private void SavePanes() {
+            var folder = Volatile.Read(ref outputFolder);
+            if (string.IsNullOrWhiteSpace(folder) || accumulator == null || accumulator.FrameCount == 0) {
+                return;
+            }
+            var requested = paneMode;
+            try {
+                if (!Directory.Exists(folder)) {
+                    Directory.CreateDirectory(folder);
+                }
+                var stem = FileNameStem(context?.Label);
+                SavePane(FringePaneMode.Average, Path.Combine(folder, stem + "_powerspectrum.jpg"));
+                SavePane(FringePaneMode.Autocorrelation, Path.Combine(folder, stem + "_autocorrelation.jpg"));
+            } catch (Exception ex) {
+                Logger.Error("Could not save the power spectrum images to " + folder, ex);
+            } finally {
+                paneMode = requested;
+            }
+        }
+
+        private void SavePane(FringePaneMode mode, string path) {
+            paneMode = mode;
+            var result = Render(true);
+            if (result?.Image == null) {
+                return;
+            }
+            var encoder = new JpegBitmapEncoder { QualityLevel = 92 };
+            encoder.Frames.Add(BitmapFrame.Create(result.Image));
+            using (var stream = File.Create(path)) {
+                encoder.Save(stream);
+            }
+            Logger.Info("Saved the " + mode + " pane to " + path);
+        }
+
+        private static string FileNameStem(string label) {
+            var name = string.IsNullOrWhiteSpace(label) ? "speckle" : label.Trim();
+            foreach (var bad in Path.GetInvalidFileNameChars()) {
+                name = name.Replace(bad, '_');
+            }
+            return name;
         }
 
         private FringeAnalysisResult Render(bool final) {

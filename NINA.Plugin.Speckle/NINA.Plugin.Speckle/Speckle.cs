@@ -391,6 +391,14 @@ namespace NINA.Plugin.Speckle {
             set => SetOption(value);
         }
 
+        public bool ShowDecimalDegrees {
+            get => GetOption(false);
+            set {
+                SetOption(value);
+                Model.CoordinateFormat.UseDecimalDegrees = value;
+            }
+        }
+
         public string RecentTargetLists {
             get => GetOption("");
             set => SetOption(value);
@@ -580,7 +588,7 @@ namespace NINA.Plugin.Speckle {
         }
 
         public int FringeAnalyseEveryNthFrame {
-            get => GetOption(1);
+            get => GetOption(50);
             set => SetOption(value);
         }
 

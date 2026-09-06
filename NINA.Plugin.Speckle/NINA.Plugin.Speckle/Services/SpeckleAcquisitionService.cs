@@ -170,12 +170,24 @@ namespace NINA.Plugin.Speckle.Services {
             });
         }
 
+        private void ReportSaveFolder(string savedPath) {
+            if (string.IsNullOrWhiteSpace(savedPath)) {
+                return;
+            }
+            try {
+                fringeAnalysis?.SetOutputFolder(Path.GetDirectoryName(savedPath));
+            } catch (Exception ex) {
+                Logger.Error("Could not work out the folder the frames are being saved to", ex);
+            }
+        }
+
         private void EnqueueSave(List<Task> saveTasks, IImageData imageData, IList<ImagePattern> customPatterns) {
             saveTasks.Add(Task.Run(async () => {
                 try {
                     FileSaveInfo fileSaveInfo = new FileSaveInfo(profileService);
                     string tempPath = await imageData.PrepareSave(fileSaveInfo);
-                    imageData.FinalizeSave(tempPath, fileSaveInfo.FilePattern, customPatterns);
+                    var savedPath = imageData.FinalizeSave(tempPath, fileSaveInfo.FilePattern, customPatterns);
+                    ReportSaveFolder(savedPath);
                 } catch (Exception ex) {
                     ReportSaveFailure(ex);
                     throw;
