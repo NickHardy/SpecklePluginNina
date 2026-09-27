@@ -70,6 +70,7 @@ namespace NINA.Plugin.Speckle.Dockables {
         private CameraInfo cameraInfo;
         private TelescopeInfo telescopeInfo;
         private CancellationTokenSource runCts;
+        private CancellationTokenSource connectCts;
         private CancellationTokenSource focusCts;
         private Task focusTask;
         private bool isFocusing;
@@ -990,6 +991,9 @@ namespace NINA.Plugin.Speckle.Dockables {
 
         public string PrimaryActionLabel {
             get {
+                if (isConnectingEquipment) {
+                    return "Cancel connect";
+                }
                 if (!IsRunning) {
                     return "Start";
                 }
@@ -1012,6 +1016,10 @@ namespace NINA.Plugin.Speckle.Dockables {
 
         public string PrimaryActionTooltip {
             get {
+                if (isConnectingEquipment) {
+                    return "Stop waiting for the equipment and abandon the start. N.I.N.A. finishes the driver connect in the background - "
+                        + "to abort the driver itself, use the cancel button on the equipment page.";
+                }
                 if (!IsRunning) {
                     return "Connect the equipment and start the run";
                 }
@@ -1260,6 +1268,7 @@ namespace NINA.Plugin.Speckle.Dockables {
             focuserMediator.RemoveConsumer(this);
             cooling.Dispose();
             StopAndDisposeSource(ref runCts);
+            StopAndDisposeSource(ref connectCts);
             StopAndDisposeSource(ref focusCts);
             StopAndDisposeSource(ref demoCts);
             SetRawPixels(null);
@@ -1302,21 +1311,25 @@ namespace NINA.Plugin.Speckle.Dockables {
 
         private async Task StartAsync() {
             await StopFocusPreviewAsync().ConfigureAwait(true);
-            isConnectingEquipment = true;
-            UiThread.Post(() => RaisePropertyChanged(nameof(StatusLine)));
-            RequeryCommands();
+            connectCts?.Dispose();
+            connectCts = new CancellationTokenSource();
+            var connectToken = connectCts.Token;
+            SetConnectingEquipment(true);
             bool ready;
             try {
-                ready = await ConnectEquipmentAsync().ConfigureAwait(true);
+                ready = await ConnectEquipmentAsync(connectToken).ConfigureAwait(true);
+            } catch (OperationCanceledException) {
+                Logger.Info("UI: Equipment connect cancelled - the run was not started");
+                Notification.ShowInformation("Start cancelled while connecting the equipment");
+                ready = false;
             } catch (Exception ex) {
                 Logger.Error(ex);
                 Notification.ShowError("Cannot start: " + ex.Message);
                 ready = false;
             } finally {
-                isConnectingEquipment = false;
+                SetConnectingEquipment(false);
                 progress.Report(new ApplicationStatus { Status = string.Empty });
-                UiThread.Post(() => RaisePropertyChanged(nameof(StatusLine)));
-                RequeryCommands();
+                StopAndDisposeSource(ref connectCts);
             }
             if (!ready || !CanStart()) {
                 return;
@@ -1324,11 +1337,30 @@ namespace NINA.Plugin.Speckle.Dockables {
             await RunAsync().ConfigureAwait(true);
         }
 
-        private async Task<bool> ConnectEquipmentAsync() {
-            var cameraConnected = await ConnectDeviceAsync("camera", cameraMediator.GetInfo()?.Connected == true, cameraMediator.Connect).ConfigureAwait(true);
-            var telescopeConnected = await ConnectDeviceAsync("telescope", telescopeMediator.GetInfo()?.Connected == true, telescopeMediator.Connect).ConfigureAwait(true);
-            await ConnectDeviceAsync("filter wheel", filterWheelMediator.GetInfo()?.Connected == true, filterWheelMediator.Connect).ConfigureAwait(true);
-            await ConnectDeviceAsync("focuser", focuserMediator.GetInfo()?.Connected == true, focuserMediator.Connect).ConfigureAwait(true);
+        private void SetConnectingEquipment(bool connecting) {
+            isConnectingEquipment = connecting;
+            UiThread.Post(() => {
+                RaisePropertyChanged(nameof(StatusLine));
+                RaisePropertyChanged(nameof(PrimaryActionVisible));
+                RaisePropertyChanged(nameof(PrimaryActionLabel));
+                RaisePropertyChanged(nameof(PrimaryActionTooltip));
+                RequeryCommands();
+            });
+        }
+
+        private void CancelConnect() {
+            try {
+                connectCts?.Cancel();
+            } catch (ObjectDisposedException) {
+            }
+            progress.Report(new ApplicationStatus { Status = "Cancelling the connect" });
+        }
+
+        private async Task<bool> ConnectEquipmentAsync(CancellationToken token) {
+            var cameraConnected = await ConnectDeviceAsync("camera", cameraMediator.GetInfo()?.Connected == true, cameraMediator.Connect, token).ConfigureAwait(true);
+            var telescopeConnected = await ConnectDeviceAsync("telescope", telescopeMediator.GetInfo()?.Connected == true, telescopeMediator.Connect, token).ConfigureAwait(true);
+            await ConnectDeviceAsync("filter wheel", filterWheelMediator.GetInfo()?.Connected == true, filterWheelMediator.Connect, token).ConfigureAwait(true);
+            await ConnectDeviceAsync("focuser", focuserMediator.GetInfo()?.Connected == true, focuserMediator.Connect, token).ConfigureAwait(true);
             if (!cameraConnected) {
                 Notification.ShowError("Cannot start: the camera did not connect");
                 return false;
@@ -1339,13 +1371,27 @@ namespace NINA.Plugin.Speckle.Dockables {
             return true;
         }
 
-        private async Task<bool> ConnectDeviceAsync(string label, bool alreadyConnected, Func<Task<bool>> connect) {
+        private async Task<bool> ConnectDeviceAsync(string label, bool alreadyConnected, Func<Task<bool>> connect, CancellationToken token) {
+            token.ThrowIfCancellationRequested();
             if (alreadyConnected) {
                 return true;
             }
             progress.Report(new ApplicationStatus { Status = "Connecting " + label });
+            // IDeviceMediator.Connect() takes no token, so cancelling means we stop waiting for it.
+            // N.I.N.A. keeps the driver connect running; its own equipment page can abort that.
+            var connectTask = Task.Run(connect);
+            using (var waiting = CancellationTokenSource.CreateLinkedTokenSource(token)) {
+                var cancelled = Task.Delay(Timeout.Infinite, waiting.Token);
+                var finished = await Task.WhenAny(connectTask, cancelled).ConfigureAwait(true);
+                waiting.Cancel();
+                if (finished != connectTask) {
+                    Logger.Info("UI: Stopped waiting for the " + label + " to connect - N.I.N.A. finishes the driver connect in the background");
+                    _ = connectTask.ContinueWith(t => Logger.Error(t.Exception), TaskContinuationOptions.OnlyOnFaulted);
+                    throw new OperationCanceledException(token);
+                }
+            }
             try {
-                return await Task.Run(connect).ConfigureAwait(true);
+                return await connectTask.ConfigureAwait(true);
             } catch (Exception ex) {
                 Logger.Error(ex);
                 return false;
@@ -1496,11 +1542,19 @@ namespace NINA.Plugin.Speckle.Dockables {
         }
 
         private bool CanPrimaryAction() {
+            if (isConnectingEquipment) {
+                return true;
+            }
             return IsRunning ? IsActionNeeded : CanStart();
         }
 
         private void PrimaryAction() {
             var label = PrimaryActionLabel;
+            if (isConnectingEquipment) {
+                Logger.Info("UI: Primary action clicked - cancelling the equipment connect");
+                CancelConnect();
+                return;
+            }
             if (!IsRunning) {
                 Logger.Info("UI: Primary action clicked - resolved to start (label " + label + ", phase " + Session.Phase + ")");
                 Start();

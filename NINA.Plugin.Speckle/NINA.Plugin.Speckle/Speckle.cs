@@ -78,6 +78,11 @@ namespace NINA.Plugin.Speckle {
                 SpeckleSettingsMigrated = true;
             }
 
+            if (!Services.RigStore.Exists) {
+                MigrateRigFromProfile();
+                WarnIfRigIncomplete();
+            }
+
             notePattern.Value = string.Empty;
             options.AddImagePattern(notePattern);
             speckleRunPattern.Value = string.Empty;
@@ -404,45 +409,44 @@ namespace NINA.Plugin.Speckle {
             set => SetOption(value);
         }
 
+        // The two camera rig lives outside the profile - see Services/RigStore.
         public bool DualCameraSetup {
-            get => GetOption(false);
-            set => SetOption(value);
+            get => Services.RigStore.Current.DualCameraSetup;
+            set => SetRig(rig => rig.DualCameraSetup = value);
         }
 
         public string WideProfileId {
-            get => GetOption("");
-            set => SetOption(value);
+            get => Services.RigStore.Current.WideProfileId;
+            set => SetRigUnlessCleared(value, (rig, stored) => rig.WideProfileId = stored);
         }
 
         public int WideMirrorPosition {
-            get => GetOption(0);
-            set => SetOption(value);
+            get => Services.RigStore.Current.WideMirrorPosition;
+            set => SetRig(rig => rig.WideMirrorPosition = value);
         }
 
         public string WideCameraId {
-            get => GetOption("");
-            set => SetOption(value);
+            get => Services.RigStore.Current.WideCameraId;
+            set => SetRig(rig => rig.WideCameraId = value);
         }
 
         public string WideCameraName {
-            get => _pluginOptionsAccessor.GetValueString(nameof(WideCameraName), "");
+            get => Services.RigStore.Current.WideCameraName;
             set {
-                _pluginOptionsAccessor.SetValueString(nameof(WideCameraName), value);
-                RaisePropertyChanged();
+                SetRig(rig => rig.WideCameraName = value);
                 RaisePropertyChanged(nameof(WideCameraLabel));
             }
         }
 
         public string ScienceCameraId {
-            get => GetOption("");
-            set => SetOption(value);
+            get => Services.RigStore.Current.ScienceCameraId;
+            set => SetRig(rig => rig.ScienceCameraId = value);
         }
 
         public string ScienceCameraName {
-            get => _pluginOptionsAccessor.GetValueString(nameof(ScienceCameraName), "");
+            get => Services.RigStore.Current.ScienceCameraName;
             set {
-                _pluginOptionsAccessor.SetValueString(nameof(ScienceCameraName), value);
-                RaisePropertyChanged();
+                SetRig(rig => rig.ScienceCameraName = value);
                 RaisePropertyChanged(nameof(ScienceCameraLabel));
             }
         }
@@ -470,33 +474,33 @@ namespace NINA.Plugin.Speckle {
         }
 
         public double WideCompassAngle {
-            get => GetOption(0d);
-            set => SetOption(value);
+            get => Services.RigStore.Current.WideCompassAngle;
+            set => SetRig(rig => rig.WideCompassAngle = value);
         }
 
         public bool WideCompassMirrored {
-            get => GetOption(false);
-            set => SetOption(value);
+            get => Services.RigStore.Current.WideCompassMirrored;
+            set => SetRig(rig => rig.WideCompassMirrored = value);
         }
 
         public bool ScienceCompassMirrored {
-            get => GetOption(true);
-            set => SetOption(value);
+            get => Services.RigStore.Current.ScienceCompassMirrored;
+            set => SetRig(rig => rig.ScienceCompassMirrored = value);
         }
 
         public double ScienceCompassAngle {
-            get => GetOption(0d);
-            set => SetOption(value);
+            get => Services.RigStore.Current.ScienceCompassAngle;
+            set => SetRig(rig => rig.ScienceCompassAngle = value);
         }
 
         public string ScienceProfileId {
-            get => GetOption("");
-            set => SetOption(value);
+            get => Services.RigStore.Current.ScienceProfileId;
+            set => SetRigUnlessCleared(value, (rig, stored) => rig.ScienceProfileId = stored);
         }
 
         public int ScienceMirrorPosition {
-            get => GetOption(0);
-            set => SetOption(value);
+            get => Services.RigStore.Current.ScienceMirrorPosition;
+            set => SetRig(rig => rig.ScienceMirrorPosition = value);
         }
 
         public bool ShowCrosshair {
@@ -532,10 +536,57 @@ namespace NINA.Plugin.Speckle {
 
         public string SlewFilter {
             get => GetOption(string.Empty);
-            set => SetOption(value);
+            set => SetOptionUnlessCleared(value);
         }
 
-        public IList<string> AvailableFilters => Services.FilterWheelCatalog.Names(_profileService).ToList();
+        // All three dropdown sources below are cached and only rebuilt when their contents really
+        // change. Returning a fresh collection makes a WPF ComboBox clear SelectedValue, which
+        // blanks the displayed selection even though the stored value is untouched.
+        private IList<string> availableFilters;
+
+        private string availableFiltersKey;
+
+        public IList<string> AvailableFilters {
+            get {
+                var names = Services.FilterWheelCatalog.Names(_profileService);
+                var key = string.Join("|", names);
+                if (availableFilters == null || availableFiltersKey != key) {
+                    availableFilters = names.ToList();
+                    availableFiltersKey = key;
+                }
+                return availableFilters;
+            }
+        }
+
+        private IList<Services.ProfileChoice> wideProfileChoices;
+
+        private string wideProfileChoicesKey;
+
+        private IList<Services.ProfileChoice> scienceProfileChoices;
+
+        private string scienceProfileChoicesKey;
+
+        public IList<Services.ProfileChoice> WideProfileChoices {
+            get {
+                var key = Services.ProfileCatalog.Signature(_profileService, WideProfileId);
+                if (wideProfileChoices == null || wideProfileChoicesKey != key) {
+                    wideProfileChoices = Services.ProfileCatalog.Choices(_profileService, WideProfileId).ToList();
+                    wideProfileChoicesKey = key;
+                }
+                return wideProfileChoices;
+            }
+        }
+
+        public IList<Services.ProfileChoice> ScienceProfileChoices {
+            get {
+                var key = Services.ProfileCatalog.Signature(_profileService, ScienceProfileId);
+                if (scienceProfileChoices == null || scienceProfileChoicesKey != key) {
+                    scienceProfileChoices = Services.ProfileCatalog.Choices(_profileService, ScienceProfileId).ToList();
+                    scienceProfileChoicesKey = key;
+                }
+                return scienceProfileChoices;
+            }
+        }
 
         public string DefaultTemplate {
             get => GetOption(string.Empty);
@@ -885,6 +936,11 @@ namespace NINA.Plugin.Speckle {
         public event PropertyChangedEventHandler PropertyChanged;
 
         private void ProfileService_ProfileChanged(object sender, EventArgs e) {
+            // Deliberately does NOT drop the dropdown caches. The list of profiles is the same
+            // whichever profile is active, and replacing a ComboBox's ItemsSource makes it clear
+            // SelectedValue - which left the wide/science profile boxes looking empty after every
+            // switch even though the value was still stored. The caches refresh themselves when
+            // the profile set really changes; see ProfileCatalog.Signature.
             RaiseAllPropertiesChanged();
         }
 
@@ -922,6 +978,81 @@ namespace NINA.Plugin.Speckle {
         private void SetOption(string value, [CallerMemberName] string optionName = null) {
             _pluginOptionsAccessor.SetValueString(optionName, value);
             RaisePropertyChanged(optionName);
+        }
+
+        /// <summary>
+        /// Stores a dropdown-backed string option, ignoring a null write. A WPF ComboBox clears
+        /// SelectedValue to null when its ItemsSource is replaced - which happens on every profile
+        /// switch - and the TwoWay binding would push that null back and erase the stored value.
+        /// Choosing the deliberate "none" entry sends an empty string, which is still stored.
+        /// </summary>
+        private void SetOptionUnlessCleared(string value, [CallerMemberName] string optionName = null) {
+            if (value == null) {
+                Logger.Debug("Ignoring a null write to " + optionName + "; the dropdown was reset rather than changed by the user");
+                RaisePropertyChanged(optionName);
+                return;
+            }
+            SetOption(value, optionName);
+        }
+
+        private void SetRig(Action<Services.RigSettings> apply, [CallerMemberName] string optionName = null) {
+            apply(Services.RigStore.Current);
+            Services.RigStore.Save();
+            RaisePropertyChanged(optionName);
+        }
+
+        /// <summary>Rig equivalent of <see cref="SetOptionUnlessCleared"/>, for the profile dropdowns.</summary>
+        private void SetRigUnlessCleared(string value, Action<Services.RigSettings, string> apply, [CallerMemberName] string optionName = null) {
+            if (value == null) {
+                Logger.Debug("Ignoring a null write to " + optionName + "; the dropdown was reset rather than changed by the user");
+                RaisePropertyChanged(optionName);
+                return;
+            }
+            SetRig(rig => apply(rig, value), optionName);
+        }
+
+        /// <summary>
+        /// Carries a two camera setup that was stored in the active profile over to the shared rig
+        /// file, once, so upgrading users keep the setup they already configured.
+        /// </summary>
+        private void MigrateRigFromProfile() {
+            Services.RigStore.Seed(new Services.RigSettings {
+                DualCameraSetup = _pluginOptionsAccessor.GetValueBoolean(nameof(DualCameraSetup), false),
+                WideProfileId = _pluginOptionsAccessor.GetValueString(nameof(WideProfileId), string.Empty),
+                ScienceProfileId = _pluginOptionsAccessor.GetValueString(nameof(ScienceProfileId), string.Empty),
+                WideMirrorPosition = _pluginOptionsAccessor.GetValueInt32(nameof(WideMirrorPosition), 0),
+                ScienceMirrorPosition = _pluginOptionsAccessor.GetValueInt32(nameof(ScienceMirrorPosition), 0),
+                WideCameraName = _pluginOptionsAccessor.GetValueString(nameof(WideCameraName), string.Empty),
+                ScienceCameraName = _pluginOptionsAccessor.GetValueString(nameof(ScienceCameraName), string.Empty),
+                WideCameraId = _pluginOptionsAccessor.GetValueString(nameof(WideCameraId), string.Empty),
+                ScienceCameraId = _pluginOptionsAccessor.GetValueString(nameof(ScienceCameraId), string.Empty),
+                WideCompassAngle = _pluginOptionsAccessor.GetValueDouble(nameof(WideCompassAngle), 0d),
+                ScienceCompassAngle = _pluginOptionsAccessor.GetValueDouble(nameof(ScienceCompassAngle), 0d),
+                WideCompassMirrored = _pluginOptionsAccessor.GetValueBoolean(nameof(WideCompassMirrored), false),
+                ScienceCompassMirrored = _pluginOptionsAccessor.GetValueBoolean(nameof(ScienceCompassMirrored), true)
+            });
+            Logger.Info("The Speckle two camera rig was carried from profile " + _profileService.ActiveProfile.Name
+                + " into " + Services.RigStore.FilePath + "; it is now shared by every profile");
+        }
+
+        /// <summary>
+        /// The rig can only be carried over from the profile that happens to be active at load, so a
+        /// setup that was configured in a different profile arrives incomplete. Say so rather than
+        /// leaving a half configured rig to be discovered at the telescope.
+        /// </summary>
+        private void WarnIfRigIncomplete() {
+            var rig = Services.RigStore.Current;
+            if (!rig.DualCameraSetup) {
+                return;
+            }
+            if (!string.IsNullOrWhiteSpace(rig.WideProfileId) && !string.IsNullOrWhiteSpace(rig.ScienceProfileId)) {
+                return;
+            }
+            Logger.Warning("The two camera rig was carried over from profile " + _profileService.ActiveProfile.Name
+                + " but the wide and science profiles are not both set. If they were configured in another profile,"
+                + " pick them again under the dual camera options; the setting is now shared by every profile.");
+            Notification.ShowWarning("Speckle: check the wide field and science camera profiles in the plugin options."
+                + " They are now shared by every profile and could not be read from the profile that was active at startup.");
         }
 
         protected void RaisePropertyChanged([CallerMemberName] string propertyName = null) {

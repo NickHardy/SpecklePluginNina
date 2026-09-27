@@ -24,6 +24,7 @@ namespace NINA.Plugin.Speckle.ManualMount {
         private double siteLatitude;
         private double siteLongitude;
         private double siteElevation;
+        private int unknownPositionLogged;
 
         public ManualTelescope(IProfileService profileService, IOperatorPageService operatorPage) {
             this.profileService = profileService;
@@ -65,11 +66,17 @@ namespace NINA.Plugin.Speckle.ManualMount {
             siteLatitude = astrometry.Latitude;
             siteLongitude = astrometry.Longitude;
             siteElevation = astrometry.Elevation;
-            if (state.Reported == null) {
-                var zenith = new InputTopocentricCoordinates(Angle.ByDegree(siteLatitude), Angle.ByDegree(siteLongitude));
-                zenith.AltDegrees = 90;
-                state.Reported = zenith.Coordinates.Transform(Epoch.JNOW);
+            // Do not invent a position here. A manual telescope has no encoders, so until a slew
+            // is confirmed - or N.I.N.A. syncs us - we genuinely do not know where it points, and
+            // the operator may well have pushed it by hand while we were disconnected. The state
+            // is a process-wide singleton, so an earlier session's position would otherwise be
+            // inherited silently.
+            if (state.Reported != null) {
+                Logger.Info("Speckle Manual Telescope: discarding the position from the previous session; "
+                    + "it is unknown again until the next On Target confirmation");
+                state.Reported = null;
             }
+            Interlocked.Exchange(ref unknownPositionLogged, 0);
             if (!operatorPage.Acquire("mount")) {
                 Logger.Error("Speckle Manual Telescope not connected because the operator page could not be started");
                 Notification.ShowError("The Speckle operator page could not be started, so a manual slew could never be confirmed. Check the operator page port in the Speckle options.");
@@ -110,7 +117,35 @@ namespace NINA.Plugin.Speckle.ManualMount {
             throw new NotImplementedException();
         }
 
-        public Coordinates Coordinates => state.Reported ?? new Coordinates(Angle.ByHours(0), Angle.ByDegree(0), Epoch.JNOW);
+        /// <summary>
+        /// Where the telescope is pointing, as far as this driver can know: the last slew the
+        /// operator confirmed, or the last sync.
+        /// <para>
+        /// When nothing has been confirmed yet, fall back to the slew being asked for rather than
+        /// to a made-up sky position. This matters more than it looks: during the August 2026 MWO
+        /// run the simulated telescope answered with a zenith position it had fabricated when it
+        /// connected, N.I.N.A. wrote it into RA/DEC/CENTALT/CENTAZ/AIRMASS of every frame, and
+        /// because the value was plausible rather than absurd nobody noticed for weeks. A
+        /// placeholder that is obviously wrong is far safer than one that is quietly wrong.
+        /// </para>
+        /// </summary>
+        public Coordinates Coordinates {
+            get {
+                var reported = state.Reported;
+                if (reported != null) {
+                    return reported;
+                }
+                var requested = state.Pending?.Target;
+                if (requested != null) {
+                    return requested;
+                }
+                if (Interlocked.Exchange(ref unknownPositionLogged, 1) == 0) {
+                    Logger.Warning("Speckle Manual Telescope has no confirmed position yet and reports 00:00:00 +00:00:00. "
+                        + "Any frame saved before the first On Target confirmation carries that placeholder, not a real pointing.");
+                }
+                return new Coordinates(Angle.ByHours(0), Angle.ByDegree(0), Epoch.JNOW);
+            }
+        }
 
         public double RightAscension => Coordinates.RA;
 

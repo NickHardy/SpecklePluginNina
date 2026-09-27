@@ -358,13 +358,21 @@ namespace NINA.Plugin.Speckle.Services {
         private static readonly TimeSpan CameraSettleStep = TimeSpan.FromMilliseconds(100);
         private static readonly TimeSpan CameraSettleLimit = TimeSpan.FromSeconds(10);
 
-        private async Task WaitForCameraReadyAsync(CancellationToken token) {
+        private Task WaitForCameraReadyAsync(CancellationToken token) {
+            return WaitForCameraReadyAsync(token, "the video stream stopped");
+        }
+
+        private async Task WaitForCameraReadyAsync(CancellationToken token, string after) {
             await Task.Delay(CameraSettleStep, token).ConfigureAwait(false);
             var waited = Stopwatch.StartNew();
-            while (cameraMediator.GetInfo()?.Connected != true) {
+            while (true) {
+                var info = cameraMediator.GetInfo();
+                if (info?.Connected == true && !info.IsExposing) {
+                    return;
+                }
                 if (waited.Elapsed > CameraSettleLimit) {
-                    Logger.Warning("The camera was still reported as disconnected " + waited.Elapsed.TotalSeconds
-                        + " seconds after the video stream stopped, so the run continues anyway");
+                    Logger.Warning("The camera was still " + (info?.Connected == true ? "exposing" : "reported as disconnected")
+                        + " " + waited.Elapsed.TotalSeconds + " seconds after " + after + ", so the run continues anyway");
                     return;
                 }
                 await Task.Delay(CameraSettleStep, token).ConfigureAwait(false);
@@ -466,6 +474,10 @@ namespace NINA.Plugin.Speckle.Services {
                     ? "roi " + request.SubSampleRectangle.Width + "x" + request.SubSampleRectangle.Height
                     : "full frame")
                 + ". Previews always take single exposures so the screen keeps up; video mode is only for the frames that are saved.");
+            // The preview usually changes the region of interest back to the full frame. Some drivers
+            // (Altair/ToupTek) throw inside the native put_Roi if that lands while the previous
+            // subframed series is still tearing down, so wait for the camera to go idle first.
+            await WaitForCameraReadyAsync(ct, "the previous capture finished").ConfigureAwait(false);
             try {
                 while (!ct.IsCancellationRequested) {
                     capture.ExposureTime = request.GetExposureTime();

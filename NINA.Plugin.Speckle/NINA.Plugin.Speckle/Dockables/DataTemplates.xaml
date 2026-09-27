@@ -1793,8 +1793,9 @@
                                     Minimum="0"
                                     ToolTip="{Binding}">
                                     <ProgressBar.Value>
-                                        <MultiBinding Converter="{StaticResource CaptureBar}">
-                                            <Binding Path="(ItemsControl.AlternationIndex)" RelativeSource="{RelativeSource AncestorType=ContentPresenter}" />
+                                        <!--  OneWay is required: ProgressBar.Value binds two-way by default, and AlternationIndex is read-only.  -->
+                                        <MultiBinding Converter="{StaticResource CaptureBar}" Mode="OneWay">
+                                            <Binding Mode="OneWay" Path="(ItemsControl.AlternationIndex)" RelativeSource="{RelativeSource AncestorType=ContentPresenter}" />
                                             <Binding Path="Data.Session.CaptureEntryNumber" Source="{StaticResource PlanProxy}" />
                                             <Binding Path="Data.Session.FrameCount" Source="{StaticResource PlanProxy}" />
                                             <Binding Path="Data.Session.FrameTotal" Source="{StaticResource PlanProxy}" />

@@ -322,26 +322,18 @@ namespace NINA.Plugin.Speckle.Services {
                 return path == LightPath.Wide ? WideCameraId : ScienceCameraId;
             }
 
+            /// <summary>
+            /// The rig itself now lives outside the profile (see <see cref="RigStore"/>), so nothing
+            /// has to be copied for the cameras, mirror positions or compass. The slew filter is
+            /// still a per profile setting, so carry that one over.
+            /// </summary>
             public void WriteTo(Speckle options, string profileName) {
-                if (!DualCameraSetup) {
+                if (!DualCameraSetup || string.IsNullOrWhiteSpace(SlewFilter)) {
                     return;
                 }
-                options.DualCameraSetup = DualCameraSetup;
-                options.WideProfileId = WideProfileId;
-                options.ScienceProfileId = ScienceProfileId;
-                options.WideMirrorPosition = WideMirrorPosition;
-                options.ScienceMirrorPosition = ScienceMirrorPosition;
-                options.WideCameraName = WideCameraName;
-                options.ScienceCameraName = ScienceCameraName;
-                options.WideCameraId = WideCameraId;
-                options.ScienceCameraId = ScienceCameraId;
                 options.SlewFilter = SlewFilter;
-                options.WideCompassAngle = WideCompassAngle;
-                options.ScienceCompassAngle = ScienceCompassAngle;
-                options.WideCompassMirrored = WideCompassMirrored;
-                options.ScienceCompassMirrored = ScienceCompassMirrored;
-                Logger.Info("The two camera setup was copied into profile " + profileName
-                    + ", so the cameras, slew filter and compass are the same whichever profile a run starts from");
+                Logger.Info("The slew filter was carried into profile " + profileName
+                    + ", so centring happens through the same filter whichever profile a run starts from");
             }
         }
     }

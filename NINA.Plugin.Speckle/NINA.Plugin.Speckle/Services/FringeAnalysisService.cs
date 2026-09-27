@@ -134,7 +134,9 @@ namespace NINA.Plugin.Speckle.Services {
             var current = pushOptions;
             var every = current.AnalyseEveryNthFrame;
             var index = Interlocked.Increment(ref pushFrameIndex);
-            if (every > 1 && index % every != 0) {
+            // Count from the first frame, so a short run still produces one result instead of
+            // waiting for frame number AnalyseEveryNthFrame to come round.
+            if (every > 1 && (index - 1) % every != 0) {
                 return;
             }
             var size = FrameCrop.ChooseSize(width, height, current.FftSize, MinFftSize, MaxFftSize);
@@ -368,16 +370,36 @@ namespace NINA.Plugin.Speckle.Services {
                     Publish(result);
                 }
             } else {
-                Logger.Warning("Fringe analysis finished with no frames analysed for " + (context?.Label ?? "unknown"));
+                Logger.Warning("Fringe analysis finished with no frames analysed for " + (context?.Label ?? "unknown")
+                               + WhyNothingAnalysed());
                 Publish(BuildResult(null, true));
             }
             SavePanes();
             var dropped = Volatile.Read(ref droppedFrames);
             var captured = Volatile.Read(ref capturedFrames);
             var analysed = accumulator?.FrameCount ?? 0;
+            var every = options?.AnalyseEveryNthFrame ?? 1;
             Logger.Info("Fringe analysis finished for " + (context?.Label ?? "unknown")
-                        + ": analysed " + analysed + " of " + captured + " frames, dropped " + dropped);
+                        + ": analysed " + analysed + " of " + captured + " frames, dropped " + dropped
+                        + (every > 1 ? ", analysing every " + every + " frames" : string.Empty));
             dirty = false;
+        }
+
+        private string WhyNothingAnalysed() {
+            var captured = Volatile.Read(ref capturedFrames);
+            if (captured == 0) {
+                return ": no frames reached the analyser";
+            }
+            var dropped = Volatile.Read(ref droppedFrames);
+            if (dropped >= captured) {
+                return ": all " + captured + " frames were dropped because the analyser could not keep up";
+            }
+            var every = options?.AnalyseEveryNthFrame ?? 1;
+            if (every > 1 && captured < every) {
+                return ": only " + captured + (captured == 1 ? " frame was" : " frames were")
+                       + " captured and the analyse-every-nth-frame setting is " + every;
+            }
+            return ": " + captured + " frames were captured but none could be used";
         }
 
         private void Allocate(int size) {

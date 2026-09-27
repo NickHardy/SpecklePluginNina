@@ -1861,9 +1861,9 @@
                                                     Grid.Column="0"
                                                     Margin="0,4,10,4"
                                                     VerticalAlignment="Center"
-                                                    Text="Wide field camera profile id"
-                                                    ToolTip="Id of the NINA profile that is activated for the wide field camera. Leave empty to stay on the current profile." />
-                                                <TextBox
+                                                    Text="Wide field camera profile"
+                                                    ToolTip="The NINA profile that is activated for the wide field camera. Choose 'Stay on the current profile' to leave the profile alone. The two camera setup is shared by every profile, so it only needs filling in once." />
+                                                <ComboBox
                                                     IsEnabled="{Binding DualCameraSetup}"
                                                     Grid.Row="5"
                                                     Grid.Column="1"
@@ -1871,8 +1871,12 @@
                                                     Margin="0,4"
                                                     HorizontalAlignment="Left"
                                                     VerticalAlignment="Center"
-                                                    Text="{Binding WideProfileId}"
-                                                    ToolTip="Id of the NINA profile that is activated for the wide field camera. Leave empty to stay on the current profile." />
+                                                    DisplayMemberPath="Name"
+                                                    IsEditable="False"
+                                                    ItemsSource="{Binding WideProfileChoices}"
+                                                    SelectedValue="{Binding WideProfileId}"
+                                                    SelectedValuePath="Id"
+                                                    ToolTip="The NINA profile that is activated for the wide field camera. Choose 'Stay on the current profile' to leave the profile alone. The two camera setup is shared by every profile, so it only needs filling in once." />
 
                                                 <TextBlock
                                                     Background="Transparent"
@@ -1900,9 +1904,9 @@
                                                     Grid.Column="0"
                                                     Margin="0,4,10,4"
                                                     VerticalAlignment="Center"
-                                                    Text="Science camera profile id"
-                                                    ToolTip="Id of the NINA profile that is activated for the science camera. Leave empty to stay on the current profile." />
-                                                <TextBox
+                                                    Text="Science camera profile"
+                                                    ToolTip="The NINA profile that is activated for the science camera. Choose 'Stay on the current profile' to leave the profile alone. The two camera setup is shared by every profile, so it only needs filling in once." />
+                                                <ComboBox
                                                     IsEnabled="{Binding DualCameraSetup}"
                                                     Grid.Row="7"
                                                     Grid.Column="1"
@@ -1910,8 +1914,12 @@
                                                     Margin="0,4"
                                                     HorizontalAlignment="Left"
                                                     VerticalAlignment="Center"
-                                                    Text="{Binding ScienceProfileId}"
-                                                    ToolTip="Id of the NINA profile that is activated for the science camera. Leave empty to stay on the current profile." />
+                                                    DisplayMemberPath="Name"
+                                                    IsEditable="False"
+                                                    ItemsSource="{Binding ScienceProfileChoices}"
+                                                    SelectedValue="{Binding ScienceProfileId}"
+                                                    SelectedValuePath="Id"
+                                                    ToolTip="The NINA profile that is activated for the science camera. Choose 'Stay on the current profile' to leave the profile alone. The two camera setup is shared by every profile, so it only needs filling in once." />
 
                                                 <TextBlock
                                                     Background="Transparent"
