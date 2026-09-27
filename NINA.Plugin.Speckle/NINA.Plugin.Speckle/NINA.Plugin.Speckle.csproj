@@ -6,7 +6,11 @@
     <TargetFramework>net8.0-windows</TargetFramework>
     <OutputType>Library</OutputType>
     <AssemblyName>SpeckleInterferometry</AssemblyName>
-    <Version>3.1.0.31</Version>
+    <!-- No <Version> here on purpose. The released package is versioned by the git tag, which the
+         workflow passes in as -p:Version=<tag>, so the tag is the single source of truth. A value
+         here would silently disagree with the tag and could make a release look like a downgrade
+         to N.I.N.A.'s plugin manager. Local builds fall back to 1.0.0.0, which is the intended
+         signal that a build did not come from a tagged release. -->
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <UseWindowsForms>true</UseWindowsForms>
     <UseWPF>true</UseWPF>
