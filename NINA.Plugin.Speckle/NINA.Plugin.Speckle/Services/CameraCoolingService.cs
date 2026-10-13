@@ -29,14 +29,15 @@ namespace NINA.Plugin.Speckle.Services {
         }
 
         public void Start() {
-            if (loop != null) {
+            if (cts != null) {
                 return;
             }
+            dontRetryBefore = DateTime.MinValue;
+            lastCameraKept = null;
             cts = new CancellationTokenSource();
             var token = cts.Token;
-            loop = Task.Run(() => RunAsync(token), token);
+            loop = Task.Run(() => RunAsync(token));
             CameraCoolingRequest.Interrupted += OnInterrupted;
-            Logger.Info("Camera cooling will be kept on in the background whenever the connected camera has a cooler.");
         }
 
         private void OnInterrupted() {
@@ -51,22 +52,23 @@ namespace NINA.Plugin.Speckle.Services {
         }
 
         public void Stop() {
+            if (cts == null) {
+                return;
+            }
             CameraCoolingRequest.Interrupted -= OnInterrupted;
-            cts?.Cancel();
+            var stopping = cts;
+            cts = null;
+            stopping.Cancel();
+            loop.ContinueWith(_ => stopping.Dispose(), TaskScheduler.Default);
         }
 
         public void Dispose() {
-            Stop();
             var running = loop;
+            Stop();
             if (running != null && !running.Wait(ShutdownWait)) {
-                Logger.Warning("The camera cooling loop did not stop within " + ShutdownWait.TotalSeconds
-                    + " seconds, so its cancellation source is being left for the finalizer.");
-                loop = null;
+                Logger.Warning("The camera cooling loop did not stop within " + ShutdownWait.TotalSeconds + " seconds.");
                 return;
             }
-            loop = null;
-            cts?.Dispose();
-            cts = null;
             nudged.Dispose();
         }
 
