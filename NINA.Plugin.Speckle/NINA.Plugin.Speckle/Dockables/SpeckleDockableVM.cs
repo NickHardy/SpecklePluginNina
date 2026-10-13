@@ -205,7 +205,6 @@ namespace NINA.Plugin.Speckle.Dockables {
             telescopeMediator.RegisterConsumer(this);
             focuserMediator.RegisterConsumer(this);
             cooling = new CameraCoolingService(profileService, cameraMediator);
-            cooling.Start();
             Logger.Info("Speckle panel created and subscribed to ImagePrepared");
         }
 
@@ -1404,6 +1403,7 @@ namespace NINA.Plugin.Speckle.Dockables {
             runCts = new CancellationTokenSource();
             runEnded = false;
             IsRunning = true;
+            cooling.Start();
             IsDrawerOpen = false;
             IsMoreOpen = false;
             BuildChains();
@@ -1417,6 +1417,7 @@ namespace NINA.Plugin.Speckle.Dockables {
                 Notification.ShowError(ex.Message);
             } finally {
                 Logger.Info("Run finished - " + Session.TargetsImaged + " imaged, " + Session.TargetsSkipped + " skipped, " + Session.TotalFrames + " frames");
+                cooling.Stop();
                 if (!cameraReleasedForHold) {
                     cameraMediator.ReleaseCaptureBlock(this);
                 }
